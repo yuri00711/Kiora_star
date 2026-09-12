@@ -94,14 +94,14 @@ if (hero && heroBg && heroCenter) {
 const supabaseUrl = "https://sqgzlaunnmwkulboyems.supabase.co/rest/v1/";
 const supabaseKey = "sb_publishable_B35Zjt_oIOMZw-NCswwVmw_WhWwDzVa";
 
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
     supabaseUrl,
     supabaseKey
 );
 
 async function loadGames(){
 
-    let { data, error } = await supabase
+    let { data, error } = await supabaseClient
         .from("games")
         .select("*");
 
