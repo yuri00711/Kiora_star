@@ -1,15 +1,3 @@
-// ==========================
-// Supabase连接
-// ==========================
-
-const SUPABASE_URL = "https://sqgzlaunnmwkulboyems.supabase.co/rest/v1/";
-
-const SUPABASE_KEY = "sb_publishable_B35Zjt_oIOMZw-NCswwVmw_WhWwDzVa";
-
-const supabaseClient = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
 
 /* ========================================
    滚动出现动画
