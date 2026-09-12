@@ -1,0 +1,830 @@
+/* ========================================
+   01. 基础设置
+======================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+
+    background: #f7f4ef;
+    color: #383433;
+
+    font-family:
+        Georgia,
+        "Times New Roman",
+        "Yu Mincho",
+        "Hiragino Mincho ProN",
+        serif;
+
+    overflow-x: hidden;
+}
+
+
+/* ========================================
+   02. 第一页 HERO
+======================================== */
+
+.hero {
+    width: 100%;
+    height: 100vh;
+    height: 100svh;
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    padding: 40px 60px;
+}
+
+
+/* ---------- 背景层 ---------- */
+
+.hero-bg {
+    position: absolute;
+    inset: 0;
+
+    pointer-events: none;
+
+    z-index: 0;
+
+    transition: transform 0.8s ease-out;
+}
+
+
+/* 星轨 */
+
+.orbit {
+    position: absolute;
+
+    left: 50%;
+
+    border: 1px solid rgba(185, 163, 122, 0.22);
+
+    border-radius: 50%;
+}
+
+.orbit-1 {
+    width: 520px;
+    height: 220px;
+
+    top: 22%;
+
+    animation: orbitOne 28s linear infinite;
+}
+
+.orbit-2 {
+    width: 780px;
+    height: 330px;
+
+    top: 38%;
+
+    animation: orbitTwo 38s linear infinite;
+}
+
+
+/* 星尘 */
+
+.dust {
+    position: absolute;
+
+    color: #b9a37a;
+
+    opacity: 0.35;
+
+    animation: dustFloat 6s ease-in-out infinite;
+}
+
+.dust-1 {
+    top: 22%;
+    left: 17%;
+}
+
+.dust-2 {
+    top: 68%;
+    left: 20%;
+
+    animation-delay: 1.5s;
+}
+
+.dust-3 {
+    top: 27%;
+    right: 17%;
+
+    animation-delay: 2.4s;
+}
+
+.dust-4 {
+    top: 70%;
+    right: 21%;
+
+    animation-delay: 3.2s;
+}
+
+
+/* ---------- 左上 / 右上 ---------- */
+
+.hero-top {
+    position: absolute;
+
+    top: 35px;
+    left: 50px;
+    right: 50px;
+
+    display: flex;
+    justify-content: space-between;
+
+    z-index: 2;
+
+    font-size: 12px;
+    letter-spacing: 4px;
+
+    color: #8b8580;
+}
+
+
+/* ---------- 中央 ---------- */
+
+.hero-center {
+    position: relative;
+
+    z-index: 2;
+
+    text-align: center;
+
+    transition: transform 0.8s ease-out;
+}
+
+
+.star {
+    margin-bottom: 30px;
+
+    font-size: 18px;
+
+    color: #b9a37a;
+}
+
+
+h1 {
+    margin: 0;
+
+    font-size: clamp(55px, 7vw, 100px);
+
+    font-weight: normal;
+
+    letter-spacing: 12px;
+}
+
+
+.subtitle {
+    margin-top: 30px;
+
+    font-size: 14px;
+
+    line-height: 2;
+
+    letter-spacing: 4px;
+
+    color: #68615d;
+}
+
+
+.jp-text {
+    margin-top: 42px;
+
+    font-size: 13px;
+
+    line-height: 2.2;
+
+    letter-spacing: 3px;
+
+    color: #9a918a;
+}
+
+
+/* ---------- scroll ---------- */
+
+.scroll {
+    position: absolute;
+
+    bottom: 35px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 3;
+
+    color: #aaa19a;
+
+    font-size: 10px;
+    letter-spacing: 3px;
+
+    text-decoration: none;
+
+    transition:
+        opacity 0.4s ease,
+        letter-spacing 0.4s ease;
+}
+
+.scroll:hover {
+    opacity: 0.55;
+    letter-spacing: 5px;
+}
+
+
+/* ========================================
+   03. 首页进入动画
+======================================== */
+
+.intro {
+    opacity: 0;
+
+    filter: blur(6px);
+
+    animation: introFade 1.5s ease forwards;
+}
+
+
+.intro-1 {
+    animation-delay: 0.15s;
+}
+
+.intro-2 {
+    animation-delay: 0.5s;
+}
+
+.intro-3 {
+    animation-delay: 0.8s;
+}
+
+.intro-4 {
+    animation-delay: 1.15s;
+}
+
+.intro-5 {
+    animation-delay: 1.5s;
+}
+
+.intro-6 {
+    animation-delay: 1.9s;
+}
+
+
+h1.intro {
+    animation-name: titleIntro;
+}
+
+
+.star.intro {
+    animation:
+        introFade 1.4s ease 0.5s forwards,
+        starBreath 3s ease-in-out 2s infinite;
+}
+
+
+.scroll.intro {
+    animation:
+        scrollIntro 1.4s ease 1.9s forwards,
+        scrollFloat 2.4s ease-in-out 3.2s infinite;
+}
+
+
+/* ========================================
+   04. 第二页以及后续页面
+======================================== */
+
+.content-section {
+    width: min(100%, 1000px);
+
+    min-height: 100vh;
+    min-height: 100svh;
+
+    margin: 0 auto;
+
+    padding: 110px 70px;
+
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    overflow: hidden;
+}
+
+
+/* 页码 */
+
+.section-number {
+    position: absolute;
+
+    top: 65px;
+    right: 70px;
+
+    font-size: 11px;
+    letter-spacing: 3px;
+
+    color: #aaa19a;
+}
+
+
+/* ABOUT / GAMES */
+
+.content-section h2 {
+    margin: 0 0 25px;
+
+    font-size: 12px;
+    font-weight: normal;
+
+    letter-spacing: 7px;
+
+    color: #a89e97;
+}
+
+
+/* 中文大标题 */
+
+.section-title {
+    margin: 0 0 32px;
+
+    font-size: 34px;
+
+    font-weight: normal;
+
+    letter-spacing: 4px;
+}
+
+
+/* 正文 */
+
+.section-text {
+    max-width: 540px;
+
+    margin: 0;
+
+    font-size: 14px;
+
+    line-height: 2.4;
+
+    letter-spacing: 2px;
+
+    color: #77706c;
+}
+
+
+/* ========================================
+   05. 第二页 About 特殊设计
+======================================== */
+
+.about-section::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 50%;
+
+    width: 1px;
+    height: 0;
+
+    background: rgba(185, 163, 122, 0.38);
+
+    transform: translateX(-50%);
+
+    transition: height 1.3s ease;
+}
+
+
+.about-section.active::before {
+    height: 75px;
+}
+
+
+/* About 内部依次出现 */
+
+.about-section h2,
+.about-section .section-title,
+.about-section .section-text {
+    opacity: 0;
+
+    transform: translateY(28px);
+
+    filter: blur(4px);
+
+    transition:
+        opacity 1s ease,
+        transform 1.2s ease,
+        filter 1s ease;
+}
+
+
+.about-section.active h2 {
+    opacity: 1;
+
+    transform: translateY(0);
+
+    filter: blur(0);
+
+    transition-delay: 0.2s;
+}
+
+
+.about-section.active .section-title {
+    opacity: 1;
+
+    transform: translateY(0);
+
+    filter: blur(0);
+
+    transition-delay: 0.45s;
+}
+
+
+.about-section.active .section-text {
+    opacity: 1;
+
+    transform: translateY(0);
+
+    filter: blur(0);
+
+    transition-delay: 0.7s;
+}
+
+
+/* ========================================
+   06. 其他页面滚动动画
+======================================== */
+
+.reveal {
+    opacity: 0;
+
+    transform: translateY(55px);
+
+    filter: blur(4px);
+
+    transition:
+        opacity 1.1s ease,
+        transform 1.3s ease,
+        filter 1.1s ease;
+}
+
+
+.reveal.active {
+    opacity: 1;
+
+    transform: translateY(0);
+
+    filter: blur(0);
+}
+
+
+/* About 自己有内部动画，
+   所以外层只负责页面出现 */
+
+.about-section.reveal.active {
+    opacity: 1;
+
+    transform: translateY(0);
+
+    filter: blur(0);
+}
+
+
+/* ========================================
+   07. Games
+======================================== */
+
+.game-list {
+    margin-top: 10px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 24px;
+}
+
+
+.game-list span {
+    width: fit-content;
+
+    font-size: 22px;
+
+    letter-spacing: 3px;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.4s ease,
+        opacity 0.4s ease;
+}
+
+
+.game-list span:hover {
+    transform: translateX(12px);
+
+    opacity: 0.55;
+}
+
+
+/* ========================================
+   08. 页尾
+======================================== */
+
+footer {
+    padding: 100px 30px;
+
+    text-align: center;
+
+    font-size: 10px;
+
+    line-height: 2;
+
+    letter-spacing: 3px;
+
+    color: #aaa19a;
+}
+
+
+/* ========================================
+   09. 动画定义
+======================================== */
+
+@keyframes introFade {
+
+    from {
+        opacity: 0;
+
+        transform: translateY(20px);
+
+        filter: blur(6px);
+    }
+
+    to {
+        opacity: 1;
+
+        transform: translateY(0);
+
+        filter: blur(0);
+    }
+
+}
+
+
+@keyframes titleIntro {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(25px)
+            scale(0.96);
+
+        letter-spacing: 22px;
+
+        filter: blur(9px);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+        letter-spacing: 12px;
+
+        filter: blur(0);
+    }
+
+}
+
+
+@keyframes scrollIntro {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateX(-50%)
+            translateY(15px);
+
+        filter: blur(5px);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateX(-50%)
+            translateY(0);
+
+        filter: blur(0);
+    }
+
+}
+
+
+@keyframes starBreath {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.55;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 1;
+    }
+
+}
+
+
+@keyframes scrollFloat {
+
+    0%,
+    100% {
+        transform:
+            translateX(-50%)
+            translateY(0);
+    }
+
+    50% {
+        transform:
+            translateX(-50%)
+            translateY(7px);
+    }
+
+}
+
+
+@keyframes dustFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.25;
+    }
+
+    50% {
+        transform: translateY(-16px);
+        opacity: 0.75;
+    }
+
+}
+
+
+@keyframes orbitOne {
+
+    from {
+        transform:
+            translateX(-50%)
+            rotate(18deg);
+    }
+
+    to {
+        transform:
+            translateX(-50%)
+            rotate(378deg);
+    }
+
+}
+
+
+@keyframes orbitTwo {
+
+    from {
+        transform:
+            translateX(-50%)
+            rotate(-14deg);
+    }
+
+    to {
+        transform:
+            translateX(-50%)
+            rotate(346deg);
+    }
+
+}
+
+
+/* ========================================
+   10. 手机
+======================================== */
+
+@media (max-width: 768px) {
+
+    .hero {
+        padding: 28px 24px;
+    }
+
+
+    .hero-top {
+        top: 25px;
+        left: 25px;
+        right: 25px;
+    }
+
+
+    h1 {
+        font-size: 52px;
+
+        letter-spacing: 7px;
+    }
+
+
+    .subtitle {
+        font-size: 11px;
+
+        letter-spacing: 3px;
+    }
+
+
+    .jp-text {
+        margin-top: 35px;
+
+        font-size: 11px;
+
+        letter-spacing: 2px;
+    }
+
+
+    .orbit-1 {
+        width: 340px;
+        height: 150px;
+    }
+
+
+    .orbit-2 {
+        width: 500px;
+        height: 230px;
+    }
+
+
+    .content-section {
+        width: 100%;
+
+        min-height: 100svh;
+
+        padding: 90px 32px;
+    }
+
+
+    .section-number {
+        top: 45px;
+        right: 32px;
+    }
+
+
+    .section-title {
+        font-size: 28px;
+
+        margin-bottom: 28px;
+    }
+
+
+    .section-text {
+        font-size: 13px;
+
+        line-height: 2.3;
+
+        letter-spacing: 1.5px;
+    }
+
+
+    .game-list span {
+        font-size: 18px;
+    }
+
+
+    .about-section.active::before {
+        height: 55px;
+    }
+
+}
+
+
+/* 用户如果系统设置了减少动画，
+   网站也会尊重这个设置 */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+}
