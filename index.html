@@ -141,6 +141,9 @@
     </section>
 
 
+    <main class="desktop-journal-layout">
+        <aside class="desktop-profile-column">
+
 
     <!-- =====================================
          02 / ABOUT
@@ -236,9 +239,25 @@
                 </div>
                 <div id="free-space-content" class="rich-reading"></div>
             </section>
+
+            <section class="profile-block profile-desktop-meta">
+                <div class="profile-sidebar-meta-row">
+                    <p>CURRENTLY PLAYING</p>
+                    <strong id="profile-current-game">—</strong>
+                </div>
+                <div class="profile-sidebar-meta-row">
+                    <p>TAGS / KEYWORDS</p>
+                    <div id="profile-sidebar-tags" class="soft-tags"></div>
+                </div>
+                <time id="profile-updated" class="profile-updated"></time>
+            </section>
         </div>
 
     </section>
+
+        </aside>
+
+        <div class="desktop-main-column">
 
 
 
@@ -326,6 +345,7 @@
                     <button class="cms-admin-button hidden" type="button" data-add-writing="game_review">＋ ADD</button>
                 </div>
                 <div class="writing-article-list" data-writing-list="game_review"></div>
+                <button class="writing-view-all" type="button" data-view-writing-category="game_review">VIEW ALL →</button>
             </article>
 
             <article class="writing-card writing-category-essay">
@@ -338,6 +358,7 @@
                     <button class="cms-admin-button hidden" type="button" data-add-writing="essay">＋ ADD</button>
                 </div>
                 <div class="writing-article-list" data-writing-list="essay"></div>
+                <button class="writing-view-all" type="button" data-view-writing-category="essay">VIEW ALL →</button>
             </article>
 
             <article class="writing-card writing-category-dream">
@@ -350,6 +371,7 @@
                     <button class="cms-admin-button hidden" type="button" data-add-writing="dream">＋ ADD</button>
                 </div>
                 <div class="writing-article-list" data-writing-list="dream"></div>
+                <button class="writing-view-all" type="button" data-view-writing-category="dream">VIEW ALL →</button>
             </article>
 
             <article class="writing-card writing-category-archive">
@@ -362,6 +384,7 @@
                     <button class="cms-admin-button hidden" type="button" data-add-writing="archive">＋ ADD</button>
                 </div>
                 <div class="writing-article-list" data-writing-list="archive"></div>
+                <button class="writing-view-all" type="button" data-view-writing-category="archive">VIEW ALL →</button>
             </article>
 
         </div>
@@ -402,6 +425,9 @@
         </p>
 
     </section>
+
+        </div>
+    </main>
 
 
 
@@ -872,6 +898,17 @@
             <div id="reading-body" class="rich-reading reading-body"></div>
             <p id="reading-updated" class="reading-updated"></p>
         </article>
+    </div>
+
+    <div id="writing-archive-modal" class="archive-modal writing-archive-modal">
+        <div class="archive-modal-backdrop"></div>
+        <section class="archive-modal-card writing-archive-modal-card" aria-labelledby="writing-archive-title">
+            <button class="modal-close" data-close-modal type="button">×</button>
+            <p id="writing-archive-index" class="modal-label"></p>
+            <h3 id="writing-archive-title"></h3>
+            <p id="writing-archive-description" class="writing-archive-description"></p>
+            <div id="writing-archive-years" class="writing-archive-years"></div>
+        </section>
     </div>
 
 

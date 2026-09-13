@@ -14,6 +14,24 @@
         dream: "梦境来信",
         archive: "拾光匣"
     };
+    const categoryMeta = {
+        game_review: {
+            index: "01 / AFTERGLOW",
+            description: "游戏落幕后仍留在心里的感想，关于故事、角色与每一次心动。"
+        },
+        essay: {
+            index: "02 / MOON NOTES",
+            description: "日常里偶然泛起的念头，以及没有预先决定去处的自由书写。"
+        },
+        dream: {
+            index: "03 / DREAM LETTERS",
+            description: "写给另一个世界的故事，让想象中的相遇拥有可以停留的形状。"
+        },
+        archive: {
+            index: "04 / KEEPSAKES",
+            description: "将舍不得遗失的句子妥善收藏，留住时间经过时落下的微光。"
+        }
+    };
     const itemTables = {
         fandom: "profile_fandoms",
         favorite: "profile_favorites",
@@ -103,7 +121,28 @@
         return new Intl.DateTimeFormat("zh-CN", {
             year: "numeric",
             month: "long",
-            day: "numeric"
+            day: "numeric",
+            timeZone: "Asia/Tokyo"
+        }).format(new Date(date));
+    }
+
+    function formatCompactDate(date) {
+        if (!date) return "";
+        const parts = new Intl.DateTimeFormat("ja-JP", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            timeZone: "Asia/Tokyo"
+        }).formatToParts(new Date(date));
+        const value = (type) => parts.find((part) => part.type === type)?.value || "";
+        return [value("year"), value("month"), value("day")].filter(Boolean).join(".");
+    }
+
+    function formatYear(date) {
+        if (!date) return "UNDATED";
+        return new Intl.DateTimeFormat("en", {
+            year: "numeric",
+            timeZone: "Asia/Tokyo"
         }).format(new Date(date));
     }
 
@@ -275,7 +314,38 @@
         }
         renderProfileCollections();
         renderOtome();
+        renderProfileSidebarMeta();
     }
+
+    function renderProfileSidebarMeta() {
+        const tags = [
+            ...(state.otome.play_styles || []),
+            ...(state.otome.favorite_elements || []),
+            ...state.favorites.map((item) => item.name)
+        ].filter((tag, index, all) => tag && all.indexOf(tag) === index).slice(0, 10);
+        renderTags("profile-sidebar-tags", tags);
+
+        const updated = byId("profile-updated");
+        if (updated) {
+            const dates = [state.profile.updated_at, state.otome.updated_at]
+                .filter(Boolean)
+                .map((date) => new Date(date))
+                .filter((date) => !Number.isNaN(date.getTime()));
+            const latest = dates.sort((a, b) => b - a)[0];
+            updated.textContent = latest ? `LAST UPDATED / ${formatCompactDate(latest)}` : "";
+        }
+
+        renderCurrentGame(bridge.games || []);
+    }
+
+    function renderCurrentGame(games) {
+        const current = byId("profile-current-game");
+        if (current) current.textContent = games?.[0]?.title || "—";
+    }
+
+    window.addEventListener("yuri:gameschange", (event) => {
+        renderCurrentGame(event.detail?.games || []);
+    });
 
     function adminEditButton(kind, item) {
         if (!isAdmin()) return null;
@@ -685,55 +755,112 @@
         return button;
     }
 
+    function createWritingEntry(writing, archiveView = false) {
+        const article = create("article", archiveView ? "writing-entry writing-archive-entry" : "writing-entry");
+        if (!writing.is_public) article.classList.add("is-private");
+        const coverUrl = safeUrl(writing.cover_url);
+        if (coverUrl) {
+            article.classList.add("has-cover");
+            const image = create("img", "writing-entry-cover");
+            image.src = coverUrl;
+            image.alt = "";
+            image.loading = "lazy";
+            article.append(image);
+        }
+
+        const copy = create("div", "writing-entry-copy");
+        const meta = create("div", "writing-entry-meta");
+        const publishedDate = writing.published_at || writing.created_at;
+        const time = create("time", "writing-date", formatDate(publishedDate));
+        if (publishedDate) {
+            time.dateTime = publishedDate;
+            time.dataset.desktopDate = formatCompactDate(publishedDate);
+        }
+        meta.append(time);
+        if (writing.is_pinned) meta.append(create("span", "writing-pin", "✦ PINNED"));
+        if (!writing.is_public && isAdmin()) meta.append(create("span", "writing-draft", "PRIVATE"));
+        copy.append(meta, create("h4", "", writing.title));
+        if (writing.subtitle) copy.append(create("p", "writing-entry-subtitle", writing.subtitle));
+        if (writing.excerpt) copy.append(create("p", "writing-entry-excerpt", writing.excerpt));
+
+        const tags = create("div", "writing-entry-tags");
+        (writing.tags || []).forEach((tag) => tags.append(create("span", "", `# ${tag}`)));
+        if (tags.childElementCount) copy.append(tags);
+
+        const footer = create("div", "writing-entry-footer");
+        const read = writingAction("READ STORY →", "read", writing.id);
+        read.className = "writing-read-button";
+        footer.append(read);
+        if (isAdmin()) {
+            const actions = create("div", "writing-admin-actions");
+            actions.append(
+                writingAction("EDIT", "edit", writing.id),
+                writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id),
+                writingAction("DELETE", "delete", writing.id)
+            );
+            footer.append(actions);
+        }
+        copy.append(footer);
+        article.append(copy);
+        return article;
+    }
+
     function renderWritings() {
         document.querySelectorAll("[data-writing-list]").forEach((container) => {
             const category = container.dataset.writingList;
             const writings = state.writings.filter((item) => item.category === category && (isAdmin() || item.is_public));
             container.replaceChildren();
+            const viewAll = document.querySelector(`[data-view-writing-category="${category}"]`);
+            if (viewAll) {
+                viewAll.classList.toggle("has-stories", writings.length > 0);
+                viewAll.textContent = `VIEW ALL / ${writings.length} ${writings.length === 1 ? "STORY" : "STORIES"} →`;
+            }
             if (!writings.length) {
                 container.append(emptyState(isAdmin() ? "这个分区还没有文章。" : "文字正在慢慢抵达这里。"));
                 return;
             }
             writings.forEach((writing) => {
-                const article = create("article", "writing-entry");
-                if (!writing.is_public) article.classList.add("is-private");
-                const coverUrl = safeUrl(writing.cover_url);
-                if (coverUrl) {
-                    const image = create("img", "writing-entry-cover");
-                    image.src = coverUrl;
-                    image.alt = "";
-                    image.loading = "lazy";
-                    article.append(image);
-                }
-                const copy = create("div", "writing-entry-copy");
-                const meta = create("div", "writing-entry-meta");
-                meta.append(create("time", "", formatDate(writing.published_at)));
-                if (writing.is_pinned) meta.append(create("span", "writing-pin", "✦ PINNED"));
-                if (!writing.is_public && isAdmin()) meta.append(create("span", "writing-draft", "PRIVATE"));
-                copy.append(meta, create("h4", "", writing.title));
-                if (writing.subtitle) copy.append(create("p", "writing-entry-subtitle", writing.subtitle));
-                if (writing.excerpt) copy.append(create("p", "writing-entry-excerpt", writing.excerpt));
-                const tags = create("div", "writing-entry-tags");
-                (writing.tags || []).forEach((tag) => tags.append(create("span", "", `# ${tag}`)));
-                if (tags.childElementCount) copy.append(tags);
-                const footer = create("div", "writing-entry-footer");
-                const read = writingAction("READ MORE / 阅读全文", "read", writing.id);
-                read.className = "writing-read-button";
-                footer.append(read);
-                if (isAdmin()) {
-                    const actions = create("div", "writing-admin-actions");
-                    actions.append(
-                        writingAction("EDIT", "edit", writing.id),
-                        writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id),
-                        writingAction("DELETE", "delete", writing.id)
-                    );
-                    footer.append(actions);
-                }
-                copy.append(footer);
-                article.append(copy);
-                container.append(article);
+                container.append(createWritingEntry(writing));
             });
         });
+    }
+
+    function openWritingArchive(category) {
+        const meta = categoryMeta[category];
+        if (!meta) return;
+
+        byId("writing-archive-index").textContent = meta.index;
+        byId("writing-archive-title").textContent = categoryLabels[category];
+        byId("writing-archive-description").textContent = meta.description;
+        const years = byId("writing-archive-years");
+        years.replaceChildren();
+
+        const writings = state.writings
+            .filter((item) => item.category === category && (isAdmin() || item.is_public))
+            .sort((a, b) => new Date(b.published_at || b.created_at || 0) - new Date(a.published_at || a.created_at || 0));
+
+        if (!writings.length) {
+            years.append(emptyState("文字正在慢慢抵达这里。"));
+        } else {
+            const groups = new Map();
+            writings.forEach((writing) => {
+                const year = formatYear(writing.published_at || writing.created_at);
+                if (!groups.has(year)) groups.set(year, []);
+                groups.get(year).push(writing);
+            });
+            groups.forEach((items, year) => {
+                const group = create("section", "writing-archive-year");
+                const heading = create("div", "writing-archive-year-heading");
+                heading.append(create("h4", "", year), create("span", "", `${items.length} ${items.length === 1 ? "STORY" : "STORIES"}`));
+                const list = create("div", "writing-archive-list");
+                items.forEach((writing) => list.append(createWritingEntry(writing, true)));
+                group.append(heading, list);
+                years.append(group);
+            });
+        }
+
+        byId("writing-archive-modal").dataset.category = category;
+        bridge.openModal(byId("writing-archive-modal"));
     }
 
     function findWriting(id) {
@@ -772,12 +899,16 @@
         byId("reading-title").textContent = writing.title;
         byId("reading-subtitle").textContent = writing.subtitle || "";
         byId("reading-date").textContent = formatDate(writing.published_at);
+        byId("reading-date").dataset.desktopDate = formatCompactDate(writing.published_at);
         const tags = byId("reading-tags");
         tags.replaceChildren();
         (writing.tags || []).forEach((tag) => tags.append(create("span", "", tag)));
         byId("reading-body").innerHTML = markdownToHtml(writing.body);
         byId("reading-updated").textContent = writing.updated_at
             ? `LAST REVISED / ${formatDate(writing.updated_at)}`
+            : "";
+        byId("reading-updated").dataset.desktopText = writing.updated_at
+            ? `UPDATED / ${formatCompactDate(writing.updated_at)}`
             : "";
         bridge.openModal(byId("reading-modal"));
     }
@@ -839,6 +970,9 @@
     });
 
     document.addEventListener("click", async (event) => {
+        const viewCategory = event.target.closest("[data-view-writing-category]");
+        if (viewCategory) return openWritingArchive(viewCategory.dataset.viewWritingCategory);
+
         const profileEdit = event.target.closest("[data-edit-profile]");
         if (profileEdit) return openProfileEditor();
 
@@ -861,7 +995,11 @@
         if (!action) return;
         const writing = findWriting(action.dataset.writingId);
         if (!writing) return;
-        if (action.dataset.writingAction === "read") return openReading(writing);
+        const archiveModal = byId("writing-archive-modal");
+        if (archiveModal?.classList.contains("active")) bridge.closeModal(archiveModal);
+        if (action.dataset.writingAction === "read") {
+            return openReading(writing);
+        }
         if (action.dataset.writingAction === "edit") return openWritingEditor(writing.category, writing);
         if (action.dataset.writingAction === "delete") return deleteWriting(writing);
         if (action.dataset.writingAction === "pin" && isAdmin()) {

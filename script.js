@@ -121,6 +121,9 @@ window.yuriArchive = Object.freeze({
     get currentUser() {
         return currentUser;
     },
+    get games() {
+        return gamesCache.slice();
+    },
     supabaseClient,
     openModal,
     closeModal,
@@ -816,6 +819,12 @@ function renderGames(games) {
             );
 
         }
+    );
+
+    window.dispatchEvent(
+        new CustomEvent("yuri:gameschange", {
+            detail: { games: games.slice() }
+        })
     );
 
 }

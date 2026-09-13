@@ -1032,3 +1032,539 @@ h1,
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Desktop editorial layout. These wrappers are layout-neutral below 1024px. */
+
+.desktop-journal-layout,
+.desktop-profile-column,
+.desktop-main-column {
+    display: contents;
+}
+
+.profile-desktop-meta,
+.writing-view-all {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .desktop-journal-layout {
+        width: min(calc(100% - 72px), 1440px);
+        margin: 0 auto;
+        padding: 88px 0 130px;
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
+        align-items: start;
+        gap: clamp(42px, 5vw, 78px);
+    }
+
+    .desktop-main-column {
+        grid-column: 1;
+        grid-row: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 94px;
+    }
+
+    .desktop-profile-column {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        max-height: calc(100vh - 72px);
+        padding-left: clamp(28px, 3vw, 48px);
+        position: sticky;
+        top: 36px;
+        display: block;
+        overflow: auto;
+        border-left: 1px solid var(--line);
+        scrollbar-width: thin;
+        scrollbar-color: rgba(149, 111, 145, 0.32) transparent;
+    }
+
+    .desktop-profile-column::-webkit-scrollbar { width: 4px; }
+    .desktop-profile-column::-webkit-scrollbar-track { background: transparent; }
+    .desktop-profile-column::-webkit-scrollbar-thumb {
+        border-radius: 99px;
+        background: rgba(149, 111, 145, 0.28);
+    }
+
+    .desktop-main-column > .content-section,
+    .desktop-profile-column > .content-section {
+        width: 100%;
+        min-height: 0;
+        margin: 0;
+        overflow: visible;
+    }
+
+    .desktop-main-column > .content-section {
+        padding: 72px clamp(24px, 3.2vw, 50px);
+        border: 1px solid var(--line-soft);
+        border-radius: 20px;
+        background: rgba(251, 248, 251, 0.48);
+        box-shadow: 0 28px 80px rgba(75, 57, 81, 0.055);
+    }
+
+    .desktop-main-column > .writing-section {
+        order: -1;
+        padding-top: 76px;
+    }
+
+    .desktop-main-column .section-number {
+        top: 34px;
+        right: 42px;
+    }
+
+    /* Magazine-style profile rail. */
+    .desktop-profile-column .about-section {
+        padding: 12px 2px 50px;
+    }
+
+    .desktop-profile-column .about-section::before,
+    .desktop-profile-column .about-section::after {
+        display: none;
+    }
+
+    .desktop-profile-column .about-section > .section-number {
+        top: 14px;
+        right: 2px;
+    }
+
+    .desktop-profile-column .about-section > h2 {
+        margin-bottom: 12px;
+        font-size: 10px;
+        letter-spacing: 5px;
+    }
+
+    .desktop-profile-column .profile-heading {
+        margin-bottom: 28px;
+        padding-bottom: 22px;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--line-soft);
+    }
+
+    .desktop-profile-column .profile-heading .archive-subtitle {
+        max-width: 220px;
+        margin: 0;
+        font-size: 10px;
+        line-height: 1.9;
+        letter-spacing: 1.7px;
+    }
+
+    .desktop-profile-column .profile-content {
+        gap: 18px;
+    }
+
+    .desktop-profile-column .profile-intro-card,
+    .desktop-profile-column .profile-block {
+        border-radius: 14px;
+    }
+
+    .desktop-profile-column .profile-intro-card {
+        min-height: 0;
+        padding: 31px 26px 29px;
+        grid-template-columns: 1fr;
+        gap: 25px;
+        text-align: center;
+    }
+
+    .desktop-profile-column .profile-avatar-frame {
+        width: 128px;
+        height: 128px;
+        margin: 0 auto;
+    }
+
+    .desktop-profile-column .profile-intro-copy h3 {
+        margin: 15px 0 9px;
+        font-size: 27px;
+        letter-spacing: 3px;
+    }
+
+    .desktop-profile-column .profile-tagline {
+        margin-bottom: 17px;
+        font-size: 9px;
+        line-height: 1.8;
+    }
+
+    .desktop-profile-column .profile-summary {
+        font-size: 11px;
+        line-height: 2;
+        letter-spacing: 0.9px;
+        text-align: left;
+    }
+
+    .desktop-profile-column .profile-block {
+        padding: 24px 22px 26px;
+    }
+
+    .desktop-profile-column .profile-block-heading {
+        margin-bottom: 20px;
+        align-items: center;
+    }
+
+    .desktop-profile-column .rich-reading {
+        font-size: 11px;
+        line-height: 2.15;
+        letter-spacing: 0.8px;
+    }
+
+    .desktop-profile-column .fandom-grid,
+    .desktop-profile-column .favorite-grid,
+    .desktop-profile-column .otome-axes,
+    .desktop-profile-column .otome-tag-groups {
+        grid-template-columns: 1fr;
+    }
+
+    .desktop-profile-column .fandom-card {
+        min-height: 0;
+        padding: 14px;
+        gap: 14px;
+        border-radius: 10px;
+    }
+
+    .desktop-profile-column .fandom-image {
+        width: 46px;
+        height: 46px;
+    }
+
+    .desktop-profile-column .favorite-card {
+        min-height: 0;
+        padding: 13px;
+        grid-template-columns: 58px 1fr;
+        gap: 14px;
+        border-radius: 10px;
+    }
+
+    .desktop-profile-column .favorite-visual {
+        min-height: 68px;
+        border-radius: 8px;
+    }
+
+    .desktop-profile-column .fandom-copy h4,
+    .desktop-profile-column .favorite-copy h4 {
+        font-size: 13px;
+    }
+
+    .desktop-profile-column .fandom-copy p,
+    .desktop-profile-column .favorite-note,
+    .desktop-profile-column .favorite-work {
+        font-size: 9px;
+    }
+
+    .desktop-profile-column .boundary-list {
+        display: grid;
+        gap: 9px;
+    }
+
+    .desktop-profile-column .boundary-chip {
+        min-width: 0;
+        padding: 14px 39px 14px 15px;
+        border-radius: 9px;
+    }
+
+    .desktop-profile-column .otome-axes {
+        gap: 22px;
+    }
+
+    .desktop-profile-column .otome-tag-groups {
+        gap: 23px;
+        margin-top: 31px;
+        padding-top: 23px;
+    }
+
+    .desktop-profile-column .soft-tags > span {
+        padding: 6px 8px;
+        font-size: 8px;
+    }
+
+    .profile-desktop-meta {
+        display: grid;
+        gap: 24px;
+    }
+
+    .profile-sidebar-meta-row > p {
+        margin: 0 0 12px;
+        color: var(--accent);
+        font-size: 8px;
+        letter-spacing: 2.6px;
+    }
+
+    .profile-sidebar-meta-row > strong {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.8;
+        letter-spacing: 1.2px;
+    }
+
+    .profile-updated {
+        padding-top: 19px;
+        border-top: 1px solid var(--line-soft);
+        color: var(--ink-muted);
+        font-size: 8px;
+        letter-spacing: 2px;
+    }
+
+    /* Four writing departments form a calm editorial collage. */
+    .desktop-main-column .writing-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+    }
+
+    .desktop-main-column .writing-card {
+        min-height: 330px;
+        padding: 39px 35px 34px;
+        border-radius: 16px;
+    }
+
+    .desktop-main-column .writing-category-dream {
+        order: 1;
+        min-height: 430px;
+        grid-column: 1 / -1;
+        padding: 47px 44px 40px;
+    }
+
+    .desktop-main-column .writing-category-game { order: 2; }
+    .desktop-main-column .writing-category-essay { order: 3; }
+
+    .desktop-main-column .writing-category-archive {
+        order: 4;
+        min-height: 350px;
+        grid-column: 1 / -1;
+        padding-left: 44px;
+        padding-right: 44px;
+    }
+
+    .desktop-main-column .writing-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .desktop-main-column .writing-card h3 {
+        font-size: clamp(22px, 2vw, 28px);
+    }
+
+    .desktop-main-column .writing-article-list {
+        margin-top: 31px;
+        gap: 16px;
+    }
+
+    .desktop-main-column .writing-card .writing-entry:nth-child(n + 4) {
+        display: none;
+    }
+
+    .writing-entry {
+        min-height: 174px;
+        padding: 24px;
+        grid-template-columns: 1fr;
+        border-radius: 12px;
+        box-shadow: 0 14px 42px rgba(77, 59, 83, 0.045);
+        transition: transform 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+    }
+
+    .writing-entry.has-cover {
+        grid-template-columns: auto 1fr;
+    }
+
+    .writing-entry:hover {
+        transform: translateY(-3px);
+        border-color: rgba(149, 111, 145, 0.34);
+    }
+
+    .writing-date {
+        display: inline-block;
+        color: var(--accent) !important;
+        font-size: 0;
+        line-height: 1;
+        letter-spacing: 2px;
+    }
+
+    .writing-date::after {
+        content: attr(data-desktop-date);
+        font-size: 12px;
+    }
+
+    .writing-entry-meta {
+        min-height: 18px;
+        gap: 13px;
+    }
+
+    .writing-entry h4 {
+        margin-top: 17px;
+        font-size: 18px;
+        line-height: 1.55;
+    }
+
+    .writing-entry-subtitle,
+    .writing-entry-excerpt {
+        font-size: 11px !important;
+        line-height: 2 !important;
+    }
+
+    .writing-entry-excerpt {
+        -webkit-line-clamp: 3;
+    }
+
+    .writing-entry-footer {
+        margin-top: 22px;
+    }
+
+    .writing-read-button {
+        display: inline-block;
+        transition: color 0.3s ease, transform 0.3s ease;
+    }
+
+    .writing-entry:hover .writing-read-button {
+        transform: translateX(4px);
+    }
+
+    .writing-view-all.has-stories {
+        display: inline-flex;
+        margin-top: 25px;
+        padding: 0 0 5px;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        background: none;
+        color: var(--accent);
+        font-family: inherit;
+        font-size: 8px;
+        letter-spacing: 2.2px;
+        cursor: pointer;
+        transition: color 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .writing-view-all:hover {
+        color: var(--ink);
+        border-color: var(--accent);
+        transform: translateX(3px);
+    }
+
+    /* The remaining archives stay in the left journal column. */
+    .desktop-main-column .game-list {
+        gap: 24px;
+    }
+
+    .desktop-main-column .game-card {
+        min-height: 390px;
+        border-radius: 14px;
+    }
+
+    /* Full category archive, grouped by year without a dashboard-style timeline. */
+    .writing-archive-modal-card {
+        width: min(1040px, 100%);
+        max-height: 92vh;
+        padding: 72px clamp(45px, 6vw, 90px) 84px;
+        border-radius: 18px;
+    }
+
+    .writing-archive-modal-card > h3 {
+        margin-bottom: 18px;
+        font-size: clamp(34px, 4vw, 50px);
+        letter-spacing: 4px;
+    }
+
+    .writing-archive-description {
+        max-width: 650px;
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 13px;
+        line-height: 2.2;
+        letter-spacing: 1.2px;
+    }
+
+    .writing-archive-years {
+        display: grid;
+        gap: 70px;
+        margin-top: 72px;
+    }
+
+    .writing-archive-year-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 25px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .writing-archive-year-heading h4 {
+        margin: 0;
+        color: var(--ink);
+        font-size: 24px;
+        font-weight: 400;
+        letter-spacing: 3px;
+    }
+
+    .writing-archive-year-heading span {
+        color: var(--ink-muted);
+        font-size: 8px;
+        letter-spacing: 2px;
+    }
+
+    .writing-archive-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .writing-archive-entry {
+        min-height: 230px;
+        align-content: start;
+        background:
+            radial-gradient(circle at 91% 8%, rgba(227, 214, 234, 0.32), transparent 31%),
+            rgba(255, 253, 255, 0.78);
+    }
+
+    .reading-modal-card {
+        width: min(980px, 100%);
+        border-radius: 18px;
+    }
+
+    .reading-modal-card > .modal-label,
+    .reading-modal-card > h3,
+    .reading-subtitle,
+    .reading-meta,
+    .reading-body,
+    .reading-updated {
+        width: min(760px, calc(100% - 100px));
+    }
+
+    #reading-date {
+        font-size: 0;
+    }
+
+    #reading-date::after {
+        content: attr(data-desktop-date);
+        font-size: 10px;
+    }
+
+    #reading-updated {
+        font-size: 0;
+    }
+
+    #reading-updated::after {
+        content: attr(data-desktop-text);
+        font-size: 8px;
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1180px) {
+    .desktop-journal-layout {
+        width: min(calc(100% - 48px), 1120px);
+        grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr);
+        gap: 34px;
+    }
+
+    .desktop-profile-column {
+        padding-left: 28px;
+    }
+
+    .desktop-main-column .writing-grid,
+    .desktop-main-column .game-list,
+    .writing-archive-list {
+        grid-template-columns: 1fr;
+    }
+
+    .desktop-main-column .writing-card {
+        grid-column: 1;
+    }
+}
