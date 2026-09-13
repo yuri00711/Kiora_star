@@ -688,6 +688,342 @@ body.sidebar-open {
     .reading-cover-wrap { height: 220px; margin-bottom: 42px; }
 }
 
+/* Cohesive high-contrast palette and the site-wide starlight waterfall. */
+
+:root {
+    --page-bg: #f3eef3;
+    --surface: rgba(252, 249, 252, 0.9);
+    --surface-strong: rgba(255, 253, 255, 0.96);
+    --ink: #493f52;
+    --ink-soft: #665a70;
+    --ink-muted: #76697f;
+    --accent: #956f91;
+    --accent-blue: #7486a3;
+    --accent-gold: #9b7d56;
+    --line: rgba(103, 82, 108, 0.22);
+    --line-soft: rgba(103, 82, 108, 0.14);
+}
+
+body {
+    background: var(--page-bg);
+    color: var(--ink);
+}
+
+.hero,
+.content-section,
+footer {
+    position: relative;
+    z-index: 1;
+}
+
+/* The old closed orbits are replaced by a vertical flow that stays present while scrolling. */
+.hero .orbit {
+    display: none;
+}
+
+.starlight-waterfall {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.72;
+}
+
+.starlight-waterfall::before,
+.starlight-waterfall::after {
+    content: "";
+    position: absolute;
+    inset: -100vh 0 0;
+    background-repeat: repeat;
+    will-change: transform;
+}
+
+.starlight-waterfall::before {
+    background-image:
+        radial-gradient(circle, rgba(139, 108, 147, 0.55) 0 1px, transparent 1.6px),
+        radial-gradient(circle, rgba(111, 137, 173, 0.48) 0 1px, transparent 1.7px),
+        radial-gradient(circle, rgba(173, 139, 100, 0.42) 0 1.2px, transparent 1.8px);
+    background-position: 18px 12px, 92px 73px, 154px 36px;
+    background-size: 173px 191px, 227px 263px, 311px 337px;
+    animation: starlightField 34s linear infinite;
+}
+
+.starlight-waterfall::after {
+    opacity: 0.5;
+    background-image:
+        radial-gradient(ellipse, rgba(255, 255, 255, 0.95) 0 1px, rgba(151, 121, 158, 0.4) 1.5px, transparent 3px),
+        radial-gradient(ellipse, rgba(255, 255, 255, 0.9) 0 1px, rgba(112, 137, 172, 0.32) 1.5px, transparent 3px);
+    background-position: 45px 45px, 130px 108px;
+    background-size: 241px 289px, 337px 379px;
+    animation: starlightField 48s linear -17s infinite;
+}
+
+.starlight-waterfall > span {
+    position: absolute;
+    top: calc(-1 * var(--length));
+    left: var(--x);
+    width: 1px;
+    height: var(--length);
+    opacity: 0;
+    background: linear-gradient(to bottom, transparent, rgba(132, 108, 151, 0.16) 38%, rgba(116, 137, 172, 0.68));
+    box-shadow: 0 0 8px rgba(132, 112, 158, 0.28);
+    animation: starlightStream var(--duration) linear var(--delay) infinite;
+    will-change: transform, opacity;
+}
+
+.starlight-waterfall > span:nth-child(3n + 2) {
+    background: linear-gradient(to bottom, transparent, rgba(143, 116, 150, 0.16) 38%, rgba(166, 116, 151, 0.62));
+}
+
+.starlight-waterfall > span:nth-child(3n) {
+    background: linear-gradient(to bottom, transparent, rgba(151, 128, 115, 0.13) 38%, rgba(170, 136, 91, 0.58));
+}
+
+.starlight-waterfall > span::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -2px;
+    width: 4px;
+    height: 4px;
+    transform: translateX(-50%) rotate(45deg);
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow:
+        0 0 5px rgba(116, 91, 139, 0.95),
+        0 0 13px rgba(116, 91, 139, 0.55);
+}
+
+@keyframes starlightField {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(0, 100vh, 0); }
+}
+
+@keyframes starlightStream {
+    0% { transform: translate3d(0, -16vh, 0); opacity: 0; }
+    9% { opacity: 0.82; }
+    84% { opacity: 0.62; }
+    100% { transform: translate3d(0, calc(116vh + var(--length)), 0); opacity: 0; }
+}
+
+/* Global type hierarchy. */
+.hero-top,
+.scroll,
+.section-number,
+footer {
+    color: var(--ink-muted);
+}
+
+h1,
+.section-title,
+.game-title,
+.profile-intro-copy h3,
+.profile-block-heading h3,
+.writing-card h3,
+.writing-entry h4 {
+    color: var(--ink);
+}
+
+.subtitle,
+.jp-text,
+.section-text,
+.archive-subtitle,
+.game-review,
+.profile-summary,
+.rich-reading,
+.writing-card > p:not(.writing-card-index),
+.writing-entry-subtitle,
+.writing-entry-excerpt {
+    color: var(--ink-soft) !important;
+}
+
+.content-section h2,
+.profile-kicker,
+.profile-block-heading p,
+.otome-tag-groups > div > p,
+.writing-card-index,
+.modal-label {
+    color: var(--accent);
+}
+
+.cms-status,
+.cms-empty,
+.profile-tagline,
+.collection-status,
+.fandom-copy p,
+.favorite-note,
+.favorite-work,
+.boundary-kind,
+.writing-card-note,
+.writing-entry-meta,
+.writing-entry-tags,
+.format-help,
+.reading-subtitle,
+.reading-meta,
+.reading-updated,
+.site-sidebar-footer,
+.hero .star[data-tooltip]::after {
+    color: var(--ink-muted) !important;
+}
+
+.cms-admin-button,
+.cms-mini-button,
+.cms-inline-button,
+.archive-admin-button,
+.game-edit-button,
+.game-view-note,
+.writing-read-button {
+    color: var(--accent) !important;
+}
+
+.cms-admin-button:hover,
+.cms-mini-button:hover,
+.cms-inline-button:hover,
+.archive-admin-button:hover,
+.game-edit-button:hover,
+.game-view-note:hover,
+.writing-read-button:hover {
+    color: var(--ink) !important;
+}
+
+/* Clear surfaces keep the moving stars behind the text. */
+.profile-intro-card,
+.profile-block,
+.game-card,
+.writing-card,
+.archive-modal-card {
+    border-color: var(--line);
+    background: linear-gradient(145deg, var(--surface-strong), var(--surface));
+    box-shadow:
+        inset 0 1px rgba(255, 255, 255, 0.9),
+        0 22px 65px rgba(75, 57, 81, 0.07);
+}
+
+.fandom-card,
+.favorite-card,
+.boundary-chip,
+.writing-entry,
+.soft-tags > span {
+    border-color: var(--line-soft);
+    background: rgba(255, 253, 255, 0.72);
+}
+
+.free-space-block,
+.otome-profile-block,
+.writing-category-dream,
+.writing-category-game,
+.writing-category-archive {
+    background:
+        radial-gradient(circle at 88% 12%, rgba(222, 210, 232, 0.36), transparent 30%),
+        linear-gradient(145deg, var(--surface-strong), var(--surface));
+}
+
+.profile-block-heading,
+.otome-tag-groups,
+.game-meta,
+.reading-meta,
+.reading-updated {
+    border-color: var(--line-soft);
+}
+
+.otome-axis-labels,
+.soft-tags > span,
+.boundary-chip p {
+    color: var(--ink-soft);
+}
+
+.game-archive-number,
+.game-rating,
+.modal-description,
+.archive-modal-card label,
+.character-editor-heading h4,
+.character-editor-subtitle,
+.character-editor-rating,
+.character-empty {
+    color: var(--ink-muted);
+}
+
+.archive-modal-card h3,
+.character-editor-name {
+    color: var(--ink);
+}
+
+.modal-close,
+.character-add-button,
+.character-edit-button {
+    color: var(--accent);
+}
+
+.archive-modal-card input,
+.archive-modal-card textarea,
+.archive-modal-card select {
+    border-color: var(--line);
+    color: var(--ink);
+}
+
+.archive-modal-card input:focus,
+.archive-modal-card textarea:focus,
+.archive-modal-card select:focus {
+    border-color: var(--accent);
+}
+
+.modal-primary-button {
+    border-color: var(--line);
+    background: rgba(255, 253, 255, 0.72);
+    color: var(--ink);
+}
+
+.modal-primary-button:hover {
+    border-color: rgba(149, 111, 145, 0.48);
+    background: rgba(242, 234, 243, 0.92);
+}
+
+.site-menu-button {
+    border-color: var(--line);
+    background: rgba(252, 249, 252, 0.92);
+    color: var(--ink-soft);
+    box-shadow: 0 8px 26px rgba(76, 57, 82, 0.06);
+}
+
+.site-sidebar {
+    border-color: var(--line);
+    background:
+        radial-gradient(circle at 15% 15%, rgba(226, 211, 233, 0.55), transparent 36%),
+        linear-gradient(160deg, rgba(255, 252, 254, 0.98), rgba(243, 237, 244, 0.98));
+}
+
+.site-sidebar-heading,
+.site-sidebar nav a {
+    color: var(--ink-soft);
+}
+
+.site-sidebar nav a:hover,
+.site-sidebar nav a.active {
+    color: var(--ink);
+}
+
+@media (max-width: 768px) {
+    .starlight-waterfall {
+        opacity: 0.56;
+    }
+
+    .starlight-waterfall > span:nth-child(even) {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .starlight-waterfall > span,
+    .starlight-waterfall::before,
+    .starlight-waterfall::after {
+        animation: none !important;
+    }
+
+    .starlight-waterfall > span {
+        display: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .site-sidebar,
     .site-sidebar-backdrop,
