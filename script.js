@@ -115,6 +115,18 @@ const supabaseClient =
 let currentUser = null;
 let gamesCache = [];
 
+// Small public bridge used by the optional profile/writing CMS module.
+// The existing auth and Supabase client remain the single source of truth.
+window.yuriArchive = Object.freeze({
+    get currentUser() {
+        return currentUser;
+    },
+    supabaseClient,
+    openModal,
+    closeModal,
+    safeImageUrl
+});
+
 
 /* =========================================
    HELPERS
@@ -229,6 +241,8 @@ if (loginStar) {
         "aria-label",
         "Archive keeper login"
     );
+
+    loginStar.dataset.tooltip = "ADMIN";
 
     loginStar.addEventListener(
         "click",
@@ -454,6 +468,12 @@ function updateAdminUI() {
             );
 
     }
+
+    window.dispatchEvent(
+        new CustomEvent("yuri:authchange", {
+            detail: { user: currentUser }
+        })
+    );
 
 }
 
