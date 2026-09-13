@@ -402,6 +402,40 @@
                     >
                 </label>
 
+                <!-- =========================
+                 CHARACTER ARCHIVE
+                ========================= -->
+
+                <div class="character-editor-section">
+
+                    <div class="character-editor-heading">
+                        <div>
+                            <p class="modal-label">
+                                CHARACTER ARCHIVE
+                            </p>
+
+                            <h4>
+                                攻略角色
+                            </h4>
+                        </div>
+
+                        <button
+                            id="add-character-btn"
+                            class="character-add-button"
+                            type="button"
+                        >
+                            ＋ ADD CHARACTER
+                        </button>
+                    </div>
+
+                    <div
+                        id="character-editor-list"
+                        class="character-editor-list"
+                    >
+                    </div>
+
+                </div>
+
                 <p id="game-form-message" class="form-message"></p>
 
                 <div class="editor-actions">
@@ -419,6 +453,139 @@
                         type="button"
                     >
                         DELETE
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+    
+    <!-- =========================
+     CHARACTER EDITOR
+    ========================= -->
+
+    <div
+        id="character-modal"
+        class="archive-modal"
+    >
+        <div class="archive-modal-backdrop"></div>
+
+        <div class="archive-modal-card character-modal-card">
+
+            <button
+                class="modal-close"
+                data-close-modal
+                type="button"
+            >
+                ×
+            </button>
+
+            <p class="modal-label">
+                CHARACTER RECORD
+            </p>
+
+            <h3 id="character-modal-title">
+                New character
+            </h3>
+
+            <form id="character-form">
+
+                <input
+                    id="character-id"
+                    type="hidden"
+                >
+
+                <input
+                    id="character-game-id"
+                    type="hidden"
+                >
+
+                <label>
+                    NAME
+
+                    <input
+                        id="character-name"
+                        type="text"
+                        required
+                    >
+                </label>
+
+                <label>
+                    SUBTITLE
+
+                    <input
+                        id="character-subtitle"
+                        type="text"
+                        placeholder="ROUTE 01 / 隠しキャラクター / 幼馴染..."
+                    >
+                </label>
+
+                <label>
+                    REVIEW
+
+                    <textarea
+                        id="character-review"
+                        rows="7"
+                    ></textarea>
+                </label>
+
+                <div class="form-grid">
+
+                    <label>
+                        RATING
+
+                        <input
+                            id="character-rating"
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                        >
+                    </label>
+
+                    <label>
+                        SORT ORDER
+
+                        <input
+                            id="character-sort-order"
+                            type="number"
+                        >
+                    </label>
+
+                </div>
+
+                <label>
+                    IMAGE URL
+
+                    <input
+                        id="character-image-url"
+                        type="url"
+                        placeholder="https://..."
+                    >
+                </label>
+
+                <p
+                    id="character-form-message"
+                    class="form-message"
+                ></p>
+
+                <div class="editor-actions">
+
+                    <button
+                        class="modal-primary-button"
+                        type="submit"
+                    >
+                        SAVE CHARACTER
+                    </button>
+
+                    <button
+                        id="delete-character-btn"
+                        class="modal-danger-button hidden"
+                        type="button"
+                    >
+                        DELETE CHARACTER
                     </button>
 
                 </div>

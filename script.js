@@ -912,6 +912,22 @@ function openGameEditor(game) {
 
     }
 
+    if (game && game.id) {
+
+    loadCharactersForGame(
+        game.id
+    );
+
+} else {
+
+    charactersCache = [];
+
+    renderCharacterEditorList(
+        []
+    );
+
+}
+
     openModal(
         gameModal
     );
@@ -1120,6 +1136,647 @@ if (deleteGameButton) {
 
 }
 
+/* =========================================
+   CHARACTER STATE
+========================================= */
+
+let currentGameForCharacters = null;
+let charactersCache = [];
+
+
+/* =========================================
+   CHARACTER ELEMENTS
+========================================= */
+
+const characterModal =
+    document.getElementById(
+        "character-modal"
+    );
+
+const characterForm =
+    document.getElementById(
+        "character-form"
+    );
+
+const addCharacterButton =
+    document.getElementById(
+        "add-character-btn"
+    );
+
+const deleteCharacterButton =
+    document.getElementById(
+        "delete-character-btn"
+    );
+
+const characterEditorList =
+    document.getElementById(
+        "character-editor-list"
+    );
+
+
+/* =========================================
+   LOAD CHARACTERS FOR GAME
+========================================= */
+
+async function loadCharactersForGame(gameId) {
+
+    if (!gameId) {
+        charactersCache = [];
+        renderCharacterEditorList([]);
+        return;
+    }
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("characters")
+            .select("*")
+            .eq("game_id", gameId)
+            .order(
+                "sort_order",
+                {
+                    ascending: true,
+                    nullsFirst: false
+                }
+            );
+
+    if (error) {
+
+        console.error(
+            "读取 characters 失败：",
+            error
+        );
+
+        return;
+    }
+
+    charactersCache =
+        data ?? [];
+
+    renderCharacterEditorList(
+        charactersCache
+    );
+
+}
+
+
+/* =========================================
+   RENDER CHARACTER LIST IN GAME EDITOR
+========================================= */
+
+function renderCharacterEditorList(characters) {
+
+    if (!characterEditorList)
+        return;
+
+    characterEditorList.innerHTML = "";
+
+    if (!characters.length) {
+
+        const empty =
+            document.createElement(
+                "div"
+            );
+
+        empty.className =
+            "character-empty";
+
+        empty.textContent =
+            "还没有角色记录。点击 ＋ ADD CHARACTER 添加第一位攻略角色。";
+
+        characterEditorList
+            .appendChild(
+                empty
+            );
+
+        return;
+    }
+
+
+    characters.forEach(
+        (character) => {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+            row.className =
+                "character-editor-row";
+
+
+            const main =
+                document.createElement(
+                    "div"
+                );
+
+            main.className =
+                "character-editor-main";
+
+
+            const name =
+                document.createElement(
+                    "p"
+                );
+
+            name.className =
+                "character-editor-name";
+
+            name.textContent =
+                character.name ?? "";
+
+
+            const subtitle =
+                document.createElement(
+                    "p"
+                );
+
+            subtitle.className =
+                "character-editor-subtitle";
+
+            subtitle.textContent =
+                character.subtitle
+                    ? character.subtitle
+                    : "CHARACTER RECORD";
+
+
+            main.appendChild(
+                name
+            );
+
+            main.appendChild(
+                subtitle
+            );
+
+
+            const rating =
+                document.createElement(
+                    "span"
+                );
+
+            rating.className =
+                "character-editor-rating";
+
+            rating.textContent =
+                character.rating !== null &&
+                character.rating !== undefined
+
+                    ? `✦ ${character.rating}`
+
+                    : "✦ —";
+
+
+            const editButton =
+                document.createElement(
+                    "button"
+                );
+
+            editButton.type =
+                "button";
+
+            editButton.className =
+                "character-edit-button";
+
+            editButton.textContent =
+                "EDIT";
+
+
+            editButton.addEventListener(
+                "click",
+                () => {
+
+                    openCharacterEditor(
+                        character
+                    );
+
+                }
+            );
+
+
+            row.appendChild(
+                main
+            );
+
+            row.appendChild(
+                rating
+            );
+
+            row.appendChild(
+                editButton
+            );
+
+
+            characterEditorList
+                .appendChild(
+                    row
+                );
+
+        }
+    );
+
+}
+
+
+/* =========================================
+   ADD CHARACTER
+========================================= */
+
+if (addCharacterButton) {
+
+    addCharacterButton
+        .addEventListener(
+            "click",
+            () => {
+
+                if (!currentUser)
+                    return;
+
+                if (!currentGameForCharacters)
+                    return;
+
+                openCharacterEditor(
+                    null
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================
+   OPEN CHARACTER EDITOR
+========================================= */
+
+function openCharacterEditor(character) {
+
+    if (!currentUser)
+        return;
+
+    if (!currentGameForCharacters)
+        return;
+
+
+    const id =
+        document.getElementById(
+            "character-id"
+        );
+
+    const gameId =
+        document.getElementById(
+            "character-game-id"
+        );
+
+    const name =
+        document.getElementById(
+            "character-name"
+        );
+
+    const subtitle =
+        document.getElementById(
+            "character-subtitle"
+        );
+
+    const review =
+        document.getElementById(
+            "character-review"
+        );
+
+    const rating =
+        document.getElementById(
+            "character-rating"
+        );
+
+    const imageUrl =
+        document.getElementById(
+            "character-image-url"
+        );
+
+    const sortOrder =
+        document.getElementById(
+            "character-sort-order"
+        );
+
+    const modalTitle =
+        document.getElementById(
+            "character-modal-title"
+        );
+
+    const message =
+        document.getElementById(
+            "character-form-message"
+        );
+
+
+    message.textContent = "";
+
+
+    gameId.value =
+        currentGameForCharacters.id;
+
+
+    if (character) {
+
+        id.value =
+            character.id;
+
+        name.value =
+            character.name ?? "";
+
+        subtitle.value =
+            character.subtitle ?? "";
+
+        review.value =
+            character.review ?? "";
+
+        rating.value =
+            character.rating ?? "";
+
+        imageUrl.value =
+            character.image_url ?? "";
+
+        sortOrder.value =
+            character.sort_order ?? "";
+
+        modalTitle.textContent =
+            "Edit character";
+
+
+        deleteCharacterButton
+            .classList
+            .remove(
+                "hidden"
+            );
+
+    } else {
+
+        characterForm.reset();
+
+        id.value = "";
+
+        gameId.value =
+            currentGameForCharacters.id;
+
+        modalTitle.textContent =
+            "New character";
+
+
+        deleteCharacterButton
+            .classList
+            .add(
+                "hidden"
+            );
+
+    }
+
+
+    openModal(
+        characterModal
+    );
+
+}
+
+
+/* =========================================
+   SAVE CHARACTER
+========================================= */
+
+if (characterForm) {
+
+    characterForm
+        .addEventListener(
+            "submit",
+            async (event) => {
+
+                event.preventDefault();
+
+                if (!currentUser)
+                    return;
+
+
+                const id =
+                    document
+                        .getElementById(
+                            "character-id"
+                        )
+                        .value;
+
+
+                const gameId =
+                    document
+                        .getElementById(
+                            "character-game-id"
+                        )
+                        .value;
+
+
+                const message =
+                    document
+                        .getElementById(
+                            "character-form-message"
+                        );
+
+
+                const payload = {
+
+                    game_id:
+                        Number(
+                            gameId
+                        ),
+
+                    name:
+                        document
+                            .getElementById(
+                                "character-name"
+                            )
+                            .value
+                            .trim(),
+
+                    subtitle:
+                        document
+                            .getElementById(
+                                "character-subtitle"
+                            )
+                            .value
+                            .trim()
+                            || null,
+
+                    review:
+                        document
+                            .getElementById(
+                                "character-review"
+                            )
+                            .value
+                            .trim()
+                            || null,
+
+                    rating:
+                        document
+                            .getElementById(
+                                "character-rating"
+                            )
+                            .value
+                            || null,
+
+                    image_url:
+                        document
+                            .getElementById(
+                                "character-image-url"
+                            )
+                            .value
+                            .trim()
+                            || null,
+
+                    sort_order:
+                        document
+                            .getElementById(
+                                "character-sort-order"
+                            )
+                            .value
+                            || null
+
+                };
+
+
+                message.textContent =
+                    "Saving…";
+
+
+                let result;
+
+
+                if (id) {
+
+                    result =
+                        await supabaseClient
+                            .from("characters")
+                            .update(
+                                payload
+                            )
+                            .eq(
+                                "id",
+                                id
+                            );
+
+                } else {
+
+                    result =
+                        await supabaseClient
+                            .from("characters")
+                            .insert(
+                                payload
+                            );
+
+                }
+
+
+                if (result.error) {
+
+                    console.error(
+                        result.error
+                    );
+
+                    message.textContent =
+                        "保存失败：" +
+                        result.error.message;
+
+                    return;
+                }
+
+
+                message.textContent =
+                    "";
+
+                closeModal(
+                    characterModal
+                );
+
+
+                await loadCharactersForGame(
+                    currentGameForCharacters.id
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================
+   DELETE CHARACTER
+========================================= */
+
+if (deleteCharacterButton) {
+
+    deleteCharacterButton
+        .addEventListener(
+            "click",
+            async () => {
+
+                if (!currentUser)
+                    return;
+
+
+                const id =
+                    document
+                        .getElementById(
+                            "character-id"
+                        )
+                        .value;
+
+
+                if (!id)
+                    return;
+
+
+                const confirmed =
+                    window.confirm(
+                        "确定要删除这条角色档案吗？"
+                    );
+
+
+                if (!confirmed)
+                    return;
+
+
+                const {
+                    error
+                } =
+                    await supabaseClient
+                        .from("characters")
+                        .delete()
+                        .eq(
+                            "id",
+                            id
+                        );
+
+
+                if (error) {
+
+                    alert(
+                        "删除失败：" +
+                        error.message
+                    );
+
+                    return;
+                }
+
+
+                closeModal(
+                    characterModal
+                );
+
+
+                await loadCharactersForGame(
+                    currentGameForCharacters.id
+                );
+
+            }
+        );
+
+}
 
 /* =========================================
    START

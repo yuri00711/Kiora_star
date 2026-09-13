@@ -1624,3 +1624,193 @@ footer {
     }
 
 }
+
+/* =========================================
+   CHARACTER EDITOR INSIDE GAME MODAL
+========================================= */
+
+.character-editor-section {
+    margin-top: 34px;
+    padding-top: 30px;
+
+    border-top:
+        1px solid
+        rgba(94, 79, 67, 0.12);
+}
+
+.character-editor-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+
+    margin-bottom: 22px;
+}
+
+.character-editor-heading h4 {
+    margin: 5px 0 0;
+
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: 2px;
+
+    color:
+        rgba(48, 43, 40, 0.9);
+}
+
+.character-add-button {
+    appearance: none;
+
+    border: none;
+    background: none;
+
+    padding: 0;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    font-size: 9px;
+    letter-spacing: 3px;
+
+    color:
+        rgba(83, 70, 61, 0.52);
+
+    transition:
+        color 0.35s ease,
+        letter-spacing 0.35s ease;
+}
+
+.character-add-button:hover {
+    color:
+        rgba(83, 70, 61, 0.95);
+
+    letter-spacing: 3.6px;
+}
+
+
+/* list */
+
+.character-editor-list {
+    display: grid;
+    gap: 12px;
+}
+
+.character-editor-row {
+    display: grid;
+
+    grid-template-columns:
+        1fr auto auto;
+
+    align-items: center;
+
+    gap: 18px;
+
+    padding: 15px 0;
+
+    border-bottom:
+        1px solid
+        rgba(94, 79, 67, 0.09);
+}
+
+.character-editor-main {
+    min-width: 0;
+}
+
+.character-editor-name {
+    margin: 0 0 5px;
+
+    font-size: 14px;
+    letter-spacing: 1.5px;
+
+    color:
+        rgba(48, 43, 40, 0.9);
+}
+
+.character-editor-subtitle {
+    margin: 0;
+
+    font-size: 8px;
+    letter-spacing: 2.5px;
+
+    color:
+        rgba(83, 70, 61, 0.42);
+}
+
+.character-editor-rating {
+    font-size: 10px;
+    letter-spacing: 2px;
+
+    color:
+        rgba(123, 98, 69, 0.62);
+}
+
+.character-edit-button {
+    appearance: none;
+
+    border: none;
+    background: none;
+
+    padding: 0;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    font-size: 8px;
+    letter-spacing: 2.5px;
+
+    color:
+        rgba(83, 70, 61, 0.48);
+
+    transition:
+        color 0.3s ease;
+}
+
+.character-edit-button:hover {
+    color:
+        rgba(83, 70, 61, 0.95);
+}
+
+
+/* empty */
+
+.character-empty {
+    padding: 22px 0;
+
+    font-size: 11px;
+    line-height: 2;
+    letter-spacing: 1.5px;
+
+    color:
+        rgba(83, 70, 61, 0.4);
+}
+
+
+/* character modal */
+
+.character-modal-card {
+    width: min(560px, 100%);
+}
+
+
+/* mobile */
+
+@media (max-width: 768px) {
+
+    .character-editor-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .character-editor-row {
+        grid-template-columns:
+            1fr auto;
+    }
+
+    .character-editor-rating {
+        grid-column:
+            1 / 2;
+    }
+
+}
