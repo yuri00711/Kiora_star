@@ -13,7 +13,7 @@ html {
 body {
     margin: 0;
 
-    background: #f9f5f8;
+    background: #f4f0f3;
     color: #51485f;
 
     font-family:
@@ -24,50 +24,6 @@ body {
         serif;
 
     overflow-x: hidden;
-}
-
-.watercolor-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    pointer-events: none;
-    background: #f9f5f8;
-}
-
-.watercolor-backdrop::before {
-    content: "";
-    position: absolute;
-    inset: -10%;
-    background-image: url("assets/pink-blue-watercolor.png");
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    opacity: 0.88;
-    filter: saturate(0.94) contrast(1.035);
-    will-change: transform;
-    animation: watercolorDrift 24s ease-in-out infinite alternate;
-}
-
-.watercolor-backdrop::after {
-    content: "";
-    position: absolute;
-    inset: -30px 0 0;
-    background-image:
-        radial-gradient(circle, rgba(255, 255, 255, 0.94) 0 0.9px, transparent 1.45px),
-        radial-gradient(circle, rgba(90, 128, 164, 0.3) 0 0.65px, transparent 1.1px),
-        radial-gradient(circle, rgba(158, 95, 133, 0.26) 0 0.6px, transparent 1px);
-    background-position: 0 0, 37px 61px, 21px 33px;
-    background-size: 88px 88px, 117px 117px, 149px 149px;
-    opacity: 0.42;
-    mix-blend-mode: multiply;
-    animation: starfieldDrift 34s linear infinite;
-}
-
-body > section,
-body > footer {
-    position: relative;
-    z-index: 1;
 }
 
 body::before {
@@ -280,17 +236,6 @@ body::after {
 
     isolation: isolate;
 }
-
-.hero-center::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: -100px -150px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(255, 253, 254, 0.68) 0%, rgba(255, 253, 254, 0.36) 42%, transparent 72%);
-    pointer-events: none;
-}
-
 
 .star {
     margin-bottom: 30px;
@@ -2008,19 +1953,6 @@ footer {
     padding-bottom: 130px;
 }
 
-.writing-section::before {
-    content: "";
-    position: absolute;
-    width: 620px;
-    height: 620px;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    pointer-events: none;
-    background: radial-gradient(circle, rgba(226, 210, 232, 0.24), transparent 67%);
-}
-
 .writing-section > * {
     position: relative;
     z-index: 1;
@@ -2155,30 +2087,6 @@ footer {
     to {
         transform: translate3d(5%, 4%, 0) scale(1.08);
         opacity: 1;
-    }
-}
-
-@keyframes watercolorDrift {
-    0% {
-        transform: translate3d(-2.6%, -1.8%, 0) scale(1.08) rotate(-0.35deg);
-    }
-
-    48% {
-        transform: translate3d(2.2%, 1.4%, 0) scale(1.13) rotate(0.25deg);
-    }
-
-    100% {
-        transform: translate3d(-0.8%, 2.8%, 0) scale(1.1) rotate(-0.12deg);
-    }
-}
-
-@keyframes starfieldDrift {
-    from {
-        transform: translate3d(0, 0, 0);
-    }
-
-    to {
-        transform: translate3d(18px, -30px, 0);
     }
 }
 

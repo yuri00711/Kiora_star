@@ -258,7 +258,6 @@
         byId("profile-about-text").innerHTML = profile.about_text
             ? markdownToHtml(profile.about_text)
             : `<p class="cms-empty">${isAdmin() ? "点击 EDIT PROFILE 写下完整的自我介绍。" : ""}</p>`;
-        byId("free-space-title").textContent = profile.free_space_title || "星屑备忘录";
         byId("free-space-content").innerHTML = profile.free_space_content
             ? markdownToHtml(profile.free_space_content)
             : `<p class="cms-empty">${isAdmin() ? "这里还没有留下文字。" : ""}</p>`;
