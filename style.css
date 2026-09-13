@@ -13,7 +13,11 @@ html {
 body {
     margin: 0;
 
-    background: #f7f4ef;
+    background:
+        radial-gradient(circle at 14% 14%, rgba(224, 211, 231, 0.46), transparent 28%),
+        radial-gradient(circle at 88% 34%, rgba(238, 211, 218, 0.38), transparent 27%),
+        radial-gradient(circle at 45% 72%, rgba(218, 228, 238, 0.42), transparent 32%),
+        linear-gradient(145deg, #faf7f3 0%, #f5f1f3 48%, #f8f5ef 100%);
     color: #383433;
 
     font-family:
@@ -24,6 +28,20 @@ body {
         serif;
 
     overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.42;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(176, 149, 189, 0.3) 0 0.7px, transparent 1.2px);
+    background-position: 0 0, 37px 61px;
+    background-size: 86px 86px, 113px 113px;
 }
 
 
@@ -45,6 +63,33 @@ body {
     overflow: hidden;
 
     padding: 40px 60px;
+}
+
+.hero::before,
+.hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(10px);
+}
+
+.hero::before {
+    width: min(58vw, 760px);
+    aspect-ratio: 1;
+    left: -20%;
+    top: -28%;
+    background: radial-gradient(circle, rgba(218, 201, 232, 0.34), transparent 68%);
+    animation: auraDrift 16s ease-in-out infinite alternate;
+}
+
+.hero::after {
+    width: min(52vw, 700px);
+    aspect-ratio: 1;
+    right: -18%;
+    bottom: -30%;
+    background: radial-gradient(circle, rgba(235, 202, 211, 0.31), transparent 68%);
+    animation: auraDrift 19s ease-in-out -6s infinite alternate-reverse;
 }
 
 
@@ -183,6 +228,10 @@ h1 {
     font-weight: normal;
 
     letter-spacing: 12px;
+
+    text-shadow:
+        0 0 28px rgba(255, 255, 255, 0.95),
+        0 14px 46px rgba(147, 119, 148, 0.12);
 }
 
 
@@ -1822,4 +1871,211 @@ footer {
 
 #character-modal {
     z-index: 11000;
+}
+
+/* =========================================
+   DREAMLIKE ATMOSPHERE / WRITING ARCHIVE
+========================================= */
+
+.content-section::after {
+    content: "✦";
+    position: absolute;
+    left: 50%;
+    bottom: 25px;
+    transform: translateX(-50%);
+    color: rgba(163, 137, 105, 0.36);
+    font-size: 9px;
+    text-shadow: 0 0 18px rgba(178, 143, 187, 0.38);
+}
+
+.section-title {
+    text-shadow: 0 8px 28px rgba(144, 118, 145, 0.1);
+}
+
+.game-card,
+.archive-modal-card {
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.game-card {
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(245, 239, 244, 0.2));
+    box-shadow:
+        inset 0 1px rgba(255, 255, 255, 0.7),
+        0 24px 80px rgba(111, 89, 112, 0.045);
+}
+
+.writing-section {
+    width: min(100%, 1120px);
+    padding-top: 120px;
+    padding-bottom: 130px;
+}
+
+.writing-section::before {
+    content: "";
+    position: absolute;
+    width: 620px;
+    height: 620px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(226, 210, 232, 0.24), transparent 67%);
+}
+
+.writing-section > * {
+    position: relative;
+    z-index: 1;
+}
+
+.writing-intro {
+    max-width: 660px;
+}
+
+.writing-grid {
+    margin-top: 58px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.writing-card {
+    position: relative;
+    min-height: 260px;
+    padding: 35px 36px 31px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(22px);
+    border: 1px solid rgba(124, 102, 116, 0.13);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.48), rgba(248, 242, 246, 0.22));
+    box-shadow:
+        inset 0 1px rgba(255, 255, 255, 0.65),
+        0 20px 70px rgba(108, 88, 108, 0.045);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition:
+        opacity 0.9s ease,
+        transform 0.7s cubic-bezier(.2,.7,.2,1),
+        border-color 0.5s ease,
+        box-shadow 0.6s ease;
+}
+
+.writing-card::before {
+    content: "";
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    right: -80px;
+    top: -90px;
+    border: 1px solid rgba(181, 151, 178, 0.16);
+    border-radius: 50%;
+    transition: transform 0.9s ease, border-color 0.6s ease;
+}
+
+.writing-card:hover {
+    border-color: rgba(161, 127, 155, 0.27);
+    box-shadow:
+        inset 0 1px rgba(255, 255, 255, 0.8),
+        0 26px 75px rgba(114, 90, 117, 0.1);
+}
+
+.writing-card:hover::before {
+    transform: scale(1.2);
+    border-color: rgba(181, 151, 178, 0.3);
+}
+
+.writing-card-mark {
+    position: absolute;
+    top: 29px;
+    right: 32px;
+    color: rgba(169, 137, 160, 0.62);
+    font-size: 13px;
+    text-shadow: 0 0 16px rgba(175, 133, 175, 0.3);
+    transition: transform 0.7s ease, color 0.4s ease;
+}
+
+.writing-card:hover .writing-card-mark {
+    transform: rotate(45deg) scale(1.18);
+    color: rgba(151, 116, 148, 0.9);
+}
+
+.writing-card-index {
+    margin: 0 0 29px;
+    color: rgba(99, 81, 91, 0.4);
+    font-size: 8px;
+    letter-spacing: 3px;
+}
+
+.writing-card h3 {
+    margin: 0 0 19px;
+    color: rgba(55, 48, 53, 0.9);
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: 4px;
+}
+
+.writing-card > p:not(.writing-card-index) {
+    max-width: 340px;
+    margin: 0;
+    color: rgba(80, 70, 76, 0.62);
+    font-size: 12px;
+    line-height: 2;
+    letter-spacing: 1.3px;
+}
+
+.writing-card-note {
+    display: block;
+    margin-top: 25px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(110, 90, 102, 0.09);
+    color: rgba(128, 101, 119, 0.48);
+    font-size: 9px;
+    letter-spacing: 2.4px;
+}
+
+.writing-section.active .writing-card {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.writing-section.active .writing-card:nth-child(1) { transition-delay: 0.15s; }
+.writing-section.active .writing-card:nth-child(2) { transition-delay: 0.25s; }
+.writing-section.active .writing-card:nth-child(3) { transition-delay: 0.35s; }
+.writing-section.active .writing-card:nth-child(4) { transition-delay: 0.45s; }
+
+.writing-section.active .writing-card:hover {
+    transform: translateY(-7px);
+}
+
+@keyframes auraDrift {
+    from {
+        transform: translate3d(-2%, -2%, 0) scale(0.96);
+        opacity: 0.68;
+    }
+
+    to {
+        transform: translate3d(5%, 4%, 0) scale(1.08);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .writing-section {
+        padding-top: 100px;
+        padding-bottom: 110px;
+    }
+
+    .writing-grid {
+        margin-top: 44px;
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .writing-card {
+        min-height: 240px;
+        padding: 31px 27px 27px;
+    }
 }
