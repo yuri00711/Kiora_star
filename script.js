@@ -99,15 +99,49 @@ const supabaseClient = window.supabase.createClient(
     supabaseKey
 );
 
-async function loadGames(){
-
-    let { data, error } = await supabaseClient
+async function loadGames() {
+    const { data, error } = await supabaseClient
         .from("games")
-        .select("*");
+        .select("*")
+        .order("sort_order", { ascending: true });
 
+    if (error) {
+        console.error("读取 games 失败：", error);
+        return;
+    }
 
-    console.log(data);
+    console.log("games 数据：", data);
 
+    const container = document.querySelector(".game-list");
+
+    if (!container) {
+        console.warn("没有找到 .game-list");
+        return;
+    }
+
+    container.innerHTML = "";
+
+    data.forEach((game) => {
+        const item = document.createElement("div");
+        item.className = "game-item";
+
+        item.innerHTML = `
+            <h3>${game.title ?? ""}</h3>
+            <p>${game.review ?? ""}</p>
+            ${
+                game.rating
+                    ? `<div class="game-rating">★ ${game.rating}</div>`
+                    : ""
+            }
+            ${
+                game.cover_url
+                    ? `<img class="game-cover" src="${game.cover_url}" alt="${game.title ?? "game cover"}">`
+                    : ""
+            }
+        `;
+
+        container.appendChild(item);
+    });
 }
 
 loadGames();
