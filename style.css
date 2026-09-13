@@ -13,10 +13,17 @@ html {
 body {
     margin: 0;
 
-    position: relative;
-    isolation: isolate;
-
-    background: #fbf8fc;
+    background-color: #f9f5f8;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.72) 0 0.9px, transparent 1.45px),
+        radial-gradient(circle, rgba(114, 148, 181, 0.19) 0 0.65px, transparent 1.1px),
+        radial-gradient(circle, rgba(181, 119, 155, 0.17) 0 0.6px, transparent 1px),
+        linear-gradient(rgba(255, 252, 253, 0.2), rgba(255, 252, 253, 0.2)),
+        url("assets/pink-blue-watercolor.png");
+    background-position: 0 0, 37px 61px, 21px 33px, center, center;
+    background-repeat: repeat, repeat, repeat, no-repeat, no-repeat;
+    background-size: 88px 88px, 117px 117px, 149px 149px, cover, cover;
+    background-attachment: fixed, fixed, fixed, fixed, fixed;
     color: #383433;
 
     font-family:
@@ -32,22 +39,10 @@ body {
 body::before {
     content: "";
     position: fixed;
-    inset: -12%;
+    inset: 0;
     z-index: -2;
     pointer-events: none;
-    opacity: 0.86;
-    filter: blur(22px) saturate(0.86);
-    background:
-        radial-gradient(ellipse 48% 29% at 4% 5%, rgba(247, 210, 226, 0.78), transparent 73%),
-        radial-gradient(ellipse 43% 34% at 54% 8%, rgba(202, 224, 244, 0.72), transparent 70%),
-        radial-gradient(ellipse 34% 45% at 91% 25%, rgba(241, 202, 221, 0.66), transparent 72%),
-        radial-gradient(ellipse 50% 27% at 24% 43%, rgba(191, 220, 242, 0.66), transparent 70%),
-        radial-gradient(ellipse 42% 30% at 69% 48%, rgba(245, 207, 225, 0.68), transparent 72%),
-        radial-gradient(ellipse 40% 39% at 97% 70%, rgba(195, 222, 243, 0.7), transparent 71%),
-        radial-gradient(ellipse 52% 31% at 30% 84%, rgba(244, 207, 225, 0.67), transparent 73%),
-        radial-gradient(ellipse 43% 34% at 73% 96%, rgba(197, 222, 243, 0.7), transparent 72%),
-        #fbf8fc;
-    animation: watercolorBreathe 28s ease-in-out infinite alternate;
+    display: none;
 }
 
 body::after {
@@ -56,25 +51,7 @@ body::after {
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    opacity: 0.32;
-    background-image:
-        radial-gradient(circle, rgba(255, 255, 255, 0.96) 0 0.9px, transparent 1.45px),
-        radial-gradient(circle, rgba(114, 148, 181, 0.26) 0 0.65px, transparent 1.1px),
-        radial-gradient(circle, rgba(181, 119, 155, 0.22) 0 0.6px, transparent 1px),
-        repeating-linear-gradient(18deg, rgba(91, 73, 102, 0.018) 0 1px, transparent 1px 4px);
-    background-position: 0 0, 37px 61px, 21px 33px, 0 0;
-    background-size: 88px 88px, 117px 117px, 149px 149px, 5px 5px;
-    mix-blend-mode: multiply;
-}
-
-@keyframes watercolorBreathe {
-    from {
-        transform: translate3d(-1.5%, -1%, 0) scale(1);
-    }
-
-    to {
-        transform: translate3d(1.8%, 1.2%, 0) scale(1.035);
-    }
+    display: none;
 }
 
 
@@ -104,7 +81,7 @@ body::after {
     position: absolute;
     border-radius: 50%;
     pointer-events: none;
-    filter: blur(10px);
+    display: none;
 }
 
 .hero::before {
