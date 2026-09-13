@@ -91,7 +91,7 @@ if (hero && heroBg && heroCenter) {
 
 }
 
-const supabaseUrl = "https://sqgzlaunnmwkulboyems.supabase.co/rest/v1/";
+const supabaseUrl = "https://sqgzlaunnmwkulboyems.supabase.co";
 const supabaseKey = "sb_publishable_B35Zjt_oIOMZw-NCswwVmw_WhWwDzVa";
 
 const supabaseClient = window.supabase.createClient(
