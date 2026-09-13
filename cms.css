@@ -293,7 +293,7 @@ body.sidebar-open {
 .profile-block {
     position: relative;
     border: 1px solid rgba(117, 92, 119, 0.12);
-    background: linear-gradient(140deg, rgba(255, 253, 254, 0.48), rgba(241, 234, 245, 0.2));
+    background: linear-gradient(140deg, rgba(255, 253, 254, 0.74), rgba(244, 238, 247, 0.56));
     box-shadow: inset 0 1px rgba(255, 255, 255, 0.7), 0 22px 75px rgba(99, 76, 103, 0.045);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -364,7 +364,7 @@ body.sidebar-open {
 
 .profile-intro-copy h3 {
     margin: 18px 0 12px;
-    color: rgba(67, 57, 70, 0.92);
+    color: rgba(62, 50, 68, 0.98);
     font-size: 34px;
     font-weight: 400;
     letter-spacing: 4px;
@@ -380,7 +380,7 @@ body.sidebar-open {
 .profile-summary {
     max-width: 570px;
     margin: 0;
-    color: rgba(69, 60, 72, 0.62);
+    color: rgba(69, 58, 75, 0.8);
     font-size: 13px;
     line-height: 2.1;
     letter-spacing: 1.3px;
@@ -408,7 +408,7 @@ body.sidebar-open {
 }
 
 .rich-reading {
-    color: rgba(65, 57, 68, 0.74);
+    color: rgba(61, 51, 67, 0.86);
     font-family: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", serif;
     font-size: 14px;
     line-height: 2.35;
@@ -572,9 +572,9 @@ body.sidebar-open {
 .writing-card { min-height: 0; }
 .writing-card-note { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
 .writing-card-note .cms-admin-button { flex: 0 0 auto; }
-.writing-category-dream { background: radial-gradient(circle at 85% 12%, rgba(227, 211, 241, 0.42), transparent 28%), linear-gradient(135deg, rgba(255,255,255,.5), rgba(244,236,249,.25)); }
-.writing-category-game { background: radial-gradient(circle at 82% 15%, rgba(207, 216, 239, 0.38), transparent 27%), linear-gradient(135deg, rgba(255,255,255,.5), rgba(239,239,248,.22)); }
-.writing-category-archive { background: radial-gradient(circle at 82% 15%, rgba(232, 215, 211, 0.38), transparent 27%), linear-gradient(135deg, rgba(255,255,255,.5), rgba(246,239,237,.22)); }
+.writing-category-dream { background: radial-gradient(circle at 85% 12%, rgba(227, 211, 241, 0.5), transparent 30%), linear-gradient(135deg, rgba(255,255,255,.76), rgba(246,239,250,.57)); }
+.writing-category-game { background: radial-gradient(circle at 82% 15%, rgba(207, 216, 239, 0.46), transparent 29%), linear-gradient(135deg, rgba(255,255,255,.76), rgba(241,243,250,.56)); }
+.writing-category-archive { background: radial-gradient(circle at 82% 15%, rgba(232, 215, 211, 0.46), transparent 29%), linear-gradient(135deg, rgba(255,255,255,.76), rgba(249,242,241,.56)); }
 
 .writing-article-list {
     display: grid;
@@ -589,11 +589,11 @@ body.sidebar-open {
     gap: 18px;
     padding: 18px;
     border: 1px solid rgba(105, 83, 108, 0.1);
-    background: rgba(255, 255, 255, 0.27);
+    background: rgba(255, 253, 254, 0.58);
     transition: border-color 0.35s ease, background 0.35s ease;
 }
 
-.writing-entry:hover { border-color: rgba(137, 103, 137, 0.24); background: rgba(255, 255, 255, 0.43); }
+.writing-entry:hover { border-color: rgba(137, 103, 137, 0.34); background: rgba(255, 255, 255, 0.76); }
 .writing-entry.is-private { border-style: dashed; }
 .writing-entry-cover { width: 88px; height: 112px; object-fit: cover; filter: saturate(0.82); }
 .writing-entry-copy { min-width: 0; }
