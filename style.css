@@ -829,54 +829,798 @@ footer {
 
 }
 
-#games-list {
-    margin-top: 50px;
-    display: grid;
-    gap: 32px;
+/* =========================================
+   STAR ARCHIVE / GAMES
+========================================= */
+
+.games-archive {
+    position: relative;
 }
+
+.archive-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 40px;
+}
+
+.archive-subtitle {
+    margin-top: 18px;
+
+    font-size: 12px;
+    letter-spacing: 3px;
+    line-height: 2;
+
+    color: rgba(74, 65, 59, 0.48);
+}
+
+
+/* =========================================
+   GAME LIST
+========================================= */
+
+.game-list {
+    margin-top: 80px;
+
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 36px;
+}
+
+
+/* =========================================
+   ARCHIVE CARD
+========================================= */
 
 .game-card {
-    display: flex;
-    justify-content: space-between;
-    gap: 32px;
-    padding: 28px 0;
-    border-top: 1px solid rgba(70, 60, 55, 0.15);
+    position: relative;
+
+    min-height: 430px;
+
+    padding: 26px;
+
+    border:
+        1px solid
+        rgba(132, 111, 88, 0.14);
+
+    background:
+        rgba(255, 253, 249, 0.28);
+
+    overflow: hidden;
+
+    transition:
+        transform 0.6s cubic-bezier(.2,.7,.2,1),
+        border-color 0.6s ease,
+        box-shadow 0.6s ease;
 }
 
-.game-card h3 {
-    margin: 0 0 14px;
-    font-size: 24px;
-    font-weight: 400;
-    letter-spacing: 2px;
+.game-card::before {
+    content: "✦";
+
+    position: absolute;
+
+    top: 21px;
+    right: 24px;
+
+    font-size: 12px;
+
+    color: rgba(177, 145, 91, 0);
+
+    transform:
+        translateY(6px)
+        rotate(-25deg);
+
+    transition:
+        color 0.5s ease,
+        transform 0.6s ease;
 }
 
-.game-card p {
-    margin: 0;
-    line-height: 2;
-    opacity: 0.7;
+.game-card::after {
+    content: "";
+
+    position: absolute;
+
+    width: 220px;
+    height: 220px;
+
+    top: -145px;
+    right: -120px;
+
+    border:
+        1px solid
+        rgba(185, 156, 110, 0);
+
+    border-radius: 50%;
+
+    transition:
+        border-color 0.8s ease,
+        transform 1s ease;
 }
 
-.game-rating {
-    margin-top: 14px;
-    font-size: 14px;
-    letter-spacing: 2px;
-    opacity: 0.65;
+.game-card:hover {
+    transform:
+        translateY(-7px);
+
+    border-color:
+        rgba(161, 128, 82, 0.3);
+
+    box-shadow:
+        0 24px 70px
+        rgba(74, 59, 45, 0.06);
+}
+
+.game-card:hover::before {
+    color:
+        rgba(177, 145, 91, 0.8);
+
+    transform:
+        translateY(0)
+        rotate(0deg);
+}
+
+.game-card:hover::after {
+    border-color:
+        rgba(185, 156, 110, 0.18);
+
+    transform:
+        scale(1.15);
+}
+
+
+/* =========================================
+   ARCHIVE NUMBER
+========================================= */
+
+.game-archive-number {
+    font-size: 10px;
+
+    letter-spacing: 4px;
+
+    color:
+        rgba(88, 75, 67, 0.42);
+
+    margin-bottom: 26px;
+}
+
+
+/* =========================================
+   COVER
+========================================= */
+
+.game-cover-frame {
+    position: relative;
+
+    width: 100%;
+    aspect-ratio: 16 / 10;
+
+    overflow: hidden;
+
+    margin-bottom: 34px;
+
+    background:
+        rgba(198, 181, 159, 0.09);
 }
 
 .game-cover {
-    width: 120px;
-    aspect-ratio: 3 / 4;
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
     object-fit: cover;
-    border-radius: 2px;
+
+    filter:
+        saturate(0.82)
+        contrast(0.96);
+
+    transition:
+        transform 1.2s cubic-bezier(.2,.7,.2,1),
+        filter 0.8s ease;
 }
 
-@media (max-width: 768px) {
-    .game-card {
-        flex-direction: column;
+.game-card:hover .game-cover {
+    transform:
+        scale(1.035);
+
+    filter:
+        saturate(0.95)
+        contrast(1);
+}
+
+
+/* no cover */
+
+.game-cover-placeholder {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    position: relative;
+}
+
+.game-cover-placeholder::before,
+.game-cover-placeholder::after {
+    content: "";
+
+    position: absolute;
+
+    width: 45%;
+    height: 65%;
+
+    border:
+        1px solid
+        rgba(177, 145, 91, 0.2);
+
+    border-radius: 50%;
+}
+
+.game-cover-placeholder::before {
+    transform: rotate(58deg);
+}
+
+.game-cover-placeholder::after {
+    transform: rotate(-58deg);
+}
+
+.game-cover-placeholder span {
+    position: relative;
+    z-index: 1;
+
+    color:
+        rgba(161, 128, 82, 0.65);
+
+    font-size: 18px;
+}
+
+
+/* =========================================
+   TEXT
+========================================= */
+
+.game-title {
+    margin: 0;
+
+    font-size: 27px;
+    font-weight: 400;
+
+    letter-spacing: 2px;
+
+    color:
+        rgba(48, 43, 40, 0.94);
+}
+
+.game-review {
+    margin:
+        20px 0 0;
+
+    min-height: 56px;
+
+    font-size: 13px;
+
+    line-height: 2.1;
+
+    letter-spacing: 1.2px;
+
+    color:
+        rgba(67, 60, 56, 0.62);
+
+    display: -webkit-box;
+
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+
+    overflow: hidden;
+}
+
+
+/* =========================================
+   CARD FOOTER
+========================================= */
+
+.game-meta {
+    margin-top: 30px;
+
+    padding-top: 19px;
+
+    border-top:
+        1px solid
+        rgba(106, 91, 77, 0.1);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+}
+
+.game-rating {
+    font-size: 11px;
+
+    letter-spacing: 3px;
+
+    color:
+        rgba(104, 87, 68, 0.62);
+}
+
+.game-view-note {
+    appearance: none;
+
+    border: none;
+    background: none;
+
+    padding: 0;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    font-size: 9px;
+
+    letter-spacing: 3px;
+
+    color:
+        rgba(73, 64, 57, 0.48);
+
+    transition:
+        color 0.4s ease,
+        letter-spacing 0.4s ease;
+}
+
+.game-card:hover .game-view-note {
+    color:
+        rgba(73, 64, 57, 0.85);
+
+    letter-spacing:
+        3.8px;
+}
+
+
+/* =========================================
+   ADMIN
+========================================= */
+
+.archive-admin-button,
+.game-edit-button {
+
+    appearance: none;
+
+    border: none;
+
+    background: none;
+
+    color:
+        rgba(83, 70, 61, 0.5);
+
+    font-family: inherit;
+
+    font-size: 9px;
+
+    letter-spacing: 3px;
+
+    cursor: pointer;
+
+    transition:
+        color 0.35s ease;
+}
+
+.archive-admin-button:hover,
+.game-edit-button:hover {
+    color:
+        rgba(83, 70, 61, 0.95);
+}
+
+.game-edit-button {
+    position: absolute;
+
+    top: 23px;
+    right: 56px;
+
+    z-index: 2;
+}
+
+
+/* =========================================
+   LOGIN STAR
+========================================= */
+
+/*
+现有首页 .star 不需要改 HTML
+登录功能会自动绑定到它
+*/
+
+.hero .star {
+    cursor: pointer;
+
+    transition:
+        transform 0.6s ease,
+        color 0.5s ease,
+        text-shadow 0.5s ease;
+}
+
+.hero .star:hover {
+    transform:
+        rotate(45deg)
+        scale(1.35);
+
+    color:
+        rgba(177, 145, 91, 0.95);
+
+    text-shadow:
+        0 0 18px
+        rgba(190, 156, 101, 0.2);
+}
+
+
+/* =========================================
+   MODAL
+========================================= */
+
+.archive-modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 9999;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 24px;
+}
+
+.archive-modal.active {
+    display: flex;
+}
+
+.archive-modal-backdrop {
+    position: absolute;
+
+    inset: 0;
+
+    background:
+        rgba(47, 42, 38, 0.2);
+
+    backdrop-filter:
+        blur(12px);
+
+    -webkit-backdrop-filter:
+        blur(12px);
+}
+
+.archive-modal-card {
+    position: relative;
+
+    z-index: 2;
+
+    width: min(540px, 100%);
+
+    max-height: 88vh;
+
+    overflow-y: auto;
+
+    padding:
+        52px 50px;
+
+    background:
+        rgb(248, 245, 239);
+
+    border:
+        1px solid
+        rgba(114, 96, 78, 0.17);
+
+    box-shadow:
+        0 40px 100px
+        rgba(61, 50, 41, 0.12);
+
+    animation:
+        archiveModalIn
+        0.55s
+        cubic-bezier(.2,.7,.2,1)
+        both;
+}
+
+@keyframes archiveModalIn {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(18px)
+            scale(0.985);
     }
 
-    .game-cover {
-        width: 100%;
-        max-width: 180px;
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
     }
+
+}
+
+.modal-close {
+    position: absolute;
+
+    top: 17px;
+    right: 22px;
+
+    border: 0;
+
+    background: none;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    font-size: 24px;
+
+    font-weight: 200;
+
+    color:
+        rgba(64, 55, 49, 0.42);
+}
+
+.modal-symbol {
+    margin-bottom: 20px;
+
+    font-size: 18px;
+
+    color:
+        rgba(175, 143, 89, 0.9);
+}
+
+.modal-label {
+    margin:
+        0 0 18px;
+
+    font-size: 9px;
+
+    letter-spacing: 4px;
+
+    color:
+        rgba(79, 67, 59, 0.45);
+}
+
+.archive-modal-card h3 {
+    margin:
+        0 0 12px;
+
+    font-size: 30px;
+
+    font-weight: 400;
+
+    letter-spacing: 1px;
+}
+
+.modal-description {
+    margin:
+        0 0 38px;
+
+    font-size: 12px;
+
+    letter-spacing: 2px;
+
+    color:
+        rgba(76, 66, 60, 0.48);
+}
+
+
+/* =========================================
+   FORM
+========================================= */
+
+.archive-modal-card form {
+    display: grid;
+
+    gap: 22px;
+}
+
+.archive-modal-card label {
+    display: grid;
+
+    gap: 10px;
+
+    font-size: 8px;
+
+    letter-spacing: 3px;
+
+    color:
+        rgba(76, 64, 55, 0.52);
+}
+
+.archive-modal-card input,
+.archive-modal-card textarea {
+
+    width: 100%;
+
+    box-sizing: border-box;
+
+    border: none;
+
+    border-bottom:
+        1px solid
+        rgba(80, 67, 56, 0.18);
+
+    border-radius: 0;
+
+    outline: none;
+
+    padding:
+        12px 2px;
+
+    background:
+        transparent;
+
+    color:
+        rgba(45, 40, 37, 0.9);
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    line-height: 1.8;
+
+    transition:
+        border-color 0.3s ease;
+}
+
+.archive-modal-card textarea {
+    resize: vertical;
+}
+
+.archive-modal-card input:focus,
+.archive-modal-card textarea:focus {
+    border-color:
+        rgba(151, 119, 77, 0.6);
+}
+
+.form-grid {
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 24px;
+}
+
+.modal-primary-button {
+    margin-top: 12px;
+
+    min-height: 48px;
+
+    border:
+        1px solid
+        rgba(98, 79, 63, 0.2);
+
+    background:
+        rgba(255, 255, 255, 0.18);
+
+    color:
+        rgba(62, 52, 45, 0.76);
+
+    font-family: inherit;
+
+    font-size: 9px;
+
+    letter-spacing: 4px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.35s ease,
+        border-color 0.35s ease;
+}
+
+.modal-primary-button:hover {
+    background:
+        rgba(255, 255, 255, 0.6);
+
+    border-color:
+        rgba(98, 79, 63, 0.35);
+}
+
+.modal-danger-button {
+    border: 0;
+
+    background: none;
+
+    cursor: pointer;
+
+    color:
+        rgba(145, 80, 74, 0.58);
+
+    font-family: inherit;
+
+    font-size: 9px;
+
+    letter-spacing: 3px;
+}
+
+.editor-actions {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 14px;
+}
+
+.form-message {
+    min-height: 16px;
+
+    margin: 0;
+
+    font-size: 11px;
+
+    line-height: 1.6;
+
+    color:
+        rgba(145, 80, 74, 0.75);
+}
+
+
+/* =========================================
+   UTIL
+========================================= */
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 768px) {
+
+    .archive-heading {
+        align-items:
+            flex-start;
+
+        flex-direction:
+            column;
+    }
+
+    .game-list {
+        margin-top:
+            54px;
+
+        grid-template-columns:
+            1fr;
+
+        gap:
+            26px;
+    }
+
+    .game-card {
+        min-height:
+            auto;
+
+        padding:
+            20px;
+    }
+
+    .game-title {
+        font-size:
+            22px;
+    }
+
+    .archive-modal-card {
+        padding:
+            44px 25px 34px;
+    }
+
+    .form-grid {
+        grid-template-columns:
+            1fr;
+    }
+
 }

@@ -131,33 +131,42 @@
 
 
 
-    <!-- =====================================
-         03 / GAMES
-    ====================================== -->
-
-    <section
-        class="content-section reveal"
-        id="games"
-    >
+    <!-- =========================
+        03 / GAMES ARCHIVE
+    ========================= -->
+    <section class="content-section games-archive reveal" id="games">
 
         <div class="section-number">
             03
         </div>
 
+        <div class="archive-heading">
 
-        <h2>
-            GAMES
-        </h2>
+            <div>
+                <h2>GAMES</h2>
 
+                <p class="section-title">
+                    乙女游戏存档
+                </p>
 
-        <p class="section-title">
-            乙女游戏存档
-        </p>
+                <p class="archive-subtitle">
+                    A quiet archive of stories I loved.
+                </p>
+            </div>
 
-
-        <div class="game-list">
+            <!-- 登录后才会出现 -->
+            <button
+                id="add-game-btn"
+                class="archive-admin-button hidden"
+                type="button"
+            >
+                ＋ ADD
+            </button>
 
         </div>
+
+        <!-- Supabase 会把游戏自动放到这里 -->
+        <div class="game-list"></div>
 
     </section>
 
@@ -247,6 +256,178 @@
 
     </footer>
 
+    <!-- =========================
+        ADMIN LOGIN
+    ========================= -->
+
+    <div id="login-modal" class="archive-modal">
+        <div class="archive-modal-backdrop"></div>
+
+        <div class="archive-modal-card login-card">
+
+            <button
+                class="modal-close"
+                data-close-modal
+                type="button"
+            >
+                ×
+            </button>
+
+            <div class="modal-symbol">✦</div>
+
+            <p class="modal-label">
+                ARCHIVE KEEPER
+            </p>
+
+            <h3>
+                Welcome back.
+            </h3>
+
+            <p class="modal-description">
+                星屑档案馆管理员入口
+            </p>
+
+            <form id="login-form">
+
+                <label>
+                    EMAIL
+                    <input
+                        id="login-email"
+                        type="email"
+                        autocomplete="email"
+                        required
+                    >
+                </label>
+
+                <label>
+                    PASSWORD
+                    <input
+                        id="login-password"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </label>
+
+                <p id="login-message" class="form-message"></p>
+
+                <button class="modal-primary-button" type="submit">
+                    ENTER ARCHIVE
+                </button>
+
+            </form>
+
+        </div>
+    </div>
+
+
+    <!-- =========================
+        GAME EDITOR
+    ========================= -->
+
+    <div id="game-modal" class="archive-modal">
+        <div class="archive-modal-backdrop"></div>
+
+        <div class="archive-modal-card game-editor-card">
+
+            <button
+                class="modal-close"
+                data-close-modal
+                type="button"
+            >
+                ×
+            </button>
+
+            <p class="modal-label">
+                ARCHIVE ENTRY
+            </p>
+
+            <h3 id="game-modal-title">
+                New record
+            </h3>
+
+            <form id="game-form">
+
+                <input
+                    id="game-id"
+                    type="hidden"
+                >
+
+                <label>
+                    TITLE
+                    <input
+                        id="game-title"
+                        type="text"
+                        required
+                    >
+                </label>
+
+                <label>
+                    REVIEW
+                    <textarea
+                        id="game-review"
+                        rows="6"
+                    ></textarea>
+                </label>
+
+                <div class="form-grid">
+
+                    <label>
+                        RATING
+                        <input
+                            id="game-rating"
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                        >
+                    </label>
+
+                    <label>
+                        SORT ORDER
+                        <input
+                            id="game-sort-order"
+                            type="number"
+                        >
+                    </label>
+
+                </div>
+
+                <label>
+                    COVER IMAGE URL
+                    <input
+                        id="game-cover-url"
+                        type="url"
+                        placeholder="https://..."
+                    >
+                </label>
+
+                <p id="game-form-message" class="form-message"></p>
+
+                <div class="editor-actions">
+
+                    <button
+                        class="modal-primary-button"
+                        type="submit"
+                    >
+                        SAVE RECORD
+                    </button>
+
+                    <button
+                        id="delete-game-btn"
+                        class="modal-danger-button hidden"
+                        type="button"
+                    >
+                        DELETE
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script src="script.js"></script>
