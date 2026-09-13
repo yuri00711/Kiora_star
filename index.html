@@ -466,10 +466,8 @@
      CHARACTER EDITOR
     ========================= -->
 
-    <div
-        id="character-modal"
-        class="archive-modal"
-    >
+    <div id="character-modal" class="archive-modal">
+
         <div class="archive-modal-backdrop"></div>
 
         <div class="archive-modal-card character-modal-card">
@@ -492,19 +490,11 @@
 
             <form id="character-form">
 
-                <input
-                    id="character-id"
-                    type="hidden"
-                >
-
-                <input
-                    id="character-game-id"
-                    type="hidden"
-                >
+                <input id="character-id" type="hidden">
+                <input id="character-game-id" type="hidden">
 
                 <label>
                     NAME
-
                     <input
                         id="character-name"
                         type="text"
@@ -514,17 +504,14 @@
 
                 <label>
                     SUBTITLE
-
                     <input
                         id="character-subtitle"
                         type="text"
-                        placeholder="ROUTE 01 / 隠しキャラクター / 幼馴染..."
                     >
                 </label>
 
                 <label>
                     REVIEW
-
                     <textarea
                         id="character-review"
                         rows="7"
@@ -535,7 +522,6 @@
 
                     <label>
                         RATING
-
                         <input
                             id="character-rating"
                             type="number"
@@ -547,7 +533,6 @@
 
                     <label>
                         SORT ORDER
-
                         <input
                             id="character-sort-order"
                             type="number"
@@ -558,11 +543,9 @@
 
                 <label>
                     IMAGE URL
-
                     <input
                         id="character-image-url"
                         type="url"
-                        placeholder="https://..."
                     >
                 </label>
 
@@ -593,11 +576,12 @@
             </form>
 
         </div>
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script src="script.js"></script>
+    </div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="script.js"></script>
 
 </body>
 

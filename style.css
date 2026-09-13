@@ -1814,3 +1814,12 @@ footer {
     }
 
 }
+
+/* 角色编辑弹窗必须盖在游戏编辑弹窗上面 */
+#game-modal {
+    z-index: 9999;
+}
+
+#character-modal {
+    z-index: 11000;
+}
