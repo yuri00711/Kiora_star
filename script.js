@@ -1378,45 +1378,52 @@ function renderCharacterEditorList(characters) {
 
 }
 
-
-/* =========================================
-   ADD CHARACTER
-========================================= */
-
-if (addCharacterButton) {
-
-    addCharacterButton
-        .addEventListener(
-            "click",
-            () => {
-
-                if (!currentUser)
-                    return;
-
-                if (!currentGameForCharacters)
-                    return;
-
-                openCharacterEditor(
-                    null
-                );
-
-            }
-        );
-
-}
-
-
 /* =========================================
    OPEN CHARACTER EDITOR
 ========================================= */
 
+document.addEventListener("click", (event) => {
+
+    const button = event.target.closest("#add-character-btn");
+
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    console.log("ADD CHARACTER clicked");
+
+    if (!currentUser) {
+        console.warn("当前没有登录");
+        return;
+    }
+
+    if (!currentGameForCharacters) {
+        console.warn("没有当前游戏");
+        return;
+    }
+
+    openCharacterEditor(null);
+
+});
+
 function openCharacterEditor(character) {
 
-    if (!currentUser)
-        return;
+    console.log(
+        "openCharacterEditor:",
+        character,
+        currentGameForCharacters
+    );
 
-    if (!currentGameForCharacters)
+    if (!currentUser) {
+        console.warn("无法打开角色编辑器：未登录");
         return;
+    }
+
+    if (!currentGameForCharacters) {
+        console.warn("无法打开角色编辑器：没有当前游戏");
+        return;
+    }
 
 
     const id =
@@ -1777,6 +1784,36 @@ if (deleteCharacterButton) {
         );
 
 }
+
+/* =========================================
+   ADD CHARACTER BUTTON
+   使用事件委托，避免按钮失去事件
+========================================= */
+
+document.addEventListener("click", (event) => {
+
+    const button = event.target.closest("#add-character-btn");
+
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    console.log("ADD CHARACTER clicked");
+
+    if (!currentUser) {
+        console.warn("当前没有登录");
+        return;
+    }
+
+    if (!currentGameForCharacters) {
+        console.warn("没有当前游戏");
+        return;
+    }
+
+    openCharacterEditor(null);
+
+});
 
 /* =========================================
    START
