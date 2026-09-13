@@ -138,7 +138,7 @@ function closeModal(modal) {
     modal.classList.remove("active");
 
     document.body.style.overflow =
-        "";
+        document.querySelector(".archive-modal.active") ? "hidden" : "";
 }
 
 
@@ -829,6 +829,11 @@ function openGameEditor(game) {
 
     if (!currentUser) return;
 
+    currentGameForCharacters = game && game.id ? game : null;
+    charactersCache = [];
+    renderCharacterEditorList([]);
+    document.getElementById("game-form-message").textContent = "";
+
     const id =
         document.getElementById(
             "game-id"
@@ -914,19 +919,9 @@ function openGameEditor(game) {
 
     if (game && game.id) {
 
-    loadCharactersForGame(
-        game.id
-    );
+        loadCharactersForGame(game.id);
 
-} else {
-
-    charactersCache = [];
-
-    renderCharacterEditorList(
-        []
-    );
-
-}
+    }
 
     openModal(
         gameModal
@@ -1202,6 +1197,9 @@ async function loadCharactersForGame(gameId) {
                 }
             );
 
+    // Ignore results from a game that is no longer being edited.
+    if (currentGameForCharacters?.id !== gameId) return;
+
     if (error) {
 
         console.error(
@@ -1244,7 +1242,9 @@ function renderCharacterEditorList(characters) {
             "character-empty";
 
         empty.textContent =
-            "还没有角色记录。点击 ＋ ADD CHARACTER 添加第一位攻略角色。";
+            currentGameForCharacters
+                ? "还没有角色记录。点击 ＋ ADD CHARACTER 添加第一位攻略角色。"
+                : "请先保存游戏记录，再重新打开 EDIT 添加攻略角色。";
 
         characterEditorList
             .appendChild(
@@ -1382,30 +1382,11 @@ function renderCharacterEditorList(characters) {
    OPEN CHARACTER EDITOR
 ========================================= */
 
-document.addEventListener("click", (event) => {
-
-    const button = event.target.closest("#add-character-btn");
-
-    if (!button) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    console.log("ADD CHARACTER clicked");
-
-    if (!currentUser) {
-        console.warn("当前没有登录");
-        return;
-    }
-
-    if (!currentGameForCharacters) {
-        console.warn("没有当前游戏");
-        return;
-    }
-
-    openCharacterEditor(null);
-
-});
+if (addCharacterButton) {
+    addCharacterButton.addEventListener("click", () => {
+        openCharacterEditor(null);
+    });
+}
 
 function openCharacterEditor(character) {
 
@@ -1421,7 +1402,8 @@ function openCharacterEditor(character) {
     }
 
     if (!currentGameForCharacters) {
-        console.warn("无法打开角色编辑器：没有当前游戏");
+        document.getElementById("game-form-message").textContent =
+            "请先保存游戏记录，再重新打开 EDIT 添加攻略角色。";
         return;
     }
 
@@ -1784,36 +1766,6 @@ if (deleteCharacterButton) {
         );
 
 }
-
-/* =========================================
-   ADD CHARACTER BUTTON
-   使用事件委托，避免按钮失去事件
-========================================= */
-
-document.addEventListener("click", (event) => {
-
-    const button = event.target.closest("#add-character-btn");
-
-    if (!button) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    console.log("ADD CHARACTER clicked");
-
-    if (!currentUser) {
-        console.warn("当前没有登录");
-        return;
-    }
-
-    if (!currentGameForCharacters) {
-        console.warn("没有当前游戏");
-        return;
-    }
-
-    openCharacterEditor(null);
-
-});
 
 /* =========================================
    START
