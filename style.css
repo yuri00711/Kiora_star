@@ -13,11 +13,10 @@ html {
 body {
     margin: 0;
 
-    background:
-        radial-gradient(circle at 14% 14%, rgba(224, 211, 231, 0.46), transparent 28%),
-        radial-gradient(circle at 88% 34%, rgba(238, 211, 218, 0.38), transparent 27%),
-        radial-gradient(circle at 45% 72%, rgba(218, 228, 238, 0.42), transparent 32%),
-        linear-gradient(145deg, #faf7f3 0%, #f5f1f3 48%, #f8f5ef 100%);
+    position: relative;
+    isolation: isolate;
+
+    background: #fbf8fc;
     color: #383433;
 
     font-family:
@@ -33,15 +32,49 @@ body {
 body::before {
     content: "";
     position: fixed;
+    inset: -12%;
+    z-index: -2;
+    pointer-events: none;
+    opacity: 0.86;
+    filter: blur(22px) saturate(0.86);
+    background:
+        radial-gradient(ellipse 48% 29% at 4% 5%, rgba(247, 210, 226, 0.78), transparent 73%),
+        radial-gradient(ellipse 43% 34% at 54% 8%, rgba(202, 224, 244, 0.72), transparent 70%),
+        radial-gradient(ellipse 34% 45% at 91% 25%, rgba(241, 202, 221, 0.66), transparent 72%),
+        radial-gradient(ellipse 50% 27% at 24% 43%, rgba(191, 220, 242, 0.66), transparent 70%),
+        radial-gradient(ellipse 42% 30% at 69% 48%, rgba(245, 207, 225, 0.68), transparent 72%),
+        radial-gradient(ellipse 40% 39% at 97% 70%, rgba(195, 222, 243, 0.7), transparent 71%),
+        radial-gradient(ellipse 52% 31% at 30% 84%, rgba(244, 207, 225, 0.67), transparent 73%),
+        radial-gradient(ellipse 43% 34% at 73% 96%, rgba(197, 222, 243, 0.7), transparent 72%),
+        #fbf8fc;
+    animation: watercolorBreathe 28s ease-in-out infinite alternate;
+}
+
+body::after {
+    content: "";
+    position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    opacity: 0.42;
+    opacity: 0.32;
     background-image:
-        radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 1px, transparent 1.5px),
-        radial-gradient(circle, rgba(176, 149, 189, 0.3) 0 0.7px, transparent 1.2px);
-    background-position: 0 0, 37px 61px;
-    background-size: 86px 86px, 113px 113px;
+        radial-gradient(circle, rgba(255, 255, 255, 0.96) 0 0.9px, transparent 1.45px),
+        radial-gradient(circle, rgba(114, 148, 181, 0.26) 0 0.65px, transparent 1.1px),
+        radial-gradient(circle, rgba(181, 119, 155, 0.22) 0 0.6px, transparent 1px),
+        repeating-linear-gradient(18deg, rgba(91, 73, 102, 0.018) 0 1px, transparent 1px 4px);
+    background-position: 0 0, 37px 61px, 21px 33px, 0 0;
+    background-size: 88px 88px, 117px 117px, 149px 149px, 5px 5px;
+    mix-blend-mode: multiply;
+}
+
+@keyframes watercolorBreathe {
+    from {
+        transform: translate3d(-1.5%, -1%, 0) scale(1);
+    }
+
+    to {
+        transform: translate3d(1.8%, 1.2%, 0) scale(1.035);
+    }
 }
 
 
@@ -79,7 +112,7 @@ body::before {
     aspect-ratio: 1;
     left: -20%;
     top: -28%;
-    background: radial-gradient(circle, rgba(218, 201, 232, 0.34), transparent 68%);
+    background: radial-gradient(circle, rgba(184, 217, 242, 0.43), transparent 68%);
     animation: auraDrift 16s ease-in-out infinite alternate;
 }
 
@@ -88,7 +121,7 @@ body::before {
     aspect-ratio: 1;
     right: -18%;
     bottom: -30%;
-    background: radial-gradient(circle, rgba(235, 202, 211, 0.31), transparent 68%);
+    background: radial-gradient(circle, rgba(244, 198, 220, 0.42), transparent 68%);
     animation: auraDrift 19s ease-in-out -6s infinite alternate-reverse;
 }
 
