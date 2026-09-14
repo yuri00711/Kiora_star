@@ -23,7 +23,8 @@ const observer =
 
         },
         {
-            threshold: 0.25
+            threshold: 0.01,
+            rootMargin: "0px 0px -8% 0px"
         }
     );
 

@@ -67,7 +67,7 @@ declare
     latest_content timestamptz;
     tracked_tables text[] := array[
         'site_profile', 'profile_fandoms', 'profile_favorites', 'profile_boundaries',
-        'otome_profile', 'writings', 'games', 'characters'
+        'otome_profile', 'writings', 'games', 'characters', 'music'
     ];
 begin
     foreach current_table in array tracked_tables loop
@@ -103,7 +103,8 @@ declare
         'otome_profile',
         'writings',
         'games',
-        'characters'
+        'characters',
+        'music'
     ];
 begin
     foreach table_name in array tracked_tables loop
