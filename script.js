@@ -140,6 +140,7 @@ function openModal(modal) {
     if (!modal) return;
 
     modal.classList.add("active");
+    if (modal.hasAttribute("data-protect-draft")) modal.dataset.dirty = "false";
 
     document.body.style.overflow =
         "hidden";
@@ -149,6 +150,12 @@ function openModal(modal) {
 function closeModal(modal) {
 
     if (!modal) return;
+
+    if (
+        modal.hasAttribute("data-protect-draft") &&
+        modal.dataset.dirty === "true" &&
+        !window.confirm("还有未保存的修改，确定关闭编辑器吗？")
+    ) return;
 
     modal.classList.remove("active");
 
@@ -321,10 +328,11 @@ document
             "click",
             () => {
 
+                const modal = backdrop.closest(".archive-modal");
+                if (modal?.hasAttribute("data-protect-draft")) return;
+
                 closeModal(
-                    backdrop.closest(
-                        ".archive-modal"
-                    )
+                    modal
                 );
 
             }
@@ -1363,6 +1371,17 @@ if (addCharacterButton) {
     addCharacterButton.addEventListener("click", () => {
         openCharacterEditor(null);
     });
+
+document.addEventListener("input", (event) => {
+    const modal = event.target.closest?.(".archive-modal[data-protect-draft]");
+    if (modal) modal.dataset.dirty = "true";
+});
+
+window.addEventListener("beforeunload", (event) => {
+    if (!document.querySelector('.archive-modal[data-protect-draft][data-dirty="true"]')) return;
+    event.preventDefault();
+    event.returnValue = "";
+});
 }
 
 function openCharacterEditor(character) {

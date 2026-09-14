@@ -240,8 +240,14 @@
 
             <section class="profile-block profile-desktop-meta">
                 <div class="profile-sidebar-meta-row">
-                    <p>CURRENTLY PLAYING</p>
+                    <div class="profile-sidebar-meta-heading">
+                        <p>CURRENTLY PLAYING</p>
+                        <span data-admin-slot="edit-currently-playing"></span>
+                    </div>
                     <strong id="profile-current-game">—</strong>
+                    <span id="profile-current-subtitle" class="profile-current-subtitle" hidden></span>
+                    <span id="profile-current-status" class="profile-current-status" hidden></span>
+                    <p id="profile-current-note" class="profile-current-note" hidden></p>
                 </div>
                 <div class="profile-sidebar-meta-row">
                     <p>TAGS / KEYWORDS</p>
@@ -701,7 +707,7 @@
     <!-- =========================
          PROFILE CMS
     ========================= -->
-    <div id="profile-modal" class="archive-modal">
+    <div id="profile-modal" class="archive-modal" data-protect-draft>
         <div class="archive-modal-backdrop"></div>
         <div class="archive-modal-card cms-modal-card">
             <button class="modal-close" data-close-modal type="button">×</button>
@@ -732,7 +738,7 @@
         </div>
     </div>
 
-    <div id="profile-item-modal" class="archive-modal">
+    <div id="profile-item-modal" class="archive-modal" data-protect-draft>
         <div class="archive-modal-backdrop"></div>
         <div class="archive-modal-card cms-modal-card">
             <button class="modal-close" data-close-modal type="button">×</button>
@@ -758,7 +764,7 @@
         </div>
     </div>
 
-    <div id="otome-modal" class="archive-modal">
+    <div id="otome-modal" class="archive-modal" data-protect-draft>
         <div class="archive-modal-backdrop"></div>
         <div class="archive-modal-card cms-modal-card otome-modal-card">
             <button class="modal-close" data-close-modal type="button">×</button>

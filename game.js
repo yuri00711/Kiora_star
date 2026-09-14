@@ -48,6 +48,7 @@
     }
 
     document.title = `${game.title || "Game Archive"} · Kiora`;
+    document.getElementById("game-detail-archive-number").textContent = `ARCHIVE ${String(game.sort_order ?? game.id).padStart(3, "0")}`;
     document.getElementById("game-detail-title").textContent = game.title || "UNTITLED";
     setOptionalText("game-detail-original", firstValue(game, ["original_title", "title_jp", "japanese_title"]));
 
@@ -85,6 +86,7 @@
         tagContainer.append(span);
     });
     tagContainer.hidden = !tags.length;
+    document.getElementById("game-detail-keywords-label").hidden = !tags.length;
 
     const description = firstValue(game, ["description", "summary", "introduction"]);
     if (description) {

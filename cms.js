@@ -216,12 +216,14 @@
             };
             controls?.append(
                 makeButton("EDIT PROFILE", { editProfile: "" }),
-                makeButton("EXPORT PROFILE", { exportProfileOpen: "" })
+                makeButton("EXPORT PROFILE", { exportProfileOpen: "" }),
+                makeButton("EDIT EXPORT PROFILE", { editExportProfile: "" })
             );
             document.querySelector('[data-admin-slot="add-fandom"]')?.append(makeButton("＋ ADD", { addItem: "fandom" }));
             document.querySelector('[data-admin-slot="add-favorite"]')?.append(makeButton("＋ ADD", { addItem: "favorite" }));
             document.querySelector('[data-admin-slot="edit-otome"]')?.append(makeButton("EDIT", { editOtome: "" }));
             document.querySelector('[data-admin-slot="add-boundary"]')?.append(makeButton("＋ ADD", { addItem: "boundary" }));
+            document.querySelector('[data-admin-slot="edit-currently-playing"]')?.append(makeButton("EDIT", { editCurrentlyPlaying: "" }));
             ["game_review", "essay", "dream"].forEach((category) => {
                 document.querySelector(`[data-admin-slot="add-writing-${category}"]`)
                     ?.append(makeButton("＋ WRITE", { addWriting: category }));
@@ -257,9 +259,31 @@
             .trim();
     }
 
+    function exportRows(value) {
+        return String(value || "").split("\n").map((line) => line.trim()).filter(Boolean).map((line) => {
+            const [name, ...description] = line.split("|");
+            return { name: name.trim(), description: description.join("|").trim() };
+        });
+    }
+
     function buildProfileExportSheet() {
         const sheet = byId("profile-export-sheet");
         sheet.replaceChildren();
+
+        const exportSettings = state.settings.export_profile_settings || {};
+        const overrides = exportSettings.overrides || {};
+        const visibility = {
+            avatar: true, name: true, subtitle: true, bio: true, fandoms: true,
+            favorites: true, boundaries: true, otome_profile: true,
+            currently_playing: true, free_space: true, updated: true,
+            ...(exportSettings.visibility || {})
+        };
+        const resolved = (override, fallback) => String(overrides[override] || "").trim() || fallback || "";
+        const displayName = resolved("display_name", state.profile.nickname);
+        const subtitleText = resolved("subtitle", state.profile.tagline);
+        const bioText = resolved("bio", state.profile.summary);
+        const aboutText = resolved("about", state.profile.about_text);
+        const exportAvatar = resolved("avatar_url", state.profile.avatar_url);
 
         const issueDate = formatCompactDate(new Date());
         const masthead = create("header", "profile-sheet-masthead");
@@ -273,24 +297,26 @@
         const spread = create("div", "profile-sheet-spread");
         const portraitColumn = create("aside", "profile-sheet-portrait-column");
         const portraitFrame = create("figure", "profile-sheet-portrait-frame");
-        const avatarUrl = safeUrl(state.profile.avatar_url);
-        if (avatarUrl) {
+        const avatarUrl = visibility.avatar ? safeUrl(exportAvatar) : "";
+        if (visibility.avatar && avatarUrl) {
             const image = create("img", "profile-sheet-avatar");
             image.src = avatarUrl;
             image.crossOrigin = "anonymous";
             image.alt = "";
             portraitFrame.append(image);
-        } else {
+        } else if (visibility.avatar) {
             portraitFrame.append(create("div", "profile-sheet-avatar profile-sheet-avatar-placeholder", "✦"));
+        } else {
+            portraitFrame.classList.add("profile-sheet-portrait-hidden");
         }
         portraitFrame.append(create("figcaption", "", "PORTRAIT / PERSONAL RECORD"));
         portraitColumn.append(portraitFrame);
 
         const identity = create("div", "profile-sheet-identity");
         identity.append(create("p", "profile-sheet-overline", "PROFILE  —  NO. 01"));
-        identity.append(create("h1", "", state.profile.nickname || "PROFILE"));
-        if (state.profile.tagline) identity.append(create("p", "profile-sheet-tagline", state.profile.tagline));
-        if (state.profile.summary) identity.append(create("p", "profile-sheet-summary", exportText(state.profile.summary)));
+        if (visibility.name) identity.append(create("h1", "", displayName || "PROFILE"));
+        if (visibility.subtitle && subtitleText) identity.append(create("p", "profile-sheet-tagline", subtitleText));
+        if (visibility.bio && bioText) identity.append(create("p", "profile-sheet-summary", exportText(bioText)));
         portraitColumn.append(identity);
         spread.append(portraitColumn);
 
@@ -298,8 +324,8 @@
         const editorialLead = create("section", "profile-sheet-lead");
         editorialLead.append(create("p", "profile-sheet-kicker", "A SMALL INDEX OF THE THINGS I LOVE"));
         editorialLead.append(create("h2", "", "静かな記録、好きなものの輪郭。"));
-        if (state.profile.about_text) {
-            editorialLead.append(create("p", "profile-sheet-prose", exportText(state.profile.about_text)));
+        if (visibility.bio && aboutText) {
+            editorialLead.append(create("p", "profile-sheet-prose", exportText(aboutText)));
         }
         editorial.append(editorialLead);
 
@@ -317,15 +343,26 @@
             });
             columns.append(section);
         };
-        collection("FANDOMS", state.fandoms, (item) => [item.status, item.description].filter(Boolean).join(" / "));
-        collection("FAVORITES", state.favorites, (item) => [item.work_name, item.favorite_level, item.note].filter(Boolean).join(" / "));
-        collection("NG", state.boundaries, (item) => item.kind || "");
+        if (visibility.fandoms) {
+            const custom = exportRows(overrides.fandoms);
+            collection("FANDOMS", custom.length ? custom : state.fandoms, (item) => item.description || [item.status].filter(Boolean).join(" / "));
+        }
+        if (visibility.favorites) {
+            const custom = exportRows(overrides.favorites);
+            collection("FAVORITES", custom.length ? custom : state.favorites, (item) => item.description || [item.work_name, item.favorite_level, item.note].filter(Boolean).join(" / "));
+        }
+        if (visibility.boundaries) {
+            const custom = exportRows(overrides.boundaries);
+            collection("NG", custom.length ? custom : state.boundaries, (item) => item.description || item.kind || "");
+        }
 
         const hasOtomeTags = state.otome.play_styles?.length || state.otome.favorite_elements?.length || state.otome.not_my_type?.length;
-        if (hasOtomeTags || state.otome.axes?.length) {
+        if (visibility.otome_profile && (overrides.otome_profile || hasOtomeTags || state.otome.axes?.length)) {
             const otome = create("section", "profile-sheet-section profile-sheet-otome");
             otome.append(create("h2", "", "OTOME PROFILE"));
-            (state.otome.axes || []).forEach((axis) => {
+            if (overrides.otome_profile) {
+                otome.append(create("p", "", exportText(overrides.otome_profile)));
+            } else (state.otome.axes || []).forEach((axis) => {
                 const numericValue = Math.min(5, Math.max(1, Number(axis.value) || 3));
                 const percentage = ((numericValue - 1) / 4) * 100;
                 const axisRow = create("div", "profile-sheet-axis");
@@ -345,7 +382,7 @@
                 ["FAVORITE ELEMENTS", state.otome.favorite_elements],
                 ["NOT MY TYPE", state.otome.not_my_type]
             ];
-            tagGroups.forEach(([label, values]) => {
+            if (!overrides.otome_profile) tagGroups.forEach(([label, values]) => {
                 if (!values?.length) return;
                 const row = create("p", "profile-sheet-tags");
                 row.append(create("b", "", label), document.createTextNode(values.join(" ・ ")));
@@ -354,10 +391,20 @@
             columns.append(otome);
         }
 
-        if (state.profile.free_space_content) {
+        const currently = state.settings.currently_playing || {};
+        if (visibility.currently_playing && (overrides.currently_playing || currently.title || currently.game_id)) {
+            const current = create("section", "profile-sheet-section");
+            current.append(create("h2", "", "CURRENTLY PLAYING"));
+            const linked = (bridge.games || []).find((game) => String(game.id) === String(currently.game_id));
+            current.append(create("p", "", resolved("currently_playing", [currently.title || linked?.title, currently.subtitle, currently.status, currently.note].filter(Boolean).join(" / "))));
+            columns.append(current);
+        }
+
+        const freeSpace = resolved("free_space", state.profile.free_space_content);
+        if (visibility.free_space && freeSpace) {
             const free = create("section", "profile-sheet-section profile-sheet-free");
             free.append(create("h2", "", state.profile.free_space_title || "FREE SPACE"));
-            free.append(create("p", "", exportText(state.profile.free_space_content)));
+            free.append(create("p", "", exportText(freeSpace)));
             columns.append(free);
         }
         editorial.append(columns);
@@ -367,7 +414,7 @@
         const footer = create("footer", "profile-sheet-footer");
         footer.append(create("span", "", "WORDS, GAMES & SMALL CONSTELLATIONS"));
         footer.append(create("span", "", "KIORA.SPACE  /  ALL THINGS KEPT WITH CARE"));
-        footer.append(create("span", "", byId("profile-updated")?.textContent || ""));
+        footer.append(create("span", "", visibility.updated ? (byId("profile-updated")?.textContent || "") : ""));
         sheet.append(footer);
         return sheet;
     }
@@ -380,12 +427,18 @@
         const sheet = buildProfileExportSheet();
         sheet.classList.add("is-rendering");
         await Promise.all(Array.from(sheet.querySelectorAll("img")).map((image) => image.decode?.().catch(() => {})));
+        const sheetRect = sheet.getBoundingClientRect();
+        const sectionOffsets = Array.from(sheet.querySelectorAll(".profile-sheet-section"))
+            .map((section) => section.getBoundingClientRect().top - sheetRect.top)
+            .filter((offset) => offset > 0);
         const canvas = await window.html2canvas(sheet, {
             backgroundColor: "#f5eff4",
             scale: 2,
             useCORS: true,
             logging: false
         });
+        const renderScale = canvas.height / sheetRect.height;
+        canvas.profileSectionBreaks = sectionOffsets.map((offset) => Math.round(offset * renderScale));
         sheet.classList.remove("is-rendering");
         return canvas;
     }
@@ -421,7 +474,12 @@
                 let page = 0;
                 while (offset < canvas.height) {
                     if (page > 0) pdf.addPage();
-                    const sliceHeight = Math.min(pageHeightPixels, canvas.height - offset);
+                    let sliceHeight = Math.min(pageHeightPixels, canvas.height - offset);
+                    const naturalEnd = offset + sliceHeight;
+                    const cleanBreak = (canvas.profileSectionBreaks || [])
+                        .filter((point) => point > offset + pageHeightPixels * 0.38 && point < naturalEnd - 20)
+                        .pop();
+                    if (cleanBreak) sliceHeight = cleanBreak - offset;
                     const slice = document.createElement("canvas");
                     slice.width = canvas.width;
                     slice.height = sliceHeight;
@@ -590,8 +648,25 @@
     }
 
     function renderCurrentGame(games) {
+        const setting = state.settings.currently_playing || {};
+        const linked = games?.find((game) => String(game.id) === String(setting.game_id));
         const current = byId("profile-current-game");
-        if (current) current.textContent = games?.[0]?.title || "—";
+        const subtitle = byId("profile-current-subtitle");
+        const status = byId("profile-current-status");
+        const note = byId("profile-current-note");
+        if (current) current.textContent = setting.title || linked?.title || games?.[0]?.title || "—";
+        if (subtitle) {
+            subtitle.textContent = setting.subtitle || "";
+            subtitle.hidden = !setting.subtitle;
+        }
+        if (status) {
+            status.textContent = setting.status ? String(setting.status).toUpperCase() : "";
+            status.hidden = !setting.status;
+        }
+        if (note) {
+            note.textContent = setting.note || "";
+            note.hidden = !setting.note;
+        }
     }
 
     window.addEventListener("yuri:gameschange", (event) => {
@@ -784,6 +859,7 @@
             return;
         }
         await removeReplacedImage(state.profile.avatar_url, avatarUrl);
+        byId("profile-modal").dataset.dirty = "false";
         bridge.closeModal(byId("profile-modal"));
         await loadProfile();
     });
@@ -924,6 +1000,7 @@
             return;
         }
         await removeReplacedImage(previousItem?.image_url, imageUrl);
+        byId("profile-item-modal").dataset.dirty = "false";
         bridge.closeModal(byId("profile-item-modal"));
         await loadProfile();
     });
@@ -940,6 +1017,7 @@
         }
         const deletedItem = itemsFor(kind).find((item) => String(item.id) === String(id));
         await removeReplacedImage(deletedItem?.image_url, null);
+        byId("profile-item-modal").dataset.dirty = "false";
         bridge.closeModal(byId("profile-item-modal"));
         await loadProfile();
     });
@@ -1004,6 +1082,7 @@
             showMessage("otome-form-message", `保存失败：${error.message}`, true);
             return;
         }
+        byId("otome-modal").dataset.dirty = "false";
         bridge.closeModal(byId("otome-modal"));
         await loadProfile();
     });
@@ -1168,6 +1247,18 @@
     }
 
     document.addEventListener("click", async (event) => {
+        if (event.target.closest("[data-edit-currently-playing]")) {
+            if (!isAdmin()) return;
+            window.location.href = "currently-playing.html";
+            return;
+        }
+
+        if (event.target.closest("[data-edit-export-profile]")) {
+            if (!isAdmin()) return;
+            window.location.href = "export-profile.html";
+            return;
+        }
+
         if (event.target.closest("[data-export-profile-open]")) {
             if (!isAdmin()) return;
             showMessage("profile-export-message", "");

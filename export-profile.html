@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Edit Export Profile · Kiora</title>
+    <link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="settings-editor.css">
+</head>
+<body>
+    <nav class="settings-nav"><button id="settings-back" type="button">← BACK TO PROFILE</button><span id="settings-save-state" class="settings-save-state">CHECKING…</span></nav>
+    <main class="settings-shell export-settings-shell">
+        <p id="settings-gate" class="settings-gate" role="status">Checking administrator session…</p>
+        <section id="export-editor" hidden>
+            <header class="settings-header"><p class="settings-eyebrow">PROFILE / EXPORT SETTINGS</p><h1>Edit export profile</h1><p>留空的覆写字段会继续读取网站 Profile；只有保存后才会写入 Supabase。</p></header>
+            <div class="export-editor-layout">
+                <form id="export-form" class="settings-card">
+                    <section class="export-editor-section"><h2>IDENTITY OVERRIDES</h2><div class="settings-fields">
+                        <label>DISPLAY NAME<input id="export-name" type="text" placeholder="留空使用 Profile 名字"></label>
+                        <label>SUBTITLE<input id="export-subtitle" type="text" placeholder="留空使用 Profile Tagline"></label>
+                        <label>SHORT BIO<textarea id="export-bio" rows="4" placeholder="留空使用 Short Intro"></textarea></label>
+                        <label>ABOUT TEXT<textarea id="export-about" rows="4" placeholder="留空使用 About 内容"></textarea></label>
+                        <label>EXPORT AVATAR URL<input id="export-avatar" type="url" placeholder="留空使用当前头像"></label>
+                        <label>OR UPLOAD EXPORT AVATAR<input id="export-avatar-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+                        <button id="export-avatar-default" type="button" class="avatar-mode">恢复使用当前头像</button>
+                    </div></section>
+                    <section class="export-editor-section"><h2>SECTION TEXT OVERRIDES</h2><div class="settings-fields">
+                        <label>FANDOMS<textarea id="export-fandoms" rows="4" placeholder="每行：名称 | 说明；留空使用 Profile"></textarea></label>
+                        <label>FAVORITES<textarea id="export-favorites" rows="4" placeholder="每行：名称 | 说明；留空使用 Profile"></textarea></label>
+                        <label>NOT MY TYPE / NG<textarea id="export-boundaries" rows="3" placeholder="每行：名称 | 说明；留空使用 Profile"></textarea></label>
+                        <label>OTOME PROFILE<textarea id="export-otome" rows="3" placeholder="留空使用现有属性轴"></textarea></label>
+                        <label>CURRENTLY PLAYING<textarea id="export-currently" rows="2" placeholder="留空使用 Currently Playing 设置"></textarea></label>
+                        <label>FREE SPACE<textarea id="export-free" rows="3" placeholder="留空使用 Profile Free Space"></textarea></label>
+                    </div></section>
+                    <section class="export-editor-section"><h2>VISIBLE SECTIONS</h2><div id="visibility-grid" class="visibility-grid">
+                        <label><input type="checkbox" data-visibility="avatar">显示头像</label><label><input type="checkbox" data-visibility="name">显示名字</label><label><input type="checkbox" data-visibility="subtitle">显示副标题</label><label><input type="checkbox" data-visibility="bio">显示简介</label><label><input type="checkbox" data-visibility="fandoms">显示坑 / Fandoms</label><label><input type="checkbox" data-visibility="favorites">显示推角</label><label><input type="checkbox" data-visibility="boundaries">显示雷点</label><label><input type="checkbox" data-visibility="otome_profile">显示日乙属性</label><label><input type="checkbox" data-visibility="currently_playing">显示 Currently Playing</label><label><input type="checkbox" data-visibility="free_space">显示 Free Space</label><label><input type="checkbox" data-visibility="updated">显示更新时间</label>
+                    </div></section>
+                    <div class="settings-actions"><button class="primary" type="submit">SAVE EXPORT PROFILE</button><button id="export-reset" type="button">RESET TO PROFILE DEFAULTS</button></div><p id="settings-message" class="settings-message" role="status"></p>
+                </form>
+                <aside class="export-preview-column"><p class="export-preview-title">EXPORT PREVIEW</p><div id="export-preview" class="export-preview-paper"></div></aside>
+            </div>
+        </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="article-common.js"></script><script src="export-profile.js"></script>
+</body>
+</html>

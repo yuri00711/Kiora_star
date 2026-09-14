@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Edit Currently Playing · Kiora</title>
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="settings-editor.css">
+</head>
+<body>
+    <nav class="settings-nav"><button id="settings-back" type="button">← BACK TO PROFILE</button><span id="settings-save-state" class="settings-save-state">CHECKING…</span></nav>
+    <main class="settings-shell">
+        <p id="settings-gate" class="settings-gate" role="status">Checking administrator session…</p>
+        <section id="currently-editor" hidden>
+            <header class="settings-header"><p class="settings-eyebrow">PROFILE / CURRENT NOTE</p><h1>Currently playing</h1><p>从已有游戏中关联一条档案，也可以单独填写展示文字。</p></header>
+            <form id="currently-form" class="settings-card">
+                <div class="settings-fields">
+                    <label>LINK TO GAME<select id="currently-game"><option value="">不关联游戏</option></select></label>
+                    <label>DISPLAY TITLE<input id="currently-title" type="text" maxlength="160" placeholder="留空时使用关联游戏标题"></label>
+                    <label>SUBTITLE<input id="currently-subtitle" type="text" maxlength="200"></label>
+                    <div class="settings-grid">
+                        <label>STATUS<select id="currently-status"><option value="">不显示</option><option value="playing">PLAYING</option><option value="replaying">REPLAYING</option><option value="completed">COMPLETED</option><option value="paused">PAUSED</option></select></label>
+                        <label>SHORT NOTE<input id="currently-note" type="text" maxlength="260"></label>
+                    </div>
+                </div>
+                <div class="settings-actions"><button class="primary" type="submit">SAVE CURRENTLY PLAYING</button><button id="currently-clear" type="button">CLEAR SETTING</button></div>
+                <p id="settings-message" class="settings-message" role="status"></p>
+            </form>
+        </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="article-common.js"></script><script src="currently-playing.js"></script>
+</body>
+</html>

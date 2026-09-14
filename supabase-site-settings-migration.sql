@@ -8,12 +8,16 @@ create table if not exists public.site_settings (
     id smallint primary key default 1 check (id = 1),
     manual_updated_at date,
     content_updated_at timestamptz,
+    currently_playing jsonb,
+    export_profile_settings jsonb,
     updated_at timestamptz not null default now()
 );
 
 alter table public.site_settings
     add column if not exists manual_updated_at date,
     add column if not exists content_updated_at timestamptz,
+    add column if not exists currently_playing jsonb,
+    add column if not exists export_profile_settings jsonb,
     add column if not exists updated_at timestamptz not null default now();
 
 insert into public.site_settings (id)

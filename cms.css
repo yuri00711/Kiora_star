@@ -652,7 +652,7 @@ body.sidebar-open {
     left: -10000px;
     box-sizing: border-box;
     width: 1680px;
-    min-height: 1080px;
+    min-height: 0;
     padding: 58px 72px 42px;
     overflow: hidden;
     color: #3f3942;
@@ -699,6 +699,8 @@ body.sidebar-open {
 .profile-sheet-spread { display: grid; grid-template-columns: 382px minmax(0, 1fr); gap: 62px; margin-top: 42px; }
 .profile-sheet-portrait-column { padding-right: 40px; border-right: 1px solid rgba(76,68,77,.3); }
 .profile-sheet-portrait-frame { position: relative; margin: 0; }
+.profile-sheet-portrait-hidden { min-height: 160px; border-top: 1px solid rgba(76,68,77,.28); border-bottom: 1px solid rgba(76,68,77,.16); }
+.profile-sheet-portrait-hidden::before { content: "PORTRAIT OMITTED"; position: absolute; top: 68px; left: 0; color: #92738e; font-size: 9px; letter-spacing: 4px; }
 .profile-sheet-avatar { width: 100%; height: 430px; display: grid; place-items: center; object-fit: cover; border: 0; background: linear-gradient(145deg, #e8dbe3, #dce2ed); font-size: 38px; filter: saturate(.86) contrast(.96); }
 .profile-sheet-portrait-frame::after { content: "✦"; position: absolute; right: -15px; bottom: 26px; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(76,68,77,.34); background: #f7f2f2; color: #9a7892; font-size: 10px; transform: rotate(45deg); }
 .profile-sheet-portrait-frame::after { line-height: 30px; }
@@ -1421,12 +1423,16 @@ h1,
         gap: 24px;
     }
 
-    .profile-sidebar-meta-row > p {
+    .profile-sidebar-meta-row > p,
+    .profile-sidebar-meta-heading > p {
         margin: 0 0 12px;
         color: var(--accent);
         font-size: 8px;
         letter-spacing: 2.6px;
     }
+
+    .profile-sidebar-meta-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .profile-sidebar-meta-heading .cms-admin-button { min-width: 0; min-height: 0; padding: 2px 0; font-size: 7px; }
 
     .profile-sidebar-meta-row > strong {
         color: var(--ink);
@@ -1435,6 +1441,11 @@ h1,
         line-height: 1.8;
         letter-spacing: 1.2px;
     }
+
+    .profile-current-subtitle,
+    .profile-current-status { display: block; margin-top: 7px; color: var(--ink-muted); font-size: 8px; line-height: 1.7; letter-spacing: 1.5px; }
+    .profile-current-status { color: var(--accent-blue); letter-spacing: 2px; }
+    .profile-current-note { margin: 10px 0 0 !important; color: var(--ink-soft) !important; font-size: 9px !important; line-height: 1.8; letter-spacing: .5px !important; }
 
     .profile-updated {
         padding-top: 19px;
