@@ -132,17 +132,17 @@
 
             const imageUrl = common.safeUrl(character.image_url);
             if (imageUrl) {
+                card.classList.add("has-image");
                 const image = document.createElement("img");
                 image.className = "game-character-image";
                 image.src = imageUrl;
                 image.alt = character.name || "Character";
                 image.loading = "lazy";
+                image.addEventListener("error", () => {
+                    image.remove();
+                    card.classList.remove("has-image");
+                }, { once: true });
                 card.append(image);
-            } else {
-                const placeholder = document.createElement("div");
-                placeholder.className = "game-character-placeholder";
-                placeholder.textContent = "◇";
-                card.append(placeholder);
             }
 
             const copy = document.createElement("div");
