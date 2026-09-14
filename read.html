@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f3eef3">
+    <title>Reading · Kiora</title>
+    <link rel="stylesheet" href="read.css">
+</head>
+<body>
+    <header class="reader-nav">
+        <button id="reader-back" type="button">← BACK</button>
+        <a href="index.html">KIORA.SPACE</a>
+        <button id="reader-settings-button" type="button" aria-expanded="false" aria-controls="reader-settings">Aa</button>
+        <div id="reader-settings" class="reader-settings" hidden>
+            <fieldset>
+                <legend>字号</legend>
+                <button type="button" data-font-size="small">小</button>
+                <button type="button" data-font-size="medium">中</button>
+                <button type="button" data-font-size="large">大</button>
+            </fieldset>
+            <fieldset>
+                <legend>行距</legend>
+                <button type="button" data-line-height="standard">标准</button>
+                <button type="button" data-line-height="relaxed">宽松</button>
+            </fieldset>
+        </div>
+    </header>
+
+    <main id="reader" class="reader-shell" aria-live="polite">
+        <p id="reader-status" class="reader-status">正在打开文字……</p>
+        <article id="reader-article" class="reader-article" hidden>
+            <header class="article-header">
+                <p id="article-meta" class="article-meta"></p>
+                <h1 id="article-title"></h1>
+                <p id="article-subtitle" class="article-subtitle"></p>
+                <div id="article-tags" class="article-tags"></div>
+            </header>
+            <img id="article-cover" class="article-cover" alt="" hidden>
+            <div id="article-body" class="article-body"></div>
+            <p id="article-updated" class="article-updated"></p>
+            <nav class="article-pager" aria-label="文章导航">
+                <a id="previous-article" href="#" hidden>← PREVIOUS</a>
+                <button id="back-to-category" type="button">BACK TO JOURNAL</button>
+                <a id="next-article" href="#" hidden>NEXT →</a>
+            </nav>
+        </article>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="article-common.js"></script>
+    <script src="read.js"></script>
+</body>
+</html>

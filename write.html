@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f3eef3">
+    <title>Write · Kiora</title>
+    <link rel="stylesheet" href="write.css">
+</head>
+<body>
+    <header class="write-nav">
+        <button id="write-back" type="button">← 返回</button>
+        <a href="index.html">KIORA.SPACE</a>
+        <span id="save-state">CHECKING…</span>
+    </header>
+
+    <p id="write-gate-status" class="write-gate-status">正在确认管理员身份……</p>
+
+    <main id="write-editor" class="write-shell" hidden>
+        <header class="write-heading">
+            <p id="write-mode">WRITING EDITOR</p>
+            <h1 id="write-page-title">New writing</h1>
+        </header>
+
+        <section id="draft-recovery" class="draft-recovery" hidden>
+            <p>检测到未保存的草稿，是否恢复？</p>
+            <div>
+                <button id="restore-draft" type="button">恢复草稿</button>
+                <button id="discard-draft" type="button">放弃草稿</button>
+            </div>
+        </section>
+
+        <form id="write-form" class="write-form">
+            <div class="write-fields-primary">
+                <label>TITLE<input id="write-title" type="text" required maxlength="240"></label>
+                <label>SUBTITLE / SUMMARY<input id="write-subtitle" type="text"></label>
+                <label>SHORT EXCERPT<textarea id="write-excerpt" rows="3"></textarea></label>
+            </div>
+
+            <div class="write-meta-grid">
+                <label>DATE<input id="write-date" type="date" required></label>
+                <label>CATEGORY<select id="write-category" required>
+                    <option value="game_review">AFTERGLOW / 游戏感想</option>
+                    <option value="essay">MOON NOTES / 随笔</option>
+                    <option value="dream">DREAM LETTERS / 梦向创作</option>
+                </select></label>
+                <label>TAGS<input id="write-tags" type="text" placeholder="用逗号分隔"></label>
+                <label>SORT ORDER<input id="write-sort" type="number"></label>
+                <label class="write-wide">COVER URL<input id="write-cover" type="url" placeholder="https://..."></label>
+                <label class="write-wide">OR UPLOAD COVER<input id="write-cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><small>最大 5MB</small></label>
+                <label class="write-check"><input id="write-pinned" type="checkbox"> PINNED / 置顶</label>
+                <label class="write-check"><input id="write-public" type="checkbox" checked> PUBLIC / 公开</label>
+            </div>
+
+            <section class="body-editor">
+                <div class="editor-toolbar" role="toolbar" aria-label="Markdown 格式工具">
+                    <button type="button" data-command="undo" title="撤销">↶</button>
+                    <button type="button" data-command="redo" title="重做">↷</button>
+                    <button type="button" data-prefix="# " title="标题">H1</button>
+                    <button type="button" data-prefix="## " title="二级标题">H2</button>
+                    <button type="button" data-wrap="**" title="粗体"><strong>B</strong></button>
+                    <button type="button" data-wrap="*" title="斜体"><em>I</em></button>
+                    <button type="button" data-wrap="~~" title="删除线"><s>S</s></button>
+                    <button type="button" data-prefix="> " title="引用">❯</button>
+                    <button type="button" data-prefix="- " title="无序列表">• LIST</button>
+                    <button type="button" data-prefix="1. " title="有序列表">1. LIST</button>
+                    <button type="button" data-command="link" title="链接">LINK</button>
+                    <button type="button" data-wrap="`" title="行内代码">CODE</button>
+                    <button type="button" data-command="rule" title="分隔线">—</button>
+                    <button id="toggle-preview" type="button">PREVIEW</button>
+                </div>
+                <textarea id="write-body" rows="24" required spellcheck="true" placeholder="从这里开始写……"></textarea>
+                <div id="write-preview" class="write-preview" hidden></div>
+                <div class="writing-stats"><span id="word-count">0 字</span><span id="reading-time">约 1 分钟阅读</span></div>
+            </section>
+
+            <p id="write-message" class="write-message" role="status"></p>
+            <div class="write-actions">
+                <button id="save-writing" class="write-save" type="submit">SAVE / 保存</button>
+                <button id="delete-writing" class="write-delete" type="button" hidden>DELETE / 删除</button>
+            </div>
+        </form>
+    </main>
+
+    <div id="mobile-write-toolbar" class="mobile-write-toolbar" aria-label="移动端写作工具栏" hidden>
+        <button type="button" data-prefix="# ">H</button>
+        <button type="button" data-wrap="**"><strong>B</strong></button>
+        <button type="button" data-wrap="*"><em>I</em></button>
+        <button type="button" data-prefix="> ">QUOTE</button>
+        <button type="button" data-prefix="- ">LIST</button>
+        <button type="button" data-command="link">LINK</button>
+        <button type="button" data-command="preview">VIEW</button>
+        <button type="button" data-command="save">SAVE</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="article-common.js"></script>
+    <script src="write.js"></script>
+</body>
+</html>

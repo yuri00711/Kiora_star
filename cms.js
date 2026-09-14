@@ -9,27 +9,19 @@
 
     const db = bridge.supabaseClient;
     const categoryLabels = {
-        game_review: "星间余响",
-        essay: "月下漫笔",
-        dream: "梦境来信",
-        archive: "拾光匣"
+        game_review: "AFTERGLOW",
+        essay: "MOON NOTES",
+        dream: "DREAM LETTERS"
     };
     const categoryMeta = {
         game_review: {
-            index: "01 / AFTERGLOW",
-            description: "游戏落幕后仍留在心里的感想，关于故事、角色与每一次心动。"
+            index: "01 / AFTERGLOW"
         },
         essay: {
-            index: "02 / MOON NOTES",
-            description: "日常里偶然泛起的念头，以及没有预先决定去处的自由书写。"
+            index: "02 / MOON NOTES"
         },
         dream: {
-            index: "03 / DREAM LETTERS",
-            description: "写给另一个世界的故事，让想象中的相遇拥有可以停留的形状。"
-        },
-        archive: {
-            index: "04 / KEEPSAKES",
-            description: "将舍不得遗失的句子妥善收藏，留住时间经过时落下的微光。"
+            index: "03 / DREAM LETTERS"
         }
     };
     const itemTables = {
@@ -43,7 +35,8 @@
         favorites: [],
         boundaries: [],
         otome: { axes: [], play_styles: [], favorite_elements: [], not_my_type: [] },
-        writings: []
+        writings: [],
+        settings: {}
     };
 
     const byId = (id) => document.getElementById(id);
@@ -146,12 +139,6 @@
         }).format(new Date(date));
     }
 
-    function toLocalDateTime(date) {
-        const source = date ? new Date(date) : new Date();
-        const local = new Date(source.getTime() - source.getTimezoneOffset() * 60000);
-        return local.toISOString().slice(0, 16);
-    }
-
     function create(tag, className, text) {
         const element = document.createElement(tag);
         if (className) element.className = className;
@@ -215,11 +202,203 @@
     }
 
     function updateAdminControls() {
-        document.querySelectorAll(".cms-admin-button").forEach((button) => {
-            button.classList.toggle("hidden", !isAdmin());
-        });
+        const controls = document.querySelector("[data-profile-admin-controls]");
+        const slots = document.querySelectorAll("[data-admin-slot]");
+        controls?.replaceChildren();
+        slots.forEach((slot) => slot.replaceChildren());
+
+        if (isAdmin()) {
+            const makeButton = (text, attributes) => {
+                const button = create("button", "cms-admin-button", text);
+                button.type = "button";
+                Object.entries(attributes).forEach(([key, value]) => { button.dataset[key] = value; });
+                return button;
+            };
+            controls?.append(
+                makeButton("EDIT PROFILE", { editProfile: "" }),
+                makeButton("EXPORT PROFILE", { exportProfileOpen: "" })
+            );
+            document.querySelector('[data-admin-slot="add-fandom"]')?.append(makeButton("＋ ADD", { addItem: "fandom" }));
+            document.querySelector('[data-admin-slot="add-favorite"]')?.append(makeButton("＋ ADD", { addItem: "favorite" }));
+            document.querySelector('[data-admin-slot="edit-otome"]')?.append(makeButton("EDIT", { editOtome: "" }));
+            document.querySelector('[data-admin-slot="add-boundary"]')?.append(makeButton("＋ ADD", { addItem: "boundary" }));
+            ["game_review", "essay", "dream"].forEach((category) => {
+                document.querySelector(`[data-admin-slot="add-writing-${category}"]`)
+                    ?.append(makeButton("＋ WRITE", { addWriting: category }));
+            });
+        }
         renderProfileCollections();
         renderWritings();
+    }
+
+    function loadExternalScript(source, ready) {
+        if (ready()) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const existing = document.querySelector(`script[src="${source}"]`);
+            if (existing) {
+                existing.addEventListener("load", resolve, { once: true });
+                existing.addEventListener("error", reject, { once: true });
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = source;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error("导出组件加载失败。"));
+            document.head.append(script);
+        });
+    }
+
+    function exportText(value) {
+        return String(value || "")
+            .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+            .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+            .replace(/[#>*_~`-]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function buildProfileExportSheet() {
+        const sheet = byId("profile-export-sheet");
+        sheet.replaceChildren();
+
+        const masthead = create("header", "profile-sheet-masthead");
+        const identity = create("div", "profile-sheet-identity");
+        identity.append(create("p", "", "KIORA.SPACE / PRIVATE ARCHIVE"));
+        identity.append(create("h1", "", state.profile.nickname || "PROFILE"));
+        if (state.profile.tagline) identity.append(create("p", "profile-sheet-tagline", state.profile.tagline));
+        const avatarUrl = safeUrl(state.profile.avatar_url);
+        if (avatarUrl) {
+            const image = create("img", "profile-sheet-avatar");
+            image.src = avatarUrl;
+            image.crossOrigin = "anonymous";
+            image.alt = "";
+            masthead.append(image);
+        } else {
+            masthead.append(create("div", "profile-sheet-avatar profile-sheet-avatar-placeholder", "✦"));
+        }
+        masthead.append(identity);
+        sheet.append(masthead);
+
+        if (state.profile.summary || state.profile.about_text) {
+            const about = create("section", "profile-sheet-section");
+            about.append(create("h2", "", "PROFILE"));
+            about.append(create("p", "", exportText(state.profile.summary || state.profile.about_text)));
+            sheet.append(about);
+        }
+
+        const columns = create("div", "profile-sheet-columns");
+        const collection = (title, items, describe) => {
+            if (!items.length) return;
+            const section = create("section", "profile-sheet-section");
+            section.append(create("h2", "", title));
+            items.forEach((item) => {
+                const row = create("article", "profile-sheet-row");
+                row.append(create("h3", "", item.name || item.label || ""));
+                const description = describe(item);
+                if (description) row.append(create("p", "", description));
+                section.append(row);
+            });
+            columns.append(section);
+        };
+        collection("FANDOMS", state.fandoms, (item) => [item.status, item.description].filter(Boolean).join(" / "));
+        collection("FAVORITES", state.favorites, (item) => [item.work_name, item.favorite_level, item.note].filter(Boolean).join(" / "));
+        collection("NG", state.boundaries, (item) => item.kind || "");
+
+        const otomeTags = [
+            ...(state.otome.play_styles || []),
+            ...(state.otome.favorite_elements || []),
+            ...(state.otome.not_my_type || [])
+        ];
+        if (otomeTags.length || state.otome.axes?.length) {
+            const otome = create("section", "profile-sheet-section");
+            otome.append(create("h2", "", "OTOME PROFILE"));
+            (state.otome.axes || []).forEach((axis) => {
+                otome.append(create("p", "profile-sheet-axis", `${axis.left || ""}  ·  ${axis.value || 3}/5  ·  ${axis.right || ""}`));
+            });
+            if (otomeTags.length) otome.append(create("p", "profile-sheet-tags", otomeTags.join(" / ")));
+            columns.append(otome);
+        }
+        sheet.append(columns);
+
+        if (state.profile.free_space_content) {
+            const free = create("section", "profile-sheet-section profile-sheet-free");
+            free.append(create("h2", "", state.profile.free_space_title || "FREE SPACE"));
+            free.append(create("p", "", exportText(state.profile.free_space_content)));
+            sheet.append(free);
+        }
+
+        const footer = create("footer", "profile-sheet-footer");
+        footer.append(create("span", "", "KIORA.SPACE"));
+        footer.append(create("span", "", byId("profile-updated")?.textContent || ""));
+        sheet.append(footer);
+        return sheet;
+    }
+
+    async function renderProfileCanvas() {
+        await loadExternalScript(
+            "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",
+            () => typeof window.html2canvas === "function"
+        );
+        const sheet = buildProfileExportSheet();
+        sheet.classList.add("is-rendering");
+        await Promise.all(Array.from(sheet.querySelectorAll("img")).map((image) => image.decode?.().catch(() => {})));
+        const canvas = await window.html2canvas(sheet, {
+            backgroundColor: "#f5eff4",
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        sheet.classList.remove("is-rendering");
+        return canvas;
+    }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function exportProfile(format) {
+        if (!isAdmin()) return;
+        showMessage("profile-export-message", "正在生成资料卡……");
+        try {
+            const canvas = await renderProfileCanvas();
+            if (format === "png") {
+                const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+                downloadBlob(blob, `kiora-profile-${formatCompactDate(new Date())}.png`);
+            } else {
+                await loadExternalScript(
+                    "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js",
+                    () => Boolean(window.jspdf?.jsPDF)
+                );
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+                const pageWidth = 210;
+                const pageHeight = 297;
+                const pageHeightPixels = Math.floor(canvas.width * pageHeight / pageWidth);
+                let offset = 0;
+                let page = 0;
+                while (offset < canvas.height) {
+                    if (page > 0) pdf.addPage();
+                    const sliceHeight = Math.min(pageHeightPixels, canvas.height - offset);
+                    const slice = document.createElement("canvas");
+                    slice.width = canvas.width;
+                    slice.height = sliceHeight;
+                    slice.getContext("2d").drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+                    pdf.addImage(slice.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageWidth, sliceHeight * pageWidth / canvas.width);
+                    offset += sliceHeight;
+                    page += 1;
+                }
+                pdf.save(`kiora-profile-${formatCompactDate(new Date())}.pdf`);
+            }
+            showMessage("profile-export-message", "导出完成。");
+        } catch (error) {
+            byId("profile-export-sheet")?.classList.remove("is-rendering");
+            showMessage("profile-export-message", `导出失败：${error.message}`, true);
+        }
     }
 
     // Sidebar
@@ -268,10 +447,11 @@
             db.from("profile_fandoms").select("*").order("sort_order", { ascending: true, nullsFirst: false }).order("created_at"),
             db.from("profile_favorites").select("*").order("sort_order", { ascending: true, nullsFirst: false }).order("created_at"),
             db.from("profile_boundaries").select("*").order("sort_order", { ascending: true, nullsFirst: false }).order("created_at"),
-            db.from("otome_profile").select("*").eq("id", 1).maybeSingle()
+            db.from("otome_profile").select("*").eq("id", 1).maybeSingle(),
+            db.from("site_settings").select("*").eq("id", 1).maybeSingle()
         ]);
 
-        const firstError = queries.find((result) => result.error)?.error;
+        const firstError = queries.slice(0, 5).find((result) => result.error)?.error;
         if (firstError) {
             showMessage("profile-status", errorMessage(firstError), true);
             byId("profile-content")?.classList.add("hidden");
@@ -283,6 +463,8 @@
         state.favorites = queries[2].data || [];
         state.boundaries = queries[3].data || [];
         state.otome = queries[4].data || state.otome;
+        state.settings = queries[5].error ? {} : (queries[5].data || {});
+        if (queries[5].error) console.warn("site_settings is unavailable; run supabase-site-settings-migration.sql.", queries[5].error);
         showMessage("profile-status", "");
         byId("profile-status")?.classList.add("hidden");
         byId("profile-content")?.classList.remove("hidden");
@@ -290,28 +472,9 @@
     }
 
     function renderProfile() {
-        const profile = state.profile;
-        byId("profile-nickname").textContent = profile.nickname || (isAdmin() ? "尚未填写名字" : "");
-        byId("profile-tagline").textContent = profile.tagline || "";
-        byId("profile-summary").textContent = profile.summary || "";
-        byId("profile-about-text").innerHTML = profile.about_text
-            ? markdownToHtml(profile.about_text)
-            : `<p class="cms-empty">${isAdmin() ? "点击 EDIT PROFILE 写下完整的自我介绍。" : ""}</p>`;
-        byId("free-space-content").innerHTML = profile.free_space_content
-            ? markdownToHtml(profile.free_space_content)
+        byId("free-space-content").innerHTML = state.profile.free_space_content
+            ? markdownToHtml(state.profile.free_space_content)
             : `<p class="cms-empty">${isAdmin() ? "这里还没有留下文字。" : ""}</p>`;
-
-        const avatar = byId("profile-avatar");
-        const placeholder = byId("profile-avatar-placeholder");
-        const avatarUrl = safeUrl(profile.avatar_url);
-        avatar.classList.toggle("hidden", !avatarUrl);
-        placeholder.classList.toggle("hidden", Boolean(avatarUrl));
-        if (avatarUrl) {
-            avatar.src = avatarUrl;
-            avatar.alt = profile.nickname ? `${profile.nickname} 的头像` : "Profile avatar";
-        } else {
-            avatar.removeAttribute("src");
-        }
         renderProfileCollections();
         renderOtome();
         renderProfileSidebarMeta();
@@ -325,17 +488,31 @@
         ].filter((tag, index, all) => tag && all.indexOf(tag) === index).slice(0, 10);
         renderTags("profile-sidebar-tags", tags);
 
-        const updated = byId("profile-updated");
-        if (updated) {
-            const dates = [state.profile.updated_at, state.otome.updated_at]
-                .filter(Boolean)
-                .map((date) => new Date(date))
-                .filter((date) => !Number.isNaN(date.getTime()));
-            const latest = dates.sort((a, b) => b - a)[0];
-            updated.textContent = latest ? `LAST UPDATED / ${formatCompactDate(latest)}` : "";
-        }
-
+        renderUpdatedDate();
         renderCurrentGame(bridge.games || []);
+    }
+
+    function renderUpdatedDate() {
+        const updated = byId("profile-updated");
+        if (!updated) return;
+
+        const manual = state.settings.manual_updated_at;
+        const automaticCandidates = [
+            state.settings.content_updated_at,
+            state.profile.updated_at,
+            state.otome.updated_at,
+            ...state.fandoms.map((item) => item.updated_at || item.created_at),
+            ...state.favorites.map((item) => item.updated_at || item.created_at),
+            ...state.boundaries.map((item) => item.updated_at || item.created_at),
+            ...state.writings.map((item) => item.updated_at || item.published_at || item.created_at),
+            ...(bridge.games || []).map((item) => item.updated_at || item.created_at)
+        ].filter(Boolean)
+            .map((date) => new Date(date))
+            .filter((date) => !Number.isNaN(date.getTime()))
+            .sort((a, b) => b - a);
+        const finalDate = manual || automaticCandidates[0];
+        updated.textContent = finalDate ? `UPDATED / ${formatCompactDate(finalDate)}` : "";
+        updated.dataset.updateMode = manual ? "manual" : "automatic";
     }
 
     function renderCurrentGame(games) {
@@ -345,6 +522,7 @@
 
     window.addEventListener("yuri:gameschange", (event) => {
         renderCurrentGame(event.detail?.games || []);
+        renderUpdatedDate();
     });
 
     function adminEditButton(kind, item) {
@@ -488,6 +666,11 @@
         byId("profile-edit-about").value = state.profile.about_text || "";
         byId("profile-edit-free-title").value = state.profile.free_space_title || "";
         byId("profile-edit-free-content").value = state.profile.free_space_content || "";
+        byId("site-manual-updated-at").value = state.settings.manual_updated_at || "";
+        const automatic = byId("profile-updated")?.textContent?.replace("UPDATED / ", "") || "—";
+        byId("site-updated-mode").textContent = state.settings.manual_updated_at
+            ? `当前使用手动日期：${formatCompactDate(state.settings.manual_updated_at)}`
+            : `当前为自动更新：${automatic}`;
         showMessage("profile-form-message", "");
         bridge.openModal(byId("profile-modal"));
     }
@@ -518,9 +701,35 @@
             showMessage("profile-form-message", `保存失败：${error.message}`, true);
             return;
         }
+        const { error: settingsError } = await db.from("site_settings").upsert({
+            id: 1,
+            manual_updated_at: optional(value("site-manual-updated-at"))
+        }, { onConflict: "id" });
+        if (settingsError) {
+            showMessage("profile-form-message", `更新时间保存失败：${settingsError.message}。请先运行 supabase-site-settings-migration.sql。`, true);
+            return;
+        }
         await removeReplacedImage(state.profile.avatar_url, avatarUrl);
         bridge.closeModal(byId("profile-modal"));
         await loadProfile();
+    });
+
+    byId("restore-auto-updated")?.addEventListener("click", async () => {
+        if (!isAdmin()) return;
+        showMessage("profile-form-message", "正在恢复自动更新时间…");
+        const { error } = await db.from("site_settings").upsert({
+            id: 1,
+            manual_updated_at: null
+        }, { onConflict: "id" });
+        if (error) {
+            showMessage("profile-form-message", `恢复失败：${error.message}。请先运行 supabase-site-settings-migration.sql。`, true);
+            return;
+        }
+        state.settings.manual_updated_at = null;
+        byId("site-manual-updated-at").value = "";
+        await loadProfile();
+        byId("site-updated-mode").textContent = `已恢复自动更新：${byId("profile-updated")?.textContent?.replace("UPDATED / ", "") || "—"}`;
+        showMessage("profile-form-message", "已恢复自动更新时间。");
     });
 
     function itemConfig(kind) {
@@ -732,6 +941,7 @@
         });
         let query = db.from("writings")
             .select("*")
+            .neq("category", "archive")
             .order("is_pinned", { ascending: false })
             .order("sort_order", { ascending: true, nullsFirst: false })
             .order("published_at", { ascending: false });
@@ -745,6 +955,7 @@
         }
         state.writings = data || [];
         renderWritings();
+        renderUpdatedDate();
     }
 
     function writingAction(label, action, id) {
@@ -831,7 +1042,7 @@
 
         byId("writing-archive-index").textContent = meta.index;
         byId("writing-archive-title").textContent = categoryLabels[category];
-        byId("writing-archive-description").textContent = meta.description;
+        byId("writing-archive-description").textContent = "";
         const years = byId("writing-archive-years");
         years.replaceChildren();
 
@@ -869,107 +1080,29 @@
 
     function openWritingEditor(category, writing = null) {
         if (!isAdmin()) return;
-        byId("writing-form").reset();
-        byId("writing-id").value = writing?.id || "";
-        byId("writing-modal-title").textContent = writing ? "Edit writing" : "New writing";
-        byId("writing-title").value = writing?.title || "";
-        byId("writing-subtitle").value = writing?.subtitle || "";
-        byId("writing-excerpt").value = writing?.excerpt || "";
-        byId("writing-body").value = writing?.body || "";
-        byId("writing-category").value = writing?.category || category;
-        byId("writing-published-at").value = toLocalDateTime(writing?.published_at);
-        byId("writing-cover").value = writing?.cover_url || "";
-        byId("writing-tags").value = (writing?.tags || []).join(", ");
-        byId("writing-sort").value = writing?.sort_order ?? "";
-        byId("writing-pinned").checked = Boolean(writing?.is_pinned);
-        byId("writing-public").checked = writing ? Boolean(writing.is_public) : true;
-        byId("writing-delete").classList.toggle("hidden", !writing);
-        showMessage("writing-form-message", "");
-        bridge.openModal(byId("writing-modal"));
+        sessionStorage.setItem("yuri:return-scroll", String(window.scrollY));
+        const query = writing?.id
+            ? `id=${encodeURIComponent(writing.id)}`
+            : `type=${encodeURIComponent(category || "essay")}`;
+        window.location.href = `write.html?${query}`;
     }
 
     function openReading(writing) {
-        const coverUrl = safeUrl(writing.cover_url);
-        byId("reading-cover-wrap").classList.toggle("hidden", !coverUrl);
-        if (coverUrl) {
-            byId("reading-cover").src = coverUrl;
-            byId("reading-cover").alt = writing.title;
-        }
-        byId("reading-category").textContent = categoryLabels[writing.category] || "WRITING";
-        byId("reading-title").textContent = writing.title;
-        byId("reading-subtitle").textContent = writing.subtitle || "";
-        byId("reading-date").textContent = formatDate(writing.published_at);
-        byId("reading-date").dataset.desktopDate = formatCompactDate(writing.published_at);
-        const tags = byId("reading-tags");
-        tags.replaceChildren();
-        (writing.tags || []).forEach((tag) => tags.append(create("span", "", tag)));
-        byId("reading-body").innerHTML = markdownToHtml(writing.body);
-        byId("reading-updated").textContent = writing.updated_at
-            ? `LAST REVISED / ${formatDate(writing.updated_at)}`
-            : "";
-        byId("reading-updated").dataset.desktopText = writing.updated_at
-            ? `UPDATED / ${formatCompactDate(writing.updated_at)}`
-            : "";
-        bridge.openModal(byId("reading-modal"));
+        sessionStorage.setItem("yuri:return-scroll", String(window.scrollY));
+        sessionStorage.setItem("yuri:return-category", writing.category || "");
+        window.location.href = `read.html?id=${encodeURIComponent(writing.id)}&from=${encodeURIComponent(writing.category || "")}`;
     }
-
-    byId("writing-form")?.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        if (!isAdmin()) return;
-        const id = value("writing-id");
-        const previousWriting = id ? findWriting(id) : null;
-        let coverUrl;
-        try {
-            coverUrl = await uploadImage("writing-cover-file", "writings", value("writing-cover"));
-        } catch (error) {
-            showMessage("writing-form-message", `上传失败：${error.message}`, true);
-            return;
-        }
-        const payload = {
-            title: value("writing-title").trim(),
-            subtitle: optional(value("writing-subtitle")),
-            excerpt: optional(value("writing-excerpt")),
-            body: value("writing-body").trim(),
-            category: value("writing-category"),
-            published_at: new Date(value("writing-published-at")).toISOString(),
-            cover_url: coverUrl,
-            tags: splitTags(value("writing-tags")),
-            sort_order: numberOrNull(value("writing-sort")),
-            is_pinned: byId("writing-pinned").checked,
-            is_public: byId("writing-public").checked
-        };
-        showMessage("writing-form-message", "Saving…");
-        const query = id
-            ? db.from("writings").update(payload).eq("id", id)
-            : db.from("writings").insert(payload);
-        const { error } = await query;
-        if (error) {
-            showMessage("writing-form-message", `保存失败：${error.message}`, true);
-            return;
-        }
-        await removeReplacedImage(previousWriting?.cover_url, coverUrl);
-        bridge.closeModal(byId("writing-modal"));
-        await loadWritings();
-    });
-
-    async function deleteWriting(writing, fromModal = false) {
-        if (!isAdmin() || !writing || !window.confirm(`确定删除《${writing.title}》吗？`)) return;
-        const { error } = await db.from("writings").delete().eq("id", writing.id);
-        if (error) {
-            if (fromModal) showMessage("writing-form-message", `删除失败：${error.message}`, true);
-            else window.alert(`删除失败：${error.message}`);
-            return;
-        }
-        await removeReplacedImage(writing.cover_url, null);
-        if (fromModal) bridge.closeModal(byId("writing-modal"));
-        await loadWritings();
-    }
-
-    byId("writing-delete")?.addEventListener("click", () => {
-        deleteWriting(findWriting(value("writing-id")), true);
-    });
 
     document.addEventListener("click", async (event) => {
+        if (event.target.closest("[data-export-profile-open]")) {
+            if (!isAdmin()) return;
+            showMessage("profile-export-message", "");
+            return bridge.openModal(byId("profile-export-modal"));
+        }
+
+        const exportAction = event.target.closest("[data-profile-export]");
+        if (exportAction) return exportProfile(exportAction.dataset.profileExport);
+
         const viewCategory = event.target.closest("[data-view-writing-category]");
         if (viewCategory) return openWritingArchive(viewCategory.dataset.viewWritingCategory);
 
@@ -1017,6 +1150,10 @@
     });
 
     updateAdminControls();
-    loadProfile();
-    loadWritings();
+    Promise.all([loadProfile(), loadWritings()]).then(() => {
+        const restore = Number(sessionStorage.getItem("yuri:restore-scroll"));
+        if (!Number.isFinite(restore) || restore < 0) return;
+        sessionStorage.removeItem("yuri:restore-scroll");
+        requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: restore, behavior: "auto" })));
+    });
 })();

@@ -203,9 +203,11 @@ const gameForm =
         "game-form"
     );
 
-const addGameButton =
+let addGameButton = null;
+
+const gameAdminActions =
     document.getElementById(
-        "add-game-btn"
+        "game-admin-actions"
     );
 
 const deleteGameButton =
@@ -451,25 +453,17 @@ supabaseClient
 
 
 function updateAdminUI() {
+    gameAdminActions?.replaceChildren();
+    addGameButton = null;
 
-    if (!addGameButton) return;
-
-    if (currentUser) {
-
-        addGameButton
-            .classList
-            .remove(
-                "hidden"
-            );
-
-    } else {
-
-        addGameButton
-            .classList
-            .add(
-                "hidden"
-            );
-
+    if (currentUser && gameAdminActions) {
+        addGameButton = document.createElement("button");
+        addGameButton.id = "add-game-btn";
+        addGameButton.className = "archive-admin-button";
+        addGameButton.type = "button";
+        addGameButton.textContent = "＋ ADD";
+        addGameButton.addEventListener("click", () => openGameEditor(null));
+        gameAdminActions.append(addGameButton);
     }
 
     window.dispatchEvent(
@@ -825,26 +819,6 @@ function renderGames(games) {
         new CustomEvent("yuri:gameschange", {
             detail: { games: games.slice() }
         })
-    );
-
-}
-
-
-/* =========================================
-   NEW GAME
-========================================= */
-
-if (addGameButton) {
-
-    addGameButton.addEventListener(
-        "click",
-        () => {
-
-            openGameEditor(
-                null
-            );
-
-        }
     );
 
 }

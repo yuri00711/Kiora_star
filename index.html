@@ -56,10 +56,10 @@
             </div>
             <p class="site-sidebar-label">A LITTLE UNIVERSE</p>
             <nav>
-                <a href="#about" data-section="about"><span>01</span>ABOUT <i>✦</i></a>
-                <a href="#games" data-section="games"><span>02</span>GAMES <i>☆</i></a>
-                <a href="#writing" data-section="writing"><span>03</span>WRITING <i>☾</i></a>
-                <a href="#archive" data-section="archive"><span>04</span>ARCHIVE <i>◇</i></a>
+                <a href="#about" data-section="about">PROFILE <i>✦</i></a>
+                <a href="#games" data-section="games">GAMES <i>☆</i></a>
+                <a href="#writing" data-section="writing">WRITING <i>☾</i></a>
+                <a href="#archive" data-section="archive">ARCHIVE <i>◇</i></a>
             </nav>
             <p class="site-sidebar-footer">星の降る場所で、好きなものを。</p>
         </aside>
@@ -89,8 +89,6 @@
         <div class="hero-top intro intro-1">
 
             <span>YŪRI</span>
-
-            <span>01</span>
 
         </div>
 
@@ -154,13 +152,8 @@
         id="about"
     >
 
-        <div class="section-number">
-            02
-        </div>
-
-
         <h2>
-            ABOUT
+            PROFILE
         </h2>
 
 
@@ -168,37 +161,16 @@
             <div>
                 <p class="archive-subtitle">A portrait made of little things I love.</p>
             </div>
-            <button class="cms-admin-button hidden" type="button" data-edit-profile>EDIT PROFILE</button>
+            <span class="profile-admin-controls" data-profile-admin-controls></span>
         </div>
 
         <div id="profile-status" class="cms-status" role="status">Loading profile…</div>
 
         <div id="profile-content" class="profile-content hidden">
-            <section class="profile-intro-card">
-                <div class="profile-avatar-frame">
-                    <img id="profile-avatar" class="profile-avatar hidden" alt="">
-                    <span id="profile-avatar-placeholder" class="profile-avatar-placeholder" aria-hidden="true">✦</span>
-                </div>
-                <div class="profile-intro-copy">
-                    <p class="profile-kicker">PROFILE / 01</p>
-                    <h3 id="profile-nickname"></h3>
-                    <p id="profile-tagline" class="profile-tagline"></p>
-                    <p id="profile-summary" class="profile-summary"></p>
-                </div>
-            </section>
-
-            <section class="profile-block profile-about-block">
-                <div class="profile-block-heading">
-                    <div><p>ABOUT ME</p></div>
-                    <span aria-hidden="true">✦</span>
-                </div>
-                <div id="profile-about-text" class="rich-reading profile-about-text"></div>
-            </section>
-
             <section class="profile-block">
                 <div class="profile-block-heading">
                     <div><p>FANDOMS</p></div>
-                    <button class="cms-admin-button hidden" type="button" data-add-item="fandom">＋ ADD</button>
+                    <span data-admin-slot="add-fandom"></span>
                 </div>
                 <div id="profile-fandoms" class="fandom-grid"></div>
             </section>
@@ -206,7 +178,7 @@
             <section class="profile-block">
                 <div class="profile-block-heading">
                     <div><p>FAVORITES</p></div>
-                    <button class="cms-admin-button hidden" type="button" data-add-item="favorite">＋ ADD</button>
+                    <span data-admin-slot="add-favorite"></span>
                 </div>
                 <div id="profile-favorites" class="favorite-grid"></div>
             </section>
@@ -214,7 +186,7 @@
             <section class="profile-block otome-profile-block">
                 <div class="profile-block-heading">
                     <div><p>OTOME PROFILE</p></div>
-                    <button class="cms-admin-button hidden" type="button" data-edit-otome>EDIT</button>
+                    <span data-admin-slot="edit-otome"></span>
                 </div>
                 <div id="otome-axes" class="otome-axes"></div>
                 <div class="otome-tag-groups">
@@ -227,7 +199,7 @@
             <section class="profile-block">
                 <div class="profile-block-heading">
                     <div><p>NG</p></div>
-                    <button class="cms-admin-button hidden" type="button" data-add-item="boundary">＋ ADD</button>
+                    <span data-admin-slot="add-boundary"></span>
                 </div>
                 <div id="profile-boundaries" class="boundary-list"></div>
             </section>
@@ -266,18 +238,10 @@
     ========================= -->
     <section class="content-section games-archive reveal" id="games">
 
-        <div class="section-number">
-            03
-        </div>
-
         <div class="archive-heading">
 
             <div>
                 <h2>GAMES</h2>
-
-                <p class="section-title">
-                    乙女游戏存档
-                </p>
 
                 <p class="archive-subtitle">
                     A quiet archive of stories I loved.
@@ -285,13 +249,7 @@
             </div>
 
             <!-- 登录后才会出现 -->
-            <button
-                id="add-game-btn"
-                class="archive-admin-button hidden"
-                type="button"
-            >
-                ＋ ADD
-            </button>
+            <span id="game-admin-actions"></span>
 
         </div>
 
@@ -311,38 +269,19 @@
         id="writing"
     >
 
-        <div class="section-number">
-            04
-        </div>
-
-
         <h2>
             WRITING
         </h2>
 
-
-        <p class="section-title">
-            写下来的东西
-        </p>
-
-
-        <p class="section-text writing-intro">
-
-            把故事结束后的余温、路过心间的念头，
-            与只在梦里发生过的相遇，轻轻收进这里。
-
-        </p>
 
         <div class="writing-grid">
 
             <article class="writing-card writing-category-game">
                 <div class="writing-card-mark">✦</div>
                 <p class="writing-card-index">01 / AFTERGLOW</p>
-                <h3>星间余响</h3>
-                <p>游戏落幕后仍留在心里的感想，关于故事、角色与每一次心动。</p>
                 <div class="writing-card-note">
                     <span>游戏感想</span>
-                    <button class="cms-admin-button hidden" type="button" data-add-writing="game_review">＋ ADD</button>
+                    <span data-admin-slot="add-writing-game_review"></span>
                 </div>
                 <div class="writing-article-list" data-writing-list="game_review"></div>
                 <button class="writing-view-all" type="button" data-view-writing-category="game_review">VIEW ALL →</button>
@@ -351,11 +290,9 @@
             <article class="writing-card writing-category-essay">
                 <div class="writing-card-mark">☾</div>
                 <p class="writing-card-index">02 / MOON NOTES</p>
-                <h3>月下漫笔</h3>
-                <p>日常里偶然泛起的念头，以及没有预先决定去处的自由书写。</p>
                 <div class="writing-card-note">
                     <span>随笔</span>
-                    <button class="cms-admin-button hidden" type="button" data-add-writing="essay">＋ ADD</button>
+                    <span data-admin-slot="add-writing-essay"></span>
                 </div>
                 <div class="writing-article-list" data-writing-list="essay"></div>
                 <button class="writing-view-all" type="button" data-view-writing-category="essay">VIEW ALL →</button>
@@ -364,27 +301,12 @@
             <article class="writing-card writing-category-dream">
                 <div class="writing-card-mark">◇</div>
                 <p class="writing-card-index">03 / DREAM LETTERS</p>
-                <h3>梦境来信</h3>
-                <p>写给另一个世界的故事，让想象中的相遇拥有可以停留的形状。</p>
                 <div class="writing-card-note">
                     <span>梦向创作</span>
-                    <button class="cms-admin-button hidden" type="button" data-add-writing="dream">＋ ADD</button>
+                    <span data-admin-slot="add-writing-dream"></span>
                 </div>
                 <div class="writing-article-list" data-writing-list="dream"></div>
                 <button class="writing-view-all" type="button" data-view-writing-category="dream">VIEW ALL →</button>
-            </article>
-
-            <article class="writing-card writing-category-archive">
-                <div class="writing-card-mark">✧</div>
-                <p class="writing-card-index">04 / KEEPSAKES</p>
-                <h3>拾光匣</h3>
-                <p>将舍不得遗失的句子妥善收藏，留住时间经过时落下的微光。</p>
-                <div class="writing-card-note">
-                    <span>不想让它们消失的文字</span>
-                    <button class="cms-admin-button hidden" type="button" data-add-writing="archive">＋ ADD</button>
-                </div>
-                <div class="writing-article-list" data-writing-list="archive"></div>
-                <button class="writing-view-all" type="button" data-view-writing-category="archive">VIEW ALL →</button>
             </article>
 
         </div>
@@ -402,27 +324,10 @@
         id="archive"
     >
 
-        <div class="section-number">
-            05
-        </div>
-
-
         <h2>
             ARCHIVE
         </h2>
 
-
-        <p class="section-title">
-            收藏与记录
-        </p>
-
-
-        <p class="section-text">
-
-            喜欢的图片、音乐、句子，
-            以及偶尔想保存下来的瞬间。
-
-        </p>
 
     </section>
 
@@ -789,6 +694,12 @@
                     <textarea id="profile-edit-free-content" rows="9"></textarea>
                     <small class="format-help">支持段落、# 标题、&gt; 引用、**粗体**、*斜体*、![说明](图片网址) 与 [文字](链接)。</small>
                 </label>
+                <fieldset class="updated-date-settings">
+                    <legend>UPDATED DATE</legend>
+                    <label>手动更新时间<input id="site-manual-updated-at" type="date"></label>
+                    <small id="site-updated-mode" class="format-help"></small>
+                    <button id="restore-auto-updated" class="cms-inline-button updated-date-reset" type="button">恢复自动更新</button>
+                </fieldset>
                 <p id="profile-form-message" class="form-message"></p>
                 <button class="modal-primary-button" type="submit">SAVE PROFILE</button>
             </form>
@@ -841,65 +752,6 @@
         </div>
     </div>
 
-    <!-- =========================
-         WRITING CMS
-    ========================= -->
-    <div id="writing-modal" class="archive-modal">
-        <div class="archive-modal-backdrop"></div>
-        <div class="archive-modal-card cms-modal-card writing-modal-card">
-            <button class="modal-close" data-close-modal type="button">×</button>
-            <p class="modal-label">WRITING EDITOR</p>
-            <h3 id="writing-modal-title">New writing</h3>
-            <form id="writing-form">
-                <input id="writing-id" type="hidden">
-                <label>TITLE<input id="writing-title" type="text" required></label>
-                <label>SUBTITLE / SUMMARY<input id="writing-subtitle" type="text"></label>
-                <label>SHORT EXCERPT<textarea id="writing-excerpt" rows="3"></textarea></label>
-                <label>
-                    BODY
-                    <textarea id="writing-body" rows="15" required></textarea>
-                    <small class="format-help">支持段落、# 标题、&gt; 引用、**粗体**、*斜体*、![说明](图片网址) 与 [文字](链接)。</small>
-                </label>
-                <div class="form-grid">
-                    <label>CATEGORY<select id="writing-category" required>
-                        <option value="game_review">星间余响</option>
-                        <option value="essay">月下漫笔</option>
-                        <option value="dream">梦境来信</option>
-                        <option value="archive">拾光匣</option>
-                    </select></label>
-                    <label>PUBLISHED AT<input id="writing-published-at" type="datetime-local" required></label>
-                </div>
-                <label>COVER IMAGE URL<input id="writing-cover" type="url" placeholder="https://..."></label>
-                <label>OR UPLOAD COVER<input id="writing-cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><small class="format-help">最大 5MB。</small></label>
-                <label>TAGS（用逗号分隔）<input id="writing-tags" type="text"></label>
-                <label>SORT ORDER<input id="writing-sort" type="number"></label>
-                <div class="cms-check-row">
-                    <label><input id="writing-pinned" type="checkbox"> PINNED / 置顶</label>
-                    <label><input id="writing-public" type="checkbox" checked> PUBLIC / 公开</label>
-                </div>
-                <p id="writing-form-message" class="form-message"></p>
-                <div class="editor-actions">
-                    <button class="modal-primary-button" type="submit">SAVE WRITING</button>
-                    <button id="writing-delete" class="modal-danger-button hidden" type="button">DELETE WRITING</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="reading-modal" class="archive-modal reading-modal">
-        <div class="archive-modal-backdrop"></div>
-        <article class="archive-modal-card reading-modal-card">
-            <button class="modal-close" data-close-modal type="button">×</button>
-            <div id="reading-cover-wrap" class="reading-cover-wrap hidden"><img id="reading-cover" alt=""></div>
-            <p id="reading-category" class="modal-label"></p>
-            <h3 id="reading-title"></h3>
-            <p id="reading-subtitle" class="reading-subtitle"></p>
-            <div class="reading-meta"><time id="reading-date"></time><div id="reading-tags" class="soft-tags"></div></div>
-            <div id="reading-body" class="rich-reading reading-body"></div>
-            <p id="reading-updated" class="reading-updated"></p>
-        </article>
-    </div>
-
     <div id="writing-archive-modal" class="archive-modal writing-archive-modal">
         <div class="archive-modal-backdrop"></div>
         <section class="archive-modal-card writing-archive-modal-card" aria-labelledby="writing-archive-title">
@@ -910,6 +762,23 @@
             <div id="writing-archive-years" class="writing-archive-years"></div>
         </section>
     </div>
+
+    <div id="profile-export-modal" class="archive-modal">
+        <div class="archive-modal-backdrop"></div>
+        <section class="archive-modal-card profile-export-options" aria-labelledby="profile-export-title">
+            <button class="modal-close" data-close-modal type="button">×</button>
+            <p class="modal-label">PROFILE EXPORT</p>
+            <h3 id="profile-export-title">Export profile sheet</h3>
+            <p class="modal-description">资料只在当前浏览器中生成，不会上传到第三方服务器。</p>
+            <div class="profile-export-actions">
+                <button type="button" data-profile-export="png">IMAGE / PNG</button>
+                <button type="button" data-profile-export="pdf">PDF</button>
+            </div>
+            <p id="profile-export-message" class="form-message"></p>
+        </section>
+    </div>
+
+    <div id="profile-export-sheet" class="profile-export-sheet" aria-hidden="true"></div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
