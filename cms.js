@@ -261,30 +261,47 @@
         const sheet = byId("profile-export-sheet");
         sheet.replaceChildren();
 
+        const issueDate = formatCompactDate(new Date());
         const masthead = create("header", "profile-sheet-masthead");
-        const identity = create("div", "profile-sheet-identity");
-        identity.append(create("p", "", "KIORA.SPACE / PRIVATE ARCHIVE"));
-        identity.append(create("h1", "", state.profile.nickname || "PROFILE"));
-        if (state.profile.tagline) identity.append(create("p", "profile-sheet-tagline", state.profile.tagline));
+        masthead.append(
+            create("span", "profile-sheet-publication", "KIORA.SPACE"),
+            create("span", "profile-sheet-edition", "PERSONAL ARCHIVE / 私人記録"),
+            create("span", "profile-sheet-issue", `ISSUE ${issueDate}`)
+        );
+        sheet.append(masthead);
+
+        const spread = create("div", "profile-sheet-spread");
+        const portraitColumn = create("aside", "profile-sheet-portrait-column");
+        const portraitFrame = create("figure", "profile-sheet-portrait-frame");
         const avatarUrl = safeUrl(state.profile.avatar_url);
         if (avatarUrl) {
             const image = create("img", "profile-sheet-avatar");
             image.src = avatarUrl;
             image.crossOrigin = "anonymous";
             image.alt = "";
-            masthead.append(image);
+            portraitFrame.append(image);
         } else {
-            masthead.append(create("div", "profile-sheet-avatar profile-sheet-avatar-placeholder", "✦"));
+            portraitFrame.append(create("div", "profile-sheet-avatar profile-sheet-avatar-placeholder", "✦"));
         }
-        masthead.append(identity);
-        sheet.append(masthead);
+        portraitFrame.append(create("figcaption", "", "PORTRAIT / PERSONAL RECORD"));
+        portraitColumn.append(portraitFrame);
 
-        if (state.profile.summary || state.profile.about_text) {
-            const about = create("section", "profile-sheet-section");
-            about.append(create("h2", "", "PROFILE"));
-            about.append(create("p", "", exportText(state.profile.summary || state.profile.about_text)));
-            sheet.append(about);
+        const identity = create("div", "profile-sheet-identity");
+        identity.append(create("p", "profile-sheet-overline", "PROFILE  —  NO. 01"));
+        identity.append(create("h1", "", state.profile.nickname || "PROFILE"));
+        if (state.profile.tagline) identity.append(create("p", "profile-sheet-tagline", state.profile.tagline));
+        if (state.profile.summary) identity.append(create("p", "profile-sheet-summary", exportText(state.profile.summary)));
+        portraitColumn.append(identity);
+        spread.append(portraitColumn);
+
+        const editorial = create("main", "profile-sheet-editorial");
+        const editorialLead = create("section", "profile-sheet-lead");
+        editorialLead.append(create("p", "profile-sheet-kicker", "A SMALL INDEX OF THE THINGS I LOVE"));
+        editorialLead.append(create("h2", "", "静かな記録、好きなものの輪郭。"));
+        if (state.profile.about_text) {
+            editorialLead.append(create("p", "profile-sheet-prose", exportText(state.profile.about_text)));
         }
+        editorial.append(editorialLead);
 
         const columns = create("div", "profile-sheet-columns");
         const collection = (title, items, describe) => {
@@ -304,31 +321,52 @@
         collection("FAVORITES", state.favorites, (item) => [item.work_name, item.favorite_level, item.note].filter(Boolean).join(" / "));
         collection("NG", state.boundaries, (item) => item.kind || "");
 
-        const otomeTags = [
-            ...(state.otome.play_styles || []),
-            ...(state.otome.favorite_elements || []),
-            ...(state.otome.not_my_type || [])
-        ];
-        if (otomeTags.length || state.otome.axes?.length) {
-            const otome = create("section", "profile-sheet-section");
+        const hasOtomeTags = state.otome.play_styles?.length || state.otome.favorite_elements?.length || state.otome.not_my_type?.length;
+        if (hasOtomeTags || state.otome.axes?.length) {
+            const otome = create("section", "profile-sheet-section profile-sheet-otome");
             otome.append(create("h2", "", "OTOME PROFILE"));
             (state.otome.axes || []).forEach((axis) => {
-                otome.append(create("p", "profile-sheet-axis", `${axis.left || ""}  ·  ${axis.value || 3}/5  ·  ${axis.right || ""}`));
+                const numericValue = Math.min(5, Math.max(1, Number(axis.value) || 3));
+                const percentage = ((numericValue - 1) / 4) * 100;
+                const axisRow = create("div", "profile-sheet-axis");
+                const labels = create("div", "profile-sheet-axis-labels");
+                labels.append(create("span", "", axis.left || ""), create("span", "", axis.right || ""));
+                const track = create("div", "profile-sheet-axis-track");
+                const fill = create("span", "profile-sheet-axis-fill");
+                const marker = create("span", "profile-sheet-axis-marker");
+                fill.style.width = `${percentage}%`;
+                marker.style.left = `${percentage}%`;
+                track.append(fill, marker);
+                axisRow.append(labels, track);
+                otome.append(axisRow);
             });
-            if (otomeTags.length) otome.append(create("p", "profile-sheet-tags", otomeTags.join(" / ")));
+            const tagGroups = [
+                ["PLAY STYLE", state.otome.play_styles],
+                ["FAVORITE ELEMENTS", state.otome.favorite_elements],
+                ["NOT MY TYPE", state.otome.not_my_type]
+            ];
+            tagGroups.forEach(([label, values]) => {
+                if (!values?.length) return;
+                const row = create("p", "profile-sheet-tags");
+                row.append(create("b", "", label), document.createTextNode(values.join(" ・ ")));
+                otome.append(row);
+            });
             columns.append(otome);
         }
-        sheet.append(columns);
 
         if (state.profile.free_space_content) {
             const free = create("section", "profile-sheet-section profile-sheet-free");
             free.append(create("h2", "", state.profile.free_space_title || "FREE SPACE"));
             free.append(create("p", "", exportText(state.profile.free_space_content)));
-            sheet.append(free);
+            columns.append(free);
         }
+        editorial.append(columns);
+        spread.append(editorial);
+        sheet.append(spread);
 
         const footer = create("footer", "profile-sheet-footer");
-        footer.append(create("span", "", "KIORA.SPACE"));
+        footer.append(create("span", "", "WORDS, GAMES & SMALL CONSTELLATIONS"));
+        footer.append(create("span", "", "KIORA.SPACE  /  ALL THINGS KEPT WITH CARE"));
         footer.append(create("span", "", byId("profile-updated")?.textContent || ""));
         sheet.append(footer);
         return sheet;
@@ -375,9 +413,9 @@
                     () => Boolean(window.jspdf?.jsPDF)
                 );
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-                const pageWidth = 210;
-                const pageHeight = 297;
+                const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+                const pageWidth = 297;
+                const pageHeight = 210;
                 const pageHeightPixels = Math.floor(canvas.width * pageHeight / pageWidth);
                 let offset = 0;
                 let page = 0;
@@ -472,12 +510,48 @@
     }
 
     function renderProfile() {
+        renderProfileIdentity();
         byId("free-space-content").innerHTML = state.profile.free_space_content
             ? markdownToHtml(state.profile.free_space_content)
             : `<p class="cms-empty">${isAdmin() ? "这里还没有留下文字。" : ""}</p>`;
         renderProfileCollections();
         renderOtome();
         renderProfileSidebarMeta();
+    }
+
+    function renderProfileIdentity() {
+        const avatar = byId("profile-display-avatar");
+        const placeholder = byId("profile-display-avatar-placeholder");
+        const avatarUrl = safeUrl(state.profile.avatar_url);
+        if (avatar) {
+            avatar.hidden = !avatarUrl;
+            if (avatarUrl) {
+                avatar.src = avatarUrl;
+                avatar.alt = state.profile.nickname ? `${state.profile.nickname} avatar` : "Profile avatar";
+            } else {
+                avatar.removeAttribute("src");
+                avatar.alt = "";
+            }
+        }
+        if (placeholder) placeholder.hidden = Boolean(avatarUrl);
+
+        const name = byId("profile-display-name");
+        const tagline = byId("profile-display-tagline");
+        const summary = byId("profile-display-summary");
+        const about = byId("profile-display-about");
+        if (name) name.textContent = state.profile.nickname || "KIORA";
+        if (tagline) {
+            tagline.textContent = state.profile.tagline || "";
+            tagline.hidden = !state.profile.tagline;
+        }
+        if (summary) {
+            summary.innerHTML = state.profile.summary ? markdownToHtml(state.profile.summary) : "";
+            summary.hidden = !state.profile.summary;
+        }
+        if (about) {
+            about.innerHTML = state.profile.about_text ? markdownToHtml(state.profile.about_text) : "";
+            about.hidden = !state.profile.about_text;
+        }
     }
 
     function renderProfileSidebarMeta() {
