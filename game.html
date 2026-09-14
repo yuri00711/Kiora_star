@@ -8,10 +8,14 @@
     <link rel="stylesheet" href="game.css">
 </head>
 <body>
-    <div class="game-detail-stars" aria-hidden="true"></div>
+    <div class="game-sky" aria-hidden="true"></div>
+    <div class="game-starfall" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="game-orbits" aria-hidden="true"><span></span><span></span></div>
 
     <nav class="game-detail-nav" aria-label="Game navigation">
-        <button id="game-back" type="button">← BACK TO GAMES</button>
+        <button id="game-back" type="button">← BACK TO ARCHIVE</button>
         <a href="index.html">KIORA.SPACE</a>
     </nav>
 
@@ -19,25 +23,40 @@
         <p id="game-detail-status" class="game-detail-status" role="status">Loading archive…</p>
 
         <article id="game-detail" class="game-detail" hidden>
-            <header class="game-detail-hero">
+            <header class="game-record">
+                <div class="game-record-heading">
+                    <p id="game-detail-archive-number" class="game-detail-kicker">ARCHIVE</p>
+                    <h1 id="game-detail-title"></h1>
+                    <p id="game-detail-original" class="game-detail-original" hidden></p>
+                </div>
+
                 <figure class="game-detail-cover-frame">
+                    <span class="game-cover-index" aria-hidden="true">CELESTIAL<br>COLLECTION</span>
                     <img id="game-detail-cover" class="game-detail-cover" alt="" loading="eager" hidden>
                     <div id="game-detail-cover-placeholder" class="game-detail-cover-placeholder" aria-hidden="true">✦</div>
                     <figcaption>PRIVATE GAME ARCHIVE</figcaption>
                 </figure>
 
-                <div class="game-detail-heading">
-                    <p id="game-detail-archive-number" class="game-detail-kicker">ARCHIVE</p>
-                    <h1 id="game-detail-title"></h1>
-                    <p id="game-detail-original" class="game-detail-original" hidden></p>
-                    <p id="game-detail-keywords-label" class="game-detail-keywords-label" hidden>KEYWORDS</p>
-                    <div id="game-detail-tags" class="game-detail-tags" hidden></div>
-
+                <div class="game-record-dossier">
                     <dl class="game-detail-facts">
                         <div id="game-rating-fact"><dt>RATING</dt><dd id="game-detail-rating"></dd></div>
                         <div id="game-status-fact" hidden><dt>STATUS</dt><dd id="game-detail-play-status"></dd></div>
                         <div id="game-date-fact" hidden><dt>PLAYED</dt><dd id="game-detail-date"></dd></div>
                     </dl>
+
+                    <div id="game-note-preview" class="game-note-preview" hidden>
+                        <p class="game-detail-label">PERSONAL RECORD</p>
+                        <p id="game-note-preview-text"></p>
+                        <a href="#game-note-section">READ FULL NOTE →</a>
+                    </div>
+
+                    <p id="game-detail-keywords-label" class="game-detail-keywords-label" hidden>KEYWORDS</p>
+                    <div id="game-detail-tags" class="game-detail-tags" hidden></div>
+
+                    <div id="game-admin-actions" class="game-admin-actions" hidden>
+                        <a id="game-edit-record" href="index.html#games">EDIT RECORD</a>
+                        <a id="game-add-character" href="index.html#games">＋ ADD CHARACTER</a>
+                    </div>
                 </div>
             </header>
 
@@ -47,13 +66,15 @@
             </section>
 
             <section id="game-note-section" class="game-detail-section game-note-section" hidden>
-                <p class="game-detail-label">MY NOTE</p>
+                <div class="game-detail-section-heading">
+                    <div><p class="game-detail-label">PERSONAL RECORD</p><span>GAME NOTE / PRIVATE IMPRESSION</span></div>
+                </div>
                 <div id="game-detail-note" class="game-detail-reading"></div>
             </section>
 
             <section id="game-characters-section" class="game-detail-section" hidden>
                 <div class="game-detail-section-heading">
-                    <p class="game-detail-label">CHARACTER ARCHIVE</p>
+                    <div><p class="game-detail-label">CHARACTER ARCHIVE</p><span>ROUTES IN THIS CONSTELLATION</span></div>
                     <span id="game-character-count"></span>
                 </div>
                 <div id="game-character-list" class="game-character-list"></div>

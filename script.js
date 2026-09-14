@@ -114,6 +114,7 @@ const supabaseClient =
 
 let currentUser = null;
 let gamesCache = [];
+let requestedGameEditorOpened = false;
 
 // Small public bridge used by the optional profile/writing CMS module.
 // The existing auth and Supabase client remain the single source of truth.
@@ -437,6 +438,7 @@ async function initialiseAuth() {
         ?? null;
 
     updateAdminUI();
+    renderGames(gamesCache);
 
 }
 
@@ -803,6 +805,21 @@ function renderGames(games) {
         })
     );
 
+    openRequestedGameEditor();
+
+}
+
+function openRequestedGameEditor() {
+    if (requestedGameEditorOpened || !currentUser || !gamesCache.length) return;
+    const requestedId = new URLSearchParams(window.location.search).get("editGame");
+    if (!requestedId) return;
+    const game = gamesCache.find((item) => String(item.id) === requestedId);
+    if (!game) return;
+    requestedGameEditorOpened = true;
+    openGameEditor(game);
+    if (new URLSearchParams(window.location.search).get("addCharacter") === "1") {
+        window.setTimeout(() => openCharacterEditor(null), 0);
+    }
 }
 
 

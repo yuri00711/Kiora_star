@@ -30,25 +30,35 @@
         element.hidden = !value;
     };
 
-    function formatTags(value) {
+    const plainText = (markdown) => {
+        const holder = document.createElement("div");
+        holder.innerHTML = common.markdownToHtml(markdown || "");
+        return holder.textContent.trim();
+    };
+
+    const formatTags = (value) => {
         if (Array.isArray(value)) return value.filter(Boolean);
         if (typeof value === "string") return value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
         return [];
-    }
+    };
 
     if (!id) {
         status.textContent = "缺少游戏档案 ID。";
         return;
     }
 
-    const { data: game, error } = await db.from("games").select("*").eq("id", id).maybeSingle();
+    const [{ data: game, error }, sessionResult] = await Promise.all([
+        db.from("games").select("*").eq("id", id).maybeSingle(),
+        db.auth.getSession()
+    ]);
     if (error || !game) {
         status.textContent = error?.message || "这条游戏档案不存在。";
         return;
     }
 
+    const archiveNumber = String(game.sort_order ?? game.id).padStart(3, "0");
     document.title = `${game.title || "Game Archive"} · Kiora`;
-    document.getElementById("game-detail-archive-number").textContent = `ARCHIVE ${String(game.sort_order ?? game.id).padStart(3, "0")}`;
+    document.getElementById("game-detail-archive-number").textContent = `ARCHIVE ${archiveNumber}`;
     document.getElementById("game-detail-title").textContent = game.title || "UNTITLED";
     setOptionalText("game-detail-original", firstValue(game, ["original_title", "title_jp", "japanese_title"]));
 
@@ -61,18 +71,17 @@
         document.getElementById("game-detail-cover-placeholder").hidden = true;
     }
 
-    const rating = game.rating !== null && game.rating !== undefined && game.rating !== ""
+    document.getElementById("game-detail-rating").textContent = game.rating !== null && game.rating !== undefined && game.rating !== ""
         ? `✦ ${game.rating} / 10`
         : "UNRATED";
-    document.getElementById("game-detail-rating").textContent = rating;
 
     const playStatus = firstValue(game, ["play_status", "status"]);
     if (playStatus) {
         document.getElementById("game-status-fact").hidden = false;
-        document.getElementById("game-detail-play-status").textContent = playStatus;
+        document.getElementById("game-detail-play-status").textContent = String(playStatus).toUpperCase();
     }
 
-    const playedAt = firstValue(game, ["played_at", "play_date", "completed_at", "started_at"]);
+    const playedAt = firstValue(game, ["played_at", "play_date", "completed_at", "started_at", "created_at"]);
     if (playedAt) {
         document.getElementById("game-date-fact").hidden = false;
         document.getElementById("game-detail-date").textContent = common.formatDate(playedAt);
@@ -96,8 +105,18 @@
 
     const note = firstValue(game, ["note", "long_review", "review"]);
     if (note) {
+        document.getElementById("game-note-preview").hidden = false;
+        document.getElementById("game-note-preview-text").textContent = plainText(note);
         document.getElementById("game-note-section").hidden = false;
         document.getElementById("game-detail-note").innerHTML = common.markdownToHtml(note);
+    }
+
+    const isAdmin = Boolean(sessionResult.data.session?.user);
+    if (isAdmin) {
+        const actions = document.getElementById("game-admin-actions");
+        document.getElementById("game-edit-record").href = `index.html?editGame=${encodeURIComponent(game.id)}#games`;
+        document.getElementById("game-add-character").href = `index.html?editGame=${encodeURIComponent(game.id)}&addCharacter=1#games`;
+        actions.hidden = false;
     }
 
     const { data: characters, error: characterError } = await db.from("characters")
@@ -107,36 +126,58 @@
     if (characterError) console.warn("Character archive could not be loaded:", characterError.message);
     if (characters?.length) {
         const list = document.getElementById("game-character-list");
-        characters.forEach((character) => {
+        characters.forEach((character, index) => {
             const card = document.createElement("article");
             card.className = "game-character-card";
+
             const imageUrl = common.safeUrl(character.image_url);
             if (imageUrl) {
                 const image = document.createElement("img");
+                image.className = "game-character-image";
                 image.src = imageUrl;
                 image.alt = character.name || "Character";
                 image.loading = "lazy";
                 card.append(image);
+            } else {
+                const placeholder = document.createElement("div");
+                placeholder.className = "game-character-placeholder";
+                placeholder.textContent = "◇";
+                card.append(placeholder);
             }
+
             const copy = document.createElement("div");
+            copy.className = "game-character-copy";
             const meta = document.createElement("p");
             meta.className = "game-character-meta";
-            meta.textContent = character.rating !== null && character.rating !== undefined ? `ROUTE / ${character.rating}` : "ROUTE NOTE";
+            meta.textContent = `CHARACTER ${String(index + 1).padStart(2, "0")}${character.rating !== null && character.rating !== undefined ? `  /  ✦ ${character.rating}` : ""}`;
             const heading = document.createElement("h3");
             heading.textContent = character.name || "CHARACTER";
             copy.append(meta, heading);
+
             if (character.subtitle) {
                 const subtitle = document.createElement("p");
                 subtitle.className = "game-character-subtitle";
                 subtitle.textContent = character.subtitle;
                 copy.append(subtitle);
             }
+
             if (character.review) {
                 const review = document.createElement("div");
                 review.className = "game-character-review";
-                review.innerHTML = common.markdownToHtml(character.review);
+                review.textContent = plainText(character.review);
                 copy.append(review);
+
+                const record = document.createElement("details");
+                record.className = "game-character-record";
+                const toggle = document.createElement("summary");
+                toggle.textContent = "VIEW RECORD →";
+                const full = document.createElement("div");
+                full.className = "game-character-full";
+                full.innerHTML = common.markdownToHtml(character.review);
+                record.append(toggle, full);
+                copy.append(record);
             }
+
             card.append(copy);
             list.append(card);
         });
