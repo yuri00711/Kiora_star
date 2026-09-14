@@ -1,10 +1,10 @@
 :root {
-    --write-bg: #f3eef3;
-    --write-paper: rgba(255, 253, 252, 0.92);
-    --write-ink: #443a4c;
-    --write-soft: #6d6075;
-    --write-accent: #916e8f;
-    --write-line: rgba(103, 81, 108, 0.2);
+    --write-bg: var(--page-bg);
+    --write-paper: var(--surface-strong);
+    --write-ink: var(--text-main);
+    --write-soft: var(--text-soft);
+    --write-accent: var(--accent);
+    --write-line: var(--border);
 }
 
 * { box-sizing: border-box; }

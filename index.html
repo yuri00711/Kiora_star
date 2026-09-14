@@ -11,6 +11,7 @@
 
     <title>Yūri</title>
 
+    <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="cms.css">
 
@@ -32,6 +33,14 @@
         <span style="--x: 77%; --delay: -8.3s; --duration: 13.1s; --length: 82px;"></span>
         <span style="--x: 85%; --delay: -0.8s; --duration: 10.4s; --length: 124px;"></span>
         <span style="--x: 93%; --delay: -6.1s; --duration: 14.7s; --length: 64px;"></span>
+        <span style="--x: 3%; --delay: -8.8s; --duration: 13.8s; --length: 42px;"></span>
+        <span style="--x: 17%; --delay: -0.9s; --duration: 11.2s; --length: 84px;"></span>
+        <span style="--x: 25%; --delay: -11.1s; --duration: 15.8s; --length: 48px;"></span>
+        <span style="--x: 41%; --delay: -5.7s; --duration: 12.8s; --length: 92px;"></span>
+        <span style="--x: 57%; --delay: -9.6s; --duration: 14.5s; --length: 46px;"></span>
+        <span style="--x: 73%; --delay: -2.1s; --duration: 10.9s; --length: 98px;"></span>
+        <span style="--x: 89%; --delay: -12.3s; --duration: 16.2s; --length: 52px;"></span>
+        <span style="--x: 97%; --delay: -4.8s; --duration: 12.1s; --length: 74px;"></span>
     </div>
 
     <button
@@ -168,9 +177,12 @@
 
         <div id="profile-content" class="profile-content hidden">
             <section class="profile-identity" aria-label="Profile identity">
-                <div class="profile-identity-portrait">
-                    <img id="profile-display-avatar" alt="" loading="lazy" hidden>
-                    <span id="profile-display-avatar-placeholder" aria-hidden="true">✦</span>
+                <div class="profile-identity-portrait-wrap" aria-hidden="true">
+                    <div class="profile-identity-portrait">
+                        <img id="profile-display-avatar" alt="" loading="lazy" hidden>
+                        <span id="profile-display-avatar-placeholder">✦</span>
+                    </div>
+                    <i class="profile-identity-orbit-star">✧</i>
                 </div>
                 <div class="profile-identity-copy">
                     <p class="profile-identity-kicker">KIORA.SPACE</p>

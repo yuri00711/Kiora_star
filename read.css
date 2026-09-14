@@ -1,10 +1,10 @@
 :root {
-    --reader-bg: #f3eef3;
-    --reader-paper: rgba(255, 253, 252, 0.88);
-    --reader-ink: #433a4a;
-    --reader-soft: #6b5e72;
-    --reader-accent: #926f90;
-    --reader-line: rgba(104, 82, 108, 0.2);
+    --reader-bg: var(--page-bg);
+    --reader-paper: var(--surface);
+    --reader-ink: var(--text-main);
+    --reader-soft: var(--text-soft);
+    --reader-accent: var(--accent);
+    --reader-line: var(--border);
     --reader-size: 18px;
     --reader-leading: 2;
 }

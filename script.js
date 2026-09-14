@@ -744,54 +744,28 @@ function renderGames(games) {
 
             const note =
                 document.createElement(
-                    "button"
+                    "a"
                 );
 
             note.className =
                 "game-view-note";
 
-            note.type =
-                "button";
+            note.href =
+                `game.html?id=${encodeURIComponent(game.id)}`;
+
+            note.setAttribute(
+                "aria-label",
+                `View notes for ${game.title || "this game"}`
+            );
 
             note.textContent =
                 "VIEW NOTE →";
 
 
-            /*
-            点击 VIEW NOTE
-            暂时展开 / 收起全文
-            */
-
             note.addEventListener(
                 "click",
                 () => {
-
-                    const expanded =
-                        review.classList
-                            .toggle(
-                                "expanded"
-                            );
-
-                    if (expanded) {
-
-                        review.style
-                            .webkitLineClamp =
-                            "unset";
-
-                        note.textContent =
-                            "CLOSE NOTE ←";
-
-                    } else {
-
-                        review.style
-                            .webkitLineClamp =
-                            "2";
-
-                        note.textContent =
-                            "VIEW NOTE →";
-
-                    }
-
+                    sessionStorage.setItem("yuri:return-scroll", String(window.scrollY));
                 }
             );
 
