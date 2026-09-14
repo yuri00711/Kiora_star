@@ -1,4 +1,4 @@
--- Yūri site CMS tables
+-- Kiora site CMS tables
 -- Run once in Supabase Dashboard > SQL Editor.
 -- Existing games, characters and authentication data are not changed.
 

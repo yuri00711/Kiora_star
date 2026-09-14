@@ -249,11 +249,17 @@ body::after {
 h1 {
     margin: 0;
 
-    font-size: clamp(55px, 7vw, 100px);
+    max-width: min(90vw, 760px);
+    margin-inline: auto;
+
+    font-size: clamp(55px, 7vw, 94px);
 
     font-weight: normal;
 
-    letter-spacing: 12px;
+    letter-spacing: 10px;
+
+    line-height: 1.1;
+    white-space: nowrap;
 
     color: #463b50;
 
@@ -788,9 +794,11 @@ footer {
 
 
     h1 {
-        font-size: 52px;
+        max-width: calc(100vw - 48px);
 
-        letter-spacing: 7px;
+        font-size: clamp(42px, 13vw, 52px);
+
+        letter-spacing: clamp(4px, 1.7vw, 7px);
     }
 
 

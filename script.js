@@ -1,4 +1,4 @@
-console.log("YURI NEW SCRIPT LOADED");
+console.log("KIORA NEW SCRIPT LOADED");
 
 /* ========================================
    滚动出现动画
