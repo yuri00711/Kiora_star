@@ -164,23 +164,27 @@
 
                 <label>
                     EMAIL
-                    <input
-                        id="login-email"
-                        type="email"
-                        autocomplete="email"
-                        required
-                    >
-                </label>
+                    <label>
+                        ID
+                        <input
+                            id="login-username"
+                            type="text"
+                            autocomplete="username"
+                            spellcheck="false"
+                            required
+                        >
+                    </label>
 
-                <label>
-                    PASSWORD
-                    <input
-                        id="login-password"
-                        type="password"
-                        autocomplete="current-password"
-                        required
-                    >
-                </label>
+                    <label>
+                        PASSWORD
+                        <input
+                            id="login-password"
+                            type="password"
+                            inputmode="numeric"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </label>
 
                 <p id="login-message" class="form-message"></p>
 
