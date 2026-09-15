@@ -497,39 +497,65 @@
         }
     }
 
-    // Sidebar
-    const sidebarShell = byId("site-sidebar-shell");
-    const menuButton = byId("site-menu-button");
+    // Top navigation: horizontal index on desktop, compact dropdown on mobile.
+    const topNavigation = byId("site-top-nav");
+    const mobileMenu = byId("site-mobile-menu");
+    const mobileMenuButton = byId("site-mobile-menu-button");
+    let navigationLockUntil = 0;
 
-    function setSidebar(open) {
-        sidebarShell?.classList.toggle("active", open);
-        sidebarShell?.setAttribute("aria-hidden", String(!open));
-        menuButton?.setAttribute("aria-expanded", String(open));
-        document.body.classList.toggle("sidebar-open", open);
-        if (open) byId("site-sidebar")?.querySelector("a")?.focus();
-        else menuButton?.focus();
+    function setActiveNavigation(sectionId) {
+        document.querySelectorAll("[data-home-section]").forEach((link) => {
+            link.classList.toggle("active", link.dataset.homeSection === sectionId);
+        });
     }
 
-    menuButton?.addEventListener("click", () => setSidebar(true));
-    document.querySelector(".site-sidebar-backdrop")?.addEventListener("click", () => setSidebar(false));
-    document.querySelector(".site-sidebar-close")?.addEventListener("click", () => setSidebar(false));
-    document.querySelectorAll(".site-sidebar a").forEach((link) => {
-        link.addEventListener("click", () => setSidebar(false));
+    function setMobileMenu(open, returnFocus = false) {
+        mobileMenu?.classList.toggle("active", open);
+        mobileMenu?.setAttribute("aria-hidden", String(!open));
+        mobileMenuButton?.setAttribute("aria-expanded", String(open));
+        if (open) mobileMenu?.querySelector("a")?.focus();
+        else if (returnFocus) mobileMenuButton?.focus();
+    }
+
+    mobileMenuButton?.addEventListener("click", () => {
+        setMobileMenu(mobileMenuButton.getAttribute("aria-expanded") !== "true");
+    });
+    mobileMenu?.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => setMobileMenu(false));
+    });
+    document.querySelectorAll('[data-home-section][href^="#"]').forEach((link) => {
+        link.addEventListener("click", () => {
+            navigationLockUntil = performance.now() + 700;
+            setActiveNavigation(link.dataset.homeSection);
+        });
+    });
+    document.addEventListener("click", (event) => {
+        if (mobileMenu?.classList.contains("active") && !topNavigation?.contains(event.target)) setMobileMenu(false);
     });
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && sidebarShell?.classList.contains("active")) setSidebar(false);
+        if (event.key === "Escape" && mobileMenu?.classList.contains("active")) setMobileMenu(false, true);
+    });
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 900) setMobileMenu(false);
     });
 
+    const updateNavigationSurface = () => topNavigation?.classList.toggle("is-scrolled", window.scrollY > 18);
+    updateNavigationSurface();
+    window.addEventListener("scroll", updateNavigationSurface, { passive: true });
+
+    const visibleHomeSections = new Map();
     const sectionObserver = new IntersectionObserver((entries) => {
-        const visible = entries
-            .filter((entry) => entry.isIntersecting)
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) visibleHomeSections.set(entry.target.id, entry);
+            else visibleHomeSections.delete(entry.target.id);
+        });
+        const visible = [...visibleHomeSections.values()]
             .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (!visible) return;
-        document.querySelectorAll(".site-sidebar a").forEach((link) => {
-            link.classList.toggle("active", link.dataset.section === visible.target.id);
-        });
-    }, { rootMargin: "-35% 0px -45%", threshold: [0, 0.2, 0.5] });
-    ["about", "games", "writing", "archive"].forEach((id) => {
+        if (performance.now() < navigationLockUntil) return;
+        setActiveNavigation(visible.target.id);
+    }, { rootMargin: "-28% 0px -58%", threshold: [0, 0.08, 0.25] });
+    ["home", "about", "games", "writing", "archive"].forEach((id) => {
         const section = byId(id);
         if (section) sectionObserver.observe(section);
     });

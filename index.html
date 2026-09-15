@@ -16,7 +16,7 @@
 
     <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="cms.css">
+    <link rel="stylesheet" href="cms.css?v=20260915-3">
     <link rel="stylesheet" href="music.css?v=20260914-1">
 
 </head>
@@ -47,42 +47,39 @@
         <span style="--x: 97%; --delay: -4.8s; --duration: 12.1s; --length: 74px;"></span>
     </div>
 
-    <button
-        id="site-menu-button"
-        class="site-menu-button"
-        type="button"
-        aria-label="打开页面导航"
-        aria-controls="site-sidebar"
-        aria-expanded="false"
-    >
-        <span aria-hidden="true">✦</span>
-        <span>MENU</span>
-    </button>
+    <header id="site-top-nav" class="site-top-nav">
+        <div class="site-top-nav-inner">
+            <a class="site-top-brand" href="#home" aria-label="Kiora home">
+                <span>Kiora</span><i aria-hidden="true"></i><b aria-hidden="true">✦</b>
+            </a>
 
-    <div id="site-sidebar-shell" class="site-sidebar-shell" aria-hidden="true">
-        <button class="site-sidebar-backdrop" type="button" aria-label="关闭页面导航"></button>
-        <aside id="site-sidebar" class="site-sidebar" aria-label="页面导航">
-            <div class="site-sidebar-orbit" aria-hidden="true"></div>
-            <div class="site-sidebar-heading">
-                <span>KIORA</span>
-                <button class="site-sidebar-close" type="button" aria-label="关闭页面导航">×</button>
-            </div>
-            <p class="site-sidebar-label">A LITTLE UNIVERSE</p>
-            <nav>
-                <a href="#about" data-section="about">PROFILE <i>✦</i></a>
-                <a href="games.html">GAMES <i>☆</i></a>
-                <a href="#writing" data-section="writing">WRITING <i>☾</i></a>
-                <a href="#archive" data-section="archive">ARCHIVE <i>◇</i></a>
+            <nav class="site-desktop-nav" aria-label="首页索引">
+                <a href="#home" data-home-section="home">HOME</a>
+                <a href="#about" data-home-section="about">ABOUT</a>
+                <a href="#archive" data-home-section="archive">ARCHIVE</a>
+                <a href="games.html" data-home-section="games">GAMES</a>
+                <a href="#writing" data-home-section="writing">WRITING</a>
             </nav>
-            <p class="site-sidebar-footer">星の降る場所で、好きなものを。</p>
-        </aside>
-    </div>
+
+            <button id="site-mobile-menu-button" class="site-mobile-menu-button" type="button" aria-label="打开页面导航" aria-controls="site-mobile-menu" aria-expanded="false">
+                <span>MENU</span><i aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <nav id="site-mobile-menu" class="site-mobile-menu" aria-label="手机首页索引" aria-hidden="true">
+            <a href="#home" data-home-section="home"><span>01</span>HOME</a>
+            <a href="#about" data-home-section="about"><span>02</span>ABOUT</a>
+            <a href="#archive" data-home-section="archive"><span>03</span>ARCHIVE</a>
+            <a href="games.html" data-home-section="games"><span>04</span>GAMES</a>
+            <a href="#writing" data-home-section="writing"><span>05</span>WRITING</a>
+        </nav>
+    </header>
 
     <!-- =====================================
          01 / HERO
     ====================================== -->
 
-    <section class="hero">
+    <section class="hero" id="home">
 
         <!-- 背景装饰 -->
         <div class="hero-bg">
@@ -921,7 +918,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js?v=20260915-2"></script>
-<script src="cms.js"></script>
+<script src="cms.js?v=20260915-3"></script>
 <script src="music-archive.js?v=20260914-1"></script>
 
 </body>
