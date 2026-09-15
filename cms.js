@@ -36,7 +36,8 @@
         boundaries: [],
         otome: { axes: [], play_styles: [], favorite_elements: [], not_my_type: [] },
         writings: [],
-        settings: {}
+        settings: {},
+        writingFilter: "all"
     };
 
     const byId = (id) => document.getElementById(id);
@@ -499,9 +500,10 @@
 
     // Profile loading and rendering
     async function loadProfile() {
-        if (!byId("profile-content")) return;
+        if (!byId("profile-content") && !byId("home-profile")) return;
         byId("profile-status")?.classList.remove("hidden");
         showMessage("profile-status", "Loading profile…");
+        showMessage("home-profile-status", "Reading profile…");
         const queries = await Promise.all([
             db.from("site_profile").select("*").eq("id", 1).maybeSingle(),
             db.from("profile_fandoms").select("*").order("sort_order", { ascending: true, nullsFirst: false }).order("created_at"),
@@ -514,6 +516,7 @@
         const firstError = queries.slice(0, 5).find((result) => result.error)?.error;
         if (firstError) {
             showMessage("profile-status", errorMessage(firstError), true);
+            showMessage("home-profile-status", errorMessage(firstError), true);
             byId("profile-content")?.classList.add("hidden");
             return;
         }
@@ -526,20 +529,52 @@
         state.settings = queries[5].error ? {} : (queries[5].data || {});
         if (queries[5].error) console.warn("site_settings is unavailable; run supabase-site-settings-migration.sql.", queries[5].error);
         showMessage("profile-status", "");
+        showMessage("home-profile-status", "");
         byId("profile-status")?.classList.add("hidden");
         byId("profile-content")?.classList.remove("hidden");
         renderProfile();
     }
 
     function renderProfile() {
-        if (!byId("profile-content")) return;
-        renderProfileIdentity();
-        byId("free-space-content").innerHTML = state.profile.free_space_content
-            ? markdownToHtml(state.profile.free_space_content)
-            : `<p class="cms-empty">${isAdmin() ? "这里还没有留下文字。" : ""}</p>`;
-        renderProfileCollections();
-        renderOtome();
-        renderProfileSidebarMeta();
+        if (byId("profile-content")) {
+            renderProfileIdentity();
+            byId("free-space-content").innerHTML = state.profile.free_space_content
+                ? markdownToHtml(state.profile.free_space_content)
+                : `<p class="cms-empty">${isAdmin() ? "这里还没有留下文字。" : ""}</p>`;
+            renderProfileCollections();
+            renderOtome();
+            renderProfileSidebarMeta();
+        }
+        renderHomeProfile();
+    }
+
+    function renderHomeProfile() {
+        if (!byId("home-profile")) return;
+        const avatar = byId("home-profile-avatar");
+        const placeholder = byId("home-profile-avatar-placeholder");
+        const avatarUrl = safeUrl(state.profile.avatar_url);
+        if (avatar) {
+            avatar.hidden = !avatarUrl;
+            if (avatarUrl) {
+                avatar.src = avatarUrl;
+                avatar.alt = state.profile.nickname ? `${state.profile.nickname} avatar` : "Profile avatar";
+                avatar.addEventListener("error", () => {
+                    avatar.hidden = true;
+                    if (placeholder) placeholder.hidden = false;
+                }, { once: true });
+            }
+        }
+        if (placeholder) placeholder.hidden = Boolean(avatarUrl);
+        byId("home-profile-name").textContent = state.profile.nickname || "Kiora";
+        byId("home-profile-tagline").textContent = state.profile.tagline || "";
+        byId("home-profile-summary").innerHTML = state.profile.summary ? markdownToHtml(state.profile.summary) : "";
+        byId("home-profile-fandoms").textContent = state.fandoms.slice(0, 3).map((item) => item.name).filter(Boolean).join(" / ") || "—";
+        byId("home-profile-favorites").textContent = state.favorites.slice(0, 3).map((item) => item.name).filter(Boolean).join(" / ") || "—";
+        const otome = [...(state.otome.play_styles || []), ...(state.otome.favorite_elements || [])].slice(0, 3);
+        byId("home-profile-otome").textContent = otome.join(" / ") || "—";
+        const current = state.settings.currently_playing || {};
+        const linked = (bridge.games || []).find((game) => String(game.id) === String(current.game_id));
+        byId("home-profile-current").textContent = current.title || linked?.title || bridge.games?.[0]?.title || "—";
     }
 
     function renderProfileIdentity() {
@@ -637,6 +672,7 @@
     window.addEventListener("yuri:gameschange", (event) => {
         renderCurrentGame(event.detail?.games || []);
         renderUpdatedDate();
+        renderHomeProfile();
     });
 
     function adminEditButton(kind, item) {
@@ -1054,10 +1090,12 @@
 
     // Writings
     async function loadWritings() {
-        if (!document.querySelector("[data-writing-list]")) return;
+        if (!document.querySelector("[data-writing-list]") && !byId("home-writing-featured") && !byId("writing-page-list")) return;
         document.querySelectorAll("[data-writing-list]").forEach((list) => {
             list.replaceChildren(emptyState("Loading…"));
         });
+        showMessage("home-writing-status", "Reading the latest pages…");
+        showMessage("writing-page-status", "Reading the archive…");
         let query = db.from("writings")
             .select("*")
             .neq("category", "archive")
@@ -1070,9 +1108,13 @@
             document.querySelectorAll("[data-writing-list]").forEach((list) => {
                 list.replaceChildren(emptyState(errorMessage(error)));
             });
+            showMessage("home-writing-status", errorMessage(error), true);
+            showMessage("writing-page-status", errorMessage(error), true);
             return;
         }
         state.writings = data || [];
+        showMessage("home-writing-status", "");
+        showMessage("writing-page-status", "");
         renderWritings();
         renderUpdatedDate();
     }
@@ -1083,6 +1125,121 @@
         button.dataset.writingAction = action;
         button.dataset.writingId = id;
         return button;
+    }
+
+    function writingDate(writing) {
+        return formatCompactDate(writing.published_at || writing.created_at || writing.updated_at);
+    }
+
+    function featuredWriting(items) {
+        return items.find((item) => item.is_pinned) || items[0] || null;
+    }
+
+    function renderHomeWriting() {
+        const featuredHost = byId("home-writing-featured");
+        const recentHost = byId("home-writing-recent");
+        if (!featuredHost || !recentHost) return;
+        featuredHost.replaceChildren();
+        recentHost.replaceChildren();
+        const items = state.writings.filter((item) => isAdmin() || item.is_public);
+        const featured = featuredWriting(items);
+        if (!featured) {
+            const empty = create("p", "home-journal-empty", "The next page is still being written.");
+            featuredHost.append(empty);
+            return;
+        }
+
+        featuredHost.append(create("p", "home-writing-featured-label", `FEATURED / ${categoryLabels[featured.category] || "WRITING"}`));
+        featuredHost.append(create("h3", "", featured.title || "UNTITLED"));
+        if (featured.subtitle) featuredHost.append(create("p", "home-writing-featured-subtitle", featured.subtitle));
+        if (featured.excerpt) featuredHost.append(create("p", "home-writing-featured-excerpt", featured.excerpt));
+        const footer = create("div", "home-writing-featured-meta");
+        footer.append(create("time", "", writingDate(featured)), writingAction("READ STORY →", "read", featured.id));
+        featuredHost.append(footer);
+
+        items.filter((item) => String(item.id) !== String(featured.id)).slice(0, 4).forEach((writing) => {
+            const row = create("article", "home-writing-recent-item");
+            row.append(create("time", "home-writing-recent-date", writingDate(writing)));
+            const copy = create("div", "home-writing-recent-copy");
+            copy.append(create("p", "home-writing-recent-category", categoryLabels[writing.category] || "WRITING"));
+            copy.append(create("h3", "", writing.title || "UNTITLED"));
+            row.append(copy, writingAction("READ →", "read", writing.id));
+            recentHost.append(row);
+        });
+    }
+
+    function renderWritingMagazine() {
+        const featuredHost = byId("writing-page-featured");
+        const list = byId("writing-page-list");
+        if (!featuredHost || !list) return;
+        document.querySelectorAll("[data-writing-filter]").forEach((button) => {
+            const selected = button.dataset.writingFilter === state.writingFilter;
+            button.setAttribute("aria-selected", String(selected));
+            button.tabIndex = selected ? 0 : -1;
+        });
+        const all = state.writings.filter((item) => isAdmin() || item.is_public);
+        const items = state.writingFilter === "all" ? all : all.filter((item) => item.category === state.writingFilter);
+        const featured = featuredWriting(items);
+        featuredHost.replaceChildren();
+        list.replaceChildren();
+        byId("writing-page-count").textContent = `${items.length} ${items.length === 1 ? "STORY" : "STORIES"}`;
+
+        const admin = byId("writing-page-admin");
+        admin?.replaceChildren();
+        if (admin && isAdmin()) {
+            const write = create("button", "", "＋ WRITE");
+            write.type = "button";
+            write.dataset.addWriting = state.writingFilter === "all" ? "essay" : state.writingFilter;
+            admin.append(write);
+        }
+
+        if (!featured) {
+            featuredHost.append(create("p", "writing-magazine-empty", "No stories in this part of the archive yet."));
+            return;
+        }
+        featuredHost.append(create("p", "writing-featured-label", `FEATURED / ${categoryLabels[featured.category] || "WRITING"}`));
+        featuredHost.append(create("h2", "", featured.title || "UNTITLED"));
+        if (featured.subtitle) featuredHost.append(create("p", "writing-featured-subtitle", featured.subtitle));
+        if (featured.excerpt) featuredHost.append(create("p", "writing-featured-excerpt", featured.excerpt));
+        const featuredFooter = create("div", "writing-featured-footer");
+        featuredFooter.append(create("time", "", writingDate(featured)), writingAction("READ STORY →", "read", featured.id));
+        if (isAdmin()) {
+            const actions = create("div", "writing-flow-admin");
+            actions.append(
+                writingAction("EDIT", "edit", featured.id),
+                writingAction(featured.is_pinned ? "UNPIN" : "PIN", "pin", featured.id),
+                writingAction("DELETE", "delete", featured.id)
+            );
+            featuredFooter.append(actions);
+        }
+        featuredHost.append(featuredFooter);
+
+        items.filter((item) => String(item.id) !== String(featured.id)).forEach((writing, index) => {
+            const row = create("article", "writing-flow-item");
+            row.append(create("p", "writing-flow-index", `${String(index + 1).padStart(2, "0")} / ${categoryLabels[writing.category] || "WRITING"}`));
+            const copy = create("div", "writing-flow-copy");
+            copy.append(create("h3", "", writing.title || "UNTITLED"));
+            if (writing.subtitle) copy.append(create("p", "writing-flow-subtitle", writing.subtitle));
+            if (writing.excerpt) copy.append(create("p", "writing-flow-excerpt", writing.excerpt));
+            if (writing.tags?.length) {
+                const tags = create("div", "writing-flow-tags");
+                writing.tags.forEach((tag) => tags.append(create("span", "", `#${tag}`)));
+                copy.append(tags);
+            }
+            const meta = create("div", "writing-flow-meta");
+            meta.append(create("time", "", writingDate(writing)), writingAction("READ STORY →", "read", writing.id));
+            if (isAdmin()) {
+                const actions = create("div", "writing-flow-admin");
+                actions.append(
+                    writingAction("EDIT", "edit", writing.id),
+                    writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id),
+                    writingAction("DELETE", "delete", writing.id)
+                );
+                meta.append(actions);
+            }
+            row.append(copy, meta);
+            list.append(row);
+        });
     }
 
     function createWritingEntry(writing, archiveView = false) {
@@ -1153,6 +1310,8 @@
                 container.append(createWritingEntry(writing));
             });
         });
+        renderHomeWriting();
+        renderWritingMagazine();
     }
 
     function openWritingArchive(category) {
@@ -1213,6 +1372,12 @@
     }
 
     document.addEventListener("click", async (event) => {
+        const filter = event.target.closest("[data-writing-filter]");
+        if (filter) {
+            state.writingFilter = filter.dataset.writingFilter || "all";
+            renderWritingMagazine();
+            return;
+        }
         if (event.target.closest("[data-edit-currently-playing]")) {
             if (!isAdmin()) return;
             window.location.href = "currently-playing.html";

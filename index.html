@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="style.css?v=20260915-5">
     <link rel="stylesheet" href="cms.css?v=20260915-5">
     <link rel="stylesheet" href="standalone.css?v=20260915-1">
+    <link rel="stylesheet" href="home-journal.css?v=20260915-2">
     <link rel="stylesheet" href="site-nav.css?v=20260915-1">
 </head>
 <body data-page="home" class="home-cover">
@@ -96,6 +97,39 @@
         </a>
 
     </section>
+
+    <main class="home-journal" aria-label="Latest writing and profile">
+        <section class="home-writing-column" aria-labelledby="home-writing-title">
+            <header class="home-journal-heading">
+                <div><p>RECENT PAGES / 01</p><h2 id="home-writing-title">Writing</h2></div>
+                <span>selected stories and recent notes</span>
+            </header>
+            <p id="home-writing-status" class="home-journal-status" role="status">Reading the latest pages…</p>
+            <div id="home-writing-featured" class="home-writing-featured"></div>
+            <div id="home-writing-recent" class="home-writing-recent"></div>
+            <a class="home-writing-all" href="writing.html">VIEW ALL WRITING →</a>
+        </section>
+
+        <aside id="home-profile" class="home-profile-card" aria-labelledby="home-profile-title">
+            <header class="home-profile-heading">
+                <p>PERSONAL RECORD / 02</p>
+                <h2 id="home-profile-title">Profile</h2>
+            </header>
+            <p id="home-profile-status" class="home-journal-status" role="status">Reading profile…</p>
+            <div class="home-profile-identity">
+                <div class="home-profile-avatar"><img id="home-profile-avatar" alt="" hidden><span id="home-profile-avatar-placeholder">✦</span></div>
+                <div><p class="home-profile-kicker">KIORA.SPACE</p><h3 id="home-profile-name"></h3><p id="home-profile-tagline"></p></div>
+            </div>
+            <div id="home-profile-summary" class="home-profile-summary"></div>
+            <dl class="home-profile-index">
+                <div><dt>FANDOMS</dt><dd id="home-profile-fandoms">—</dd></div>
+                <div><dt>FAVORITES</dt><dd id="home-profile-favorites">—</dd></div>
+                <div><dt>OTOME PROFILE</dt><dd id="home-profile-otome">—</dd></div>
+                <div><dt>CURRENTLY PLAYING</dt><dd id="home-profile-current">—</dd></div>
+            </dl>
+            <a class="home-profile-more" href="about.html">VIEW FULL PROFILE →</a>
+        </aside>
+    </main>
     <footer class="standalone-footer">
         <span>PRIVATE CELESTIAL ARCHIVE</span><span>2026</span>
     </footer>
@@ -162,6 +196,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js?v=20260915-5"></script>
+    <script src="cms.js?v=20260915-7"></script>
     <script src="site-nav.js?v=20260915-1"></script>
 </body>
 </html>

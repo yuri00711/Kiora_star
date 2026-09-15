@@ -1,0 +1,114 @@
+.home-journal {
+    position: relative;
+    z-index: 2;
+    width: min(1420px, calc(100% - 96px));
+    margin: 0 auto;
+    padding: 112px 0 132px;
+    display: grid;
+    grid-template-columns: minmax(0, 2.15fr) minmax(280px, .85fr);
+    gap: clamp(54px, 6vw, 104px);
+    align-items: start;
+}
+
+.home-writing-column,
+.home-profile-card { min-width: 0; }
+
+.home-journal-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 30px;
+    margin-bottom: 46px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid rgba(103, 84, 110, .17);
+}
+
+.home-journal-heading p,
+.home-profile-heading p,
+.home-profile-kicker,
+.home-writing-featured-label,
+.home-writing-recent-category {
+    margin: 0;
+    color: rgba(143, 108, 143, .7);
+    font-size: 8px;
+    letter-spacing: 3.2px;
+}
+
+.home-journal-heading h2,
+.home-profile-heading h2 {
+    margin: 10px 0 0;
+    color: #514958;
+    font-size: 34px;
+    font-weight: 400;
+    letter-spacing: .4px;
+}
+
+.home-journal-heading > span { max-width: 230px; color: rgba(83, 73, 89, .5); font-size: 10px; line-height: 1.7; letter-spacing: 1.2px; text-align: right; }
+.home-journal-status { margin: 0; color: rgba(89,77,94,.56); font-size: 10px; letter-spacing: 1.2px; }
+
+.home-writing-featured {
+    min-height: 260px;
+    margin-bottom: 20px;
+    padding: clamp(36px, 5vw, 66px);
+    border: 1px solid rgba(103, 84, 110, .14);
+    background: rgba(255, 253, 251, .54);
+}
+
+.home-writing-featured h3 { max-width: 720px; margin: 18px 0 11px; color: #4a424f; font-size: clamp(28px, 3.2vw, 46px); font-weight: 400; line-height: 1.25; }
+.home-writing-featured-subtitle { margin: 0 0 19px; color: rgba(78,68,83,.72); font-size: 14px; line-height: 1.8; }
+.home-writing-featured-excerpt { max-width: 680px; margin: 0; color: rgba(78,68,83,.62); font-size: 13px; line-height: 2; }
+.home-writing-featured-meta { margin-top: 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.home-writing-featured-meta time { color: rgba(101,87,106,.48); font-size: 8px; letter-spacing: 2px; }
+.home-writing-featured-meta button,
+.home-writing-all,
+.home-profile-more { border: 0; background: none; color: rgba(92,70,96,.76); font: inherit; font-size: 8px; letter-spacing: 2.4px; text-decoration: none; cursor: pointer; }
+.home-writing-column .cms-mini-button { position: static; }
+
+.home-writing-recent { border-top: 1px solid rgba(103,84,110,.16); }
+.home-writing-recent-item { display: grid; grid-template-columns: 112px minmax(0,1fr) auto; gap: 26px; align-items: center; min-height: 104px; border-bottom: 1px solid rgba(103,84,110,.14); }
+.home-writing-recent-date { color: rgba(93,80,99,.48); font-size: 9px; letter-spacing: 1.8px; }
+.home-writing-recent-copy h3 { margin: 8px 0 0; color: #514957; font-size: 18px; font-weight: 400; line-height: 1.4; }
+.home-writing-recent-item button { min-height: 44px; border: 0; background: none; color: rgba(93,72,98,.67); font: inherit; font-size: 8px; letter-spacing: 2px; cursor: pointer; }
+.home-writing-all { display: inline-block; margin-top: 38px; padding-bottom: 8px; border-bottom: 1px solid rgba(117,87,118,.24); }
+
+.home-profile-card { position: sticky; top: 106px; padding: 34px 31px 38px; border: 1px solid rgba(103,84,110,.14); background: rgba(255,253,251,.48); }
+.home-profile-heading { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(103,84,110,.13); }
+.home-profile-heading h2 { font-size: 25px; }
+.home-profile-identity { display: grid; grid-template-columns: 78px minmax(0,1fr); gap: 20px; align-items: center; }
+.home-profile-avatar { width: 78px; height: 78px; display: grid; place-items: center; overflow: hidden; border: 1px solid rgba(120,94,124,.2); border-radius: 50%; color: rgba(144,108,145,.62); background: rgba(247,241,247,.74); }
+.home-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.home-profile-identity h3 { margin: 8px 0 7px; color: #514857; font-size: 25px; font-weight: 400; }
+.home-profile-identity div > p:last-child { margin: 0; color: rgba(78,68,83,.58); font-size: 10px; line-height: 1.7; }
+.home-profile-summary { margin: 26px 0 32px; color: rgba(72,63,77,.68); font-size: 12px; line-height: 2; }
+.home-profile-summary p { margin: 0; }
+.home-profile-index { margin: 0 0 32px; border-top: 1px solid rgba(103,84,110,.13); }
+.home-profile-index > div { padding: 17px 0; border-bottom: 1px solid rgba(103,84,110,.12); }
+.home-profile-index dt { margin-bottom: 8px; color: rgba(143,108,143,.68); font-size: 7px; letter-spacing: 2.3px; }
+.home-profile-index dd { margin: 0; color: rgba(76,66,81,.68); font-size: 11px; line-height: 1.75; }
+.home-profile-more { display: inline-block; padding-bottom: 7px; border-bottom: 1px solid rgba(117,87,118,.22); }
+.home-journal-empty { padding: 50px 0; color: rgba(85,73,91,.48); font-size: 11px; line-height: 1.9; }
+
+@media (max-width: 1023px) {
+    .home-journal { width: min(100% - 56px, 900px); grid-template-columns: 1fr; gap: 92px; }
+    .home-profile-card { position: static; max-width: 660px; }
+}
+
+@media (max-width: 767px) {
+    .home-journal { width: calc(100% - 40px); padding: 76px 0 92px; gap: 76px; }
+    .home-journal-heading { display: block; margin-bottom: 30px; }
+    .home-journal-heading > span { display: block; margin-top: 12px; text-align: left; }
+    .home-writing-featured { min-height: 0; padding: 30px 24px 33px; }
+    .home-writing-featured h3 { font-size: 28px; }
+    .home-writing-featured-meta { align-items: end; }
+    .home-writing-recent-item { grid-template-columns: 1fr auto; gap: 14px; padding: 22px 0; }
+    .home-writing-recent-date { grid-column: 1 / -1; }
+    .home-writing-recent-copy h3 { font-size: 17px; }
+    .home-profile-card { padding: 29px 24px 34px; }
+}
+
+@media (max-width: 370px) {
+    .home-journal { width: calc(100% - 28px); }
+    .home-writing-featured { padding-inline: 19px; }
+    .home-profile-identity { grid-template-columns: 66px minmax(0,1fr); gap: 15px; }
+    .home-profile-avatar { width: 66px; height: 66px; }
+}

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css?v=20260915-5">
     <link rel="stylesheet" href="cms.css?v=20260915-5">
     <link rel="stylesheet" href="standalone.css?v=20260915-1">
+    <link rel="stylesheet" href="writing-magazine.css?v=20260915-2">
     <link rel="stylesheet" href="site-nav.css?v=20260915-1">
 </head>
 <body data-page="writing" class="standalone-body">
@@ -39,72 +40,30 @@
         <header class="standalone-page-heading">
             <p>KIORA.SPACE / WRITING</p>
             <h1>Writing</h1>
+            <span>stories, notes and dreams collected here.</span>
         </header>
-<section
-        class="content-section writing-section reveal"
-        id="writing"
-    >
-
-        <h2>
-            WRITING
-        </h2>
-
-
-        <div class="writing-grid">
-
-            <article class="writing-card writing-category-game">
-                <div class="writing-card-mark">✦</div>
-                <p class="writing-card-index">01 / AFTERGLOW</p>
-                <div class="writing-card-note">
-                    <span>游戏感想</span>
-                    <span data-admin-slot="add-writing-game_review"></span>
+        <section id="writing" class="writing-magazine" aria-label="Writing archive">
+            <div class="writing-magazine-toolbar">
+                <div class="writing-filter-tabs" role="tablist" aria-label="Writing categories">
+                    <button type="button" role="tab" data-writing-filter="all" aria-selected="true">ALL</button>
+                    <button type="button" role="tab" data-writing-filter="game_review" aria-selected="false">AFTERGLOW</button>
+                    <button type="button" role="tab" data-writing-filter="essay" aria-selected="false">MOON NOTES</button>
+                    <button type="button" role="tab" data-writing-filter="dream" aria-selected="false">DREAM LETTERS</button>
                 </div>
-                <div class="writing-article-list" data-writing-list="game_review"></div>
-                <button class="writing-view-all" type="button" data-view-writing-category="game_review">VIEW ALL →</button>
-            </article>
-
-            <article class="writing-card writing-category-essay">
-                <div class="writing-card-mark">☾</div>
-                <p class="writing-card-index">02 / MOON NOTES</p>
-                <div class="writing-card-note">
-                    <span>随笔</span>
-                    <span data-admin-slot="add-writing-essay"></span>
-                </div>
-                <div class="writing-article-list" data-writing-list="essay"></div>
-                <button class="writing-view-all" type="button" data-view-writing-category="essay">VIEW ALL →</button>
-            </article>
-
-            <article class="writing-card writing-category-dream">
-                <div class="writing-card-mark">◇</div>
-                <p class="writing-card-index">03 / DREAM LETTERS</p>
-                <div class="writing-card-note">
-                    <span>梦向创作</span>
-                    <span data-admin-slot="add-writing-dream"></span>
-                </div>
-                <div class="writing-article-list" data-writing-list="dream"></div>
-                <button class="writing-view-all" type="button" data-view-writing-category="dream">VIEW ALL →</button>
-            </article>
-
-        </div>
-
-    </section>
+                <div id="writing-page-admin" class="writing-page-admin"></div>
+            </div>
+            <p id="writing-page-status" class="writing-page-status" role="status">Reading the archive…</p>
+            <div id="writing-page-featured" class="writing-page-featured"></div>
+            <div class="writing-flow-heading"><p>ARTICLE INDEX</p><span id="writing-page-count"></span></div>
+            <div id="writing-page-list" class="writing-page-list"></div>
+        </section>
     </main>
     <footer class="standalone-footer">
         <span>Kiora's little universe</span><span>2026</span>
     </footer>
-<div id="writing-archive-modal" class="archive-modal writing-archive-modal">
-        <div class="archive-modal-backdrop"></div>
-        <section class="archive-modal-card writing-archive-modal-card" aria-labelledby="writing-archive-title">
-            <button class="modal-close" data-close-modal type="button">×</button>
-            <p id="writing-archive-index" class="modal-label"></p>
-            <h3 id="writing-archive-title"></h3>
-            <p id="writing-archive-description" class="writing-archive-description"></p>
-            <div id="writing-archive-years" class="writing-archive-years"></div>
-        </section>
-    </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js?v=20260915-5"></script>
-    <script src="cms.js?v=20260915-5"></script>
+    <script src="cms.js?v=20260915-7"></script>
     <script src="site-nav.js?v=20260915-1"></script>
 </body>
 </html>

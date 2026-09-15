@@ -1,0 +1,60 @@
+.standalone-page-heading > span { display: block; margin-top: 17px; color: rgba(79,69,84,.56); font-size: 11px; letter-spacing: 1.25px; }
+.writing-magazine { width: 100%; }
+.writing-magazine-toolbar { min-height: 62px; display: flex; justify-content: space-between; align-items: start; gap: 30px; margin-bottom: 58px; border-bottom: 1px solid rgba(103,84,110,.16); }
+.writing-filter-tabs { display: flex; align-items: center; gap: clamp(20px,3vw,42px); overflow-x: auto; scrollbar-width: none; }
+.writing-filter-tabs::-webkit-scrollbar { display: none; }
+.writing-filter-tabs button { position: relative; flex: none; min-height: 44px; padding: 0 0 16px; border: 0; background: none; color: rgba(79,69,84,.48); font: inherit; font-size: 9px; letter-spacing: 2.4px; cursor: pointer; }
+.writing-filter-tabs button::after { content: ""; position: absolute; left: 50%; right: 50%; bottom: -1px; border-top: 1px solid rgba(132,96,132,.42); transition: left .22s ease,right .22s ease; }
+.writing-filter-tabs button:hover,
+.writing-filter-tabs button[aria-selected="true"] { color: rgba(65,54,70,.9); }
+.writing-filter-tabs button[aria-selected="true"]::after { left: 0; right: 0; }
+.writing-page-admin button { min-height: 40px; padding: 0; border: 0; background: none; color: rgba(117,82,116,.72); font: inherit; font-size: 8px; letter-spacing: 2px; cursor: pointer; }
+.writing-page-status { margin: 0; color: rgba(82,71,88,.52); font-size: 10px; letter-spacing: 1.2px; }
+
+.writing-page-featured { min-height: 278px; margin-bottom: 72px; padding: clamp(38px,5vw,68px); border-block: 1px solid rgba(103,84,110,.15); background: rgba(255,253,251,.38); }
+.writing-featured-label,.writing-flow-index { margin: 0; color: rgba(143,108,143,.7); font-size: 8px; letter-spacing: 3.3px; }
+.writing-page-featured h2 { max-width: 840px; margin: 20px 0 10px; color: #4b424f; font-size: clamp(32px,4vw,56px); font-weight: 400; line-height: 1.2; }
+.writing-featured-subtitle { margin: 0 0 21px; color: rgba(75,65,80,.72); font-size: 15px; line-height: 1.8; }
+.writing-featured-excerpt { max-width: 780px; margin: 0; color: rgba(77,67,82,.61); font-size: 13px; line-height: 2; }
+.writing-featured-footer { margin-top: 32px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.writing-featured-footer time { color: rgba(92,79,97,.46); font-size: 8px; letter-spacing: 2px; }
+.writing-featured-footer button,
+.writing-flow-meta > .cms-mini-button { min-height: 44px; padding: 0; border: 0; background: none; color: rgba(103,76,106,.76); font: inherit; font-size: 8px; letter-spacing: 2.2px; cursor: pointer; }
+.writing-magazine .cms-mini-button { position: static; }
+
+.writing-flow-heading { display: flex; justify-content: space-between; margin-bottom: 17px; color: rgba(126,96,127,.62); font-size: 8px; letter-spacing: 3px; }
+.writing-flow-heading p { margin: 0; }
+.writing-page-list { border-top: 1px solid rgba(103,84,110,.18); }
+.writing-flow-item { display: grid; grid-template-columns: 170px minmax(0,1fr) 130px; gap: clamp(30px,5vw,78px); padding: 42px 0 44px; border-bottom: 1px solid rgba(103,84,110,.16); }
+.writing-flow-index { padding-top: 5px; }
+.writing-flow-copy h3 { margin: 0 0 9px; color: #4d4552; font-size: clamp(22px,2.5vw,34px); font-weight: 400; line-height: 1.35; }
+.writing-flow-subtitle { margin: 0 0 15px; color: rgba(77,67,82,.7); font-size: 13px; line-height: 1.7; }
+.writing-flow-excerpt { max-width: 650px; margin: 0; color: rgba(77,67,82,.56); font-size: 12px; line-height: 1.9; }
+.writing-flow-tags { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 18px; color: rgba(118,91,119,.58); font-size: 8px; letter-spacing: 1.2px; }
+.writing-flow-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 14px; text-align: right; }
+.writing-flow-meta time { color: rgba(91,78,96,.48); font-size: 8px; letter-spacing: 1.8px; }
+.writing-flow-admin { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.writing-flow-admin button { padding: 0; border: 0; background: none; color: rgba(128,91,123,.54); font: inherit; font-size: 7px; letter-spacing: 1.4px; cursor: pointer; }
+.writing-magazine-empty { padding: 70px 0; color: rgba(80,69,85,.48); font-size: 11px; line-height: 1.9; text-align: center; }
+
+@media (max-width: 767px) {
+    .writing-magazine-toolbar { display: block; margin-bottom: 40px; }
+    .writing-filter-tabs { width: calc(100vw - 40px); gap: 24px; }
+    .writing-page-admin { min-height: 42px; text-align: right; }
+    .writing-page-featured { min-height: 0; margin-bottom: 54px; padding: 32px 23px 36px; }
+    .writing-page-featured h2 { font-size: 31px; }
+    .writing-featured-footer { align-items: end; }
+    .writing-flow-item { grid-template-columns: 1fr auto; gap: 18px; padding: 31px 0 34px; }
+    .writing-flow-index { grid-column: 1 / -1; }
+    .writing-flow-copy h3 { font-size: 23px; }
+    .writing-flow-meta { min-width: 74px; }
+    .writing-flow-admin { max-width: 92px; }
+}
+
+@media (max-width: 370px) {
+    .writing-filter-tabs { width: calc(100vw - 28px); }
+    .writing-page-featured { padding-inline: 18px; }
+    .writing-flow-item { grid-template-columns: 1fr; }
+    .writing-flow-meta { align-items: flex-start; text-align: left; }
+    .writing-flow-admin { justify-content: flex-start; max-width: none; }
+}
