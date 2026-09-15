@@ -555,7 +555,7 @@
         if (performance.now() < navigationLockUntil) return;
         setActiveNavigation(visible.target.id);
     }, { rootMargin: "-28% 0px -58%", threshold: [0, 0.08, 0.25] });
-    ["home", "about", "games", "writing", "archive"].forEach((id) => {
+    ["home", "about", "writing", "archive"].forEach((id) => {
         const section = byId(id);
         if (section) sectionObserver.observe(section);
     });

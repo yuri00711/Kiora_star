@@ -212,23 +212,10 @@ const gameForm =
         "game-form"
     );
 
-let addGameButton = null;
-
-const gameAdminActions =
-    document.getElementById(
-        "game-admin-actions"
-    );
-
 const deleteGameButton =
     document.getElementById(
         "delete-game-btn"
     );
-
-const gameList =
-    document.querySelector(
-        ".game-list"
-    );
-
 
 /* =========================================
    STAR LOGIN
@@ -439,7 +426,7 @@ async function initialiseAuth() {
         ?? null;
 
     updateAdminUI();
-    renderGames(gamesCache);
+    publishGames(gamesCache);
 
 }
 
@@ -455,7 +442,7 @@ supabaseClient
 
             updateAdminUI();
 
-            renderGames(
+            publishGames(
                 gamesCache
             );
 
@@ -464,19 +451,6 @@ supabaseClient
 
 
 function updateAdminUI() {
-    gameAdminActions?.replaceChildren();
-    addGameButton = null;
-
-    if (currentUser && gameAdminActions) {
-        addGameButton = document.createElement("button");
-        addGameButton.id = "add-game-btn";
-        addGameButton.className = "archive-admin-button";
-        addGameButton.type = "button";
-        addGameButton.textContent = "＋ ADD";
-        addGameButton.addEventListener("click", () => openGameEditor(null));
-        gameAdminActions.append(addGameButton);
-    }
-
     window.dispatchEvent(
         new CustomEvent("yuri:authchange", {
             detail: { user: currentUser }
@@ -520,7 +494,7 @@ async function loadGames() {
     gamesCache =
         data ?? [];
 
-    renderGames(
+    publishGames(
         gamesCache
     );
 
@@ -528,286 +502,16 @@ async function loadGames() {
 
 
 /* =========================================
-   RENDER ARCHIVE
+   PUBLISH GAME DATA / OPEN ADMIN EDITOR
 ========================================= */
 
-function renderGames(games) {
-
-    if (!gameList) return;
-
-    gameList.innerHTML = "";
-
-    games.forEach(
-        (game, index) => {
-
-            const article =
-                document.createElement(
-                    "article"
-                );
-
-            article.className =
-                "game-card";
-
-            /*
-            ARCHIVE 001 / 002 / 003
-            */
-
-            const number =
-                document.createElement(
-                    "div"
-                );
-
-            number.className =
-                "game-archive-number";
-
-            number.textContent =
-                `ARCHIVE ${String(
-                    index + 1
-                ).padStart(
-                    3,
-                    "0"
-                )}`;
-
-            article.appendChild(
-                number
-            );
-
-
-            /*
-            ADMIN EDIT
-            */
-
-            if (currentUser) {
-
-                const editButton =
-                    document.createElement(
-                        "button"
-                    );
-
-                editButton.className =
-                    "game-edit-button";
-
-                editButton.type =
-                    "button";
-
-                editButton.textContent =
-                    "EDIT";
-
-                editButton.addEventListener(
-                    "click",
-                    () => {
-                        openGameEditor(
-                            game
-                        );
-                    }
-                );
-
-                article.appendChild(
-                    editButton
-                );
-
-            }
-
-
-            /*
-            COVER
-            */
-
-            const coverFrame =
-                document.createElement(
-                    "div"
-                );
-
-            coverFrame.className =
-                "game-cover-frame";
-
-            const coverUrl =
-                safeImageUrl(
-                    game.cover_url
-                );
-
-            if (coverUrl) {
-
-                const image =
-                    document.createElement(
-                        "img"
-                    );
-
-                image.className =
-                    "game-cover";
-
-                image.src =
-                    coverUrl;
-
-                image.alt =
-                    game.title ||
-                    "game cover";
-
-                image.loading =
-                    "lazy";
-
-                coverFrame.appendChild(
-                    image
-                );
-
-            } else {
-
-                const placeholder =
-                    document.createElement(
-                        "div"
-                    );
-
-                placeholder.className =
-                    "game-cover-placeholder";
-
-                const star =
-                    document.createElement(
-                        "span"
-                    );
-
-                star.textContent =
-                    "✦";
-
-                placeholder.appendChild(
-                    star
-                );
-
-                coverFrame.appendChild(
-                    placeholder
-                );
-
-            }
-
-            article.appendChild(
-                coverFrame
-            );
-
-
-            /*
-            TITLE
-            */
-
-            const title =
-                document.createElement(
-                    "h3"
-                );
-
-            title.className =
-                "game-title";
-
-            title.textContent =
-                game.title || "";
-
-            article.appendChild(
-                title
-            );
-
-
-            /*
-            REVIEW
-            */
-
-            const review =
-                document.createElement(
-                    "p"
-                );
-
-            review.className =
-                "game-review";
-
-            review.textContent =
-                game.review || "";
-
-            article.appendChild(
-                review
-            );
-
-
-            /*
-            FOOTER
-            */
-
-            const meta =
-                document.createElement(
-                    "div"
-                );
-
-            meta.className =
-                "game-meta";
-
-
-            const rating =
-                document.createElement(
-                    "span"
-                );
-
-            rating.className =
-                "game-rating";
-
-            rating.textContent =
-                game.rating !== null &&
-                game.rating !== undefined
-
-                    ? `✦  ${game.rating} / 10`
-
-                    : "✦  UNRATED";
-
-
-            const note =
-                document.createElement(
-                    "a"
-                );
-
-            note.className =
-                "game-view-note";
-
-            note.href =
-                `game.html?id=${encodeURIComponent(game.id)}`;
-
-            note.setAttribute(
-                "aria-label",
-                `View notes for ${game.title || "this game"}`
-            );
-
-            note.textContent =
-                "VIEW NOTE →";
-
-
-            note.addEventListener(
-                "click",
-                () => {
-                    sessionStorage.setItem("yuri:return-scroll", String(window.scrollY));
-                }
-            );
-
-
-            meta.appendChild(
-                rating
-            );
-
-            meta.appendChild(
-                note
-            );
-
-            article.appendChild(
-                meta
-            );
-
-            gameList.appendChild(
-                article
-            );
-
-        }
-    );
-
+function publishGames(games) {
     window.dispatchEvent(
         new CustomEvent("yuri:gameschange", {
             detail: { games: games.slice() }
         })
     );
-
     openRequestedGameEditor();
-
 }
 
 function openRequestedGameEditor() {

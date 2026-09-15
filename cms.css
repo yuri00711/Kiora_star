@@ -25,30 +25,8 @@
     margin: 0 auto;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 45px;
-}
-
-.site-top-brand {
-    display: inline-flex;
-    align-items: center;
-    min-width: 220px;
-    color: rgba(69, 61, 75, .78);
-    font-size: 15px;
-    letter-spacing: 1.5px;
-    text-decoration: none;
-}
-
-.site-top-brand i {
-    width: 70px;
-    margin: 1px 13px 0 16px;
-    border-top: 1px solid rgba(122, 97, 127, .2);
-}
-
-.site-top-brand b {
-    color: rgba(157, 122, 154, .52);
-    font-size: 8px;
-    font-weight: 400;
 }
 
 .site-desktop-nav {
@@ -106,7 +84,6 @@
 
 #home,
 #about,
-#games,
 #writing,
 #archive { scroll-margin-top: 74px; }
 
@@ -118,8 +95,6 @@
 @media (max-width: 900px) {
     .site-top-nav { height: 62px; }
     .site-top-nav-inner { width: calc(100% - 40px); }
-    .site-top-brand { min-width: 0; font-size: 14px; }
-    .site-top-brand i { width: 44px; margin-inline: 13px 10px; }
     .site-desktop-nav { display: none; }
 
     .site-mobile-menu-button {
@@ -207,7 +182,6 @@
 
     #home,
     #about,
-    #games,
     #writing,
     #archive { scroll-margin-top: 62px; }
 
@@ -950,7 +924,6 @@ footer {
 
 h1,
 .section-title,
-.game-title,
 .profile-block-heading h3,
 .writing-card h3,
 .writing-entry h4 {
@@ -961,7 +934,6 @@ h1,
 .jp-text,
 .section-text,
 .archive-subtitle,
-.game-review,
 .rich-reading,
 .writing-card > p:not(.writing-card-index),
 .writing-entry-subtitle,
@@ -995,9 +967,6 @@ h1,
 .cms-admin-button,
 .cms-mini-button,
 .cms-inline-button,
-.archive-admin-button,
-.game-edit-button,
-.game-view-note,
 .writing-read-button {
     color: var(--accent) !important;
 }
@@ -1005,16 +974,12 @@ h1,
 .cms-admin-button:hover,
 .cms-mini-button:hover,
 .cms-inline-button:hover,
-.archive-admin-button:hover,
-.game-edit-button:hover,
-.game-view-note:hover,
 .writing-read-button:hover {
     color: var(--ink) !important;
 }
 
 /* Clear surfaces keep the moving stars behind the text. */
 .profile-block,
-.game-card,
 .writing-card,
 .archive-modal-card {
     border-color: var(--line);
@@ -1023,16 +988,12 @@ h1,
     box-shadow: inset 0 1px rgba(255, 255, 255, 0.9), var(--shadow-soft);
 }
 
-.game-card:only-child { width: 100%; max-width: 520px; }
-
-.content-section > h2,
-.archive-heading h2 {
+.content-section > h2 {
     position: relative;
     width: fit-content;
 }
 
-.content-section > h2::after,
-.archive-heading h2::after {
+.content-section > h2::after {
     content: "✦  ·  ·";
     position: absolute;
     top: 50%;
@@ -1074,8 +1035,7 @@ h1,
 }
 
 .profile-block-heading,
-.otome-tag-groups,
-.game-meta {
+.otome-tag-groups {
     border-color: var(--line-soft);
 }
 
@@ -1085,8 +1045,6 @@ h1,
     color: var(--ink-soft);
 }
 
-.game-archive-number,
-.game-rating,
 .modal-description,
 .archive-modal-card label,
 .character-editor-heading h4,
@@ -1154,7 +1112,6 @@ h1,
 
     .profile-identity-orbit-star,
     .content-section > h2::after,
-    .archive-heading h2::after,
     .desktop-profile-column .profile-content::after {
         animation: none !important;
     }
@@ -1586,16 +1543,6 @@ h1,
         transform: translateX(3px);
     }
 
-    /* The remaining archives stay in the left journal column. */
-    .desktop-main-column .game-list {
-        gap: 24px;
-    }
-
-    .desktop-main-column .game-card {
-        min-height: 390px;
-        border-radius: 14px;
-    }
-
     /* Full category archive, grouped by year without a dashboard-style timeline. */
     .writing-archive-modal-card {
         width: min(1040px, 100%);
@@ -1673,8 +1620,7 @@ h1,
     .starlight-waterfall::after { animation: none !important; opacity: 0.28; }
     body::before { opacity: .2; }
     body::after,
-    .content-section > h2::after,
-    .archive-heading h2::after { display: none; }
+    .content-section > h2::after { display: none; }
 
     .content-section,
     .about-section,
@@ -1699,18 +1645,11 @@ h1,
     .writing-entry { min-width: 0; padding: 18px; border-radius: 10px; }
     .writing-entry h4 { overflow-wrap: anywhere; }
     .writing-entry-cover { height: auto; max-height: 230px; }
-    .game-list { margin-top: 34px; gap: 20px; }
-    .game-card:only-child { max-width: none; }
-    .game-card { min-height: 0; padding: 20px; border-radius: 12px; }
-    .game-edit-button { top: 17px; right: 46px; }
     #archive { padding-top: 58px !important; padding-bottom: 58px !important; }
 
     .cms-admin-button,
     .cms-mini-button,
     .cms-inline-button,
-    .archive-admin-button,
-    .game-edit-button,
-    .game-view-note,
     .writing-read-button,
     .character-add-button,
     .character-edit-button {
@@ -1772,7 +1711,6 @@ h1,
     }
 
     .desktop-main-column .writing-grid,
-    .desktop-main-column .game-list,
     .writing-archive-list {
         grid-template-columns: 1fr;
     }
