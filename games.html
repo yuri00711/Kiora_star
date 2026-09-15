@@ -6,14 +6,37 @@
     <title>Games Archive · Kiora</title>
     <meta name="description" content="Kiora's quiet archive of games, stories and constellations.">
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="games.css?v=20260915-1">
+    <link rel="stylesheet" href="style.css?v=20260915-5">
+    <link rel="stylesheet" href="cms.css?v=20260915-5">
+    <link rel="stylesheet" href="games.css?v=20260915-2">
+    <link rel="stylesheet" href="site-nav.css?v=20260915-1">
 </head>
-<body>
+<body data-page="games">
     <div class="games-atmosphere" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="games-stars" aria-hidden="true"><span>✦</span><span>·</span><span>◇</span><span>·</span></div>
 
+    <header id="site-top-nav" class="site-top-nav">
+        <div class="site-top-nav-inner">
+            <a class="site-top-logo" href="/" aria-label="Kiora home">Kiora</a>
+            <nav class="site-desktop-nav" aria-label="Primary navigation">
+                <a href="/" data-page-link="home">HOME</a>
+                <a href="about.html" data-page-link="about">ABOUT</a>
+                <a href="archive.html" data-page-link="archive">ARCHIVE</a>
+                <a href="games.html" data-page-link="games">GAMES</a>
+                <a href="writing.html" data-page-link="writing">WRITING</a>
+            </nav>
+            <button id="site-mobile-menu-button" class="site-mobile-menu-button" type="button" aria-label="打开页面导航" aria-controls="site-mobile-menu" aria-expanded="false"><span>MENU</span><i aria-hidden="true"></i></button>
+        </div>
+        <nav id="site-mobile-menu" class="site-mobile-menu" aria-label="Mobile navigation" aria-hidden="true">
+            <a href="/" data-page-link="home"><span>01</span>HOME</a>
+            <a href="about.html" data-page-link="about"><span>02</span>ABOUT</a>
+            <a href="archive.html" data-page-link="archive"><span>03</span>ARCHIVE</a>
+            <a href="games.html" data-page-link="games"><span>04</span>GAMES</a>
+            <a href="writing.html" data-page-link="writing"><span>05</span>WRITING</a>
+        </nav>
+    </header>
+
     <header class="games-header">
-        <a class="games-home" href="index.html">KIORA.SPACE</a>
         <div class="games-heading-copy">
             <p>PRIVATE CELESTIAL INDEX / 03</p>
             <h1>Games Archive</h1>
@@ -60,7 +83,7 @@
         </section>
     </main>
 
-    <footer class="games-footer"><span>KIORA / PRIVATE ARCHIVE</span><a href="index.html">RETURN HOME ↑</a></footer>
+    <footer class="games-footer"><span>KIORA / PRIVATE ARCHIVE</span><a href="/">RETURN HOME ↑</a></footer>
 
     <div id="filter-sheet" class="filter-sheet" hidden>
         <button class="filter-sheet-backdrop" type="button" aria-label="Close filters"></button>
@@ -72,8 +95,259 @@
         </section>
     </div>
 
+<div id="game-modal" class="archive-modal">
+        <div class="archive-modal-backdrop"></div>
+
+        <div class="archive-modal-card game-editor-card">
+
+            <button
+                class="modal-close"
+                data-close-modal
+                type="button"
+            >
+                ×
+            </button>
+
+            <p class="modal-label">
+                ARCHIVE ENTRY
+            </p>
+
+            <h3 id="game-modal-title">
+                New record
+            </h3>
+
+            <form id="game-form">
+
+                <input
+                    id="game-id"
+                    type="hidden"
+                >
+
+                <label>
+                    TITLE
+                    <input
+                        id="game-title"
+                        type="text"
+                        required
+                    >
+                </label>
+
+                <label>
+                    REVIEW
+                    <textarea
+                        id="game-review"
+                        rows="6"
+                    ></textarea>
+                </label>
+
+                <div class="form-grid">
+
+                    <label>
+                        RATING
+                        <input
+                            id="game-rating"
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                        >
+                    </label>
+
+                    <label>
+                        SORT ORDER
+                        <input
+                            id="game-sort-order"
+                            type="number"
+                        >
+                    </label>
+
+                </div>
+
+                <label>
+                    COVER IMAGE URL
+                    <input
+                        id="game-cover-url"
+                        type="url"
+                        placeholder="https://..."
+                    >
+                </label>
+
+                <!-- =========================
+                 CHARACTER ARCHIVE
+                ========================= -->
+
+                <div class="character-editor-section">
+
+                    <div class="character-editor-heading">
+                        <div>
+                            <p class="modal-label">
+                                CHARACTER ARCHIVE
+                            </p>
+
+                            <h4>
+                                攻略角色
+                            </h4>
+                        </div>
+
+                        <button
+                            id="add-character-btn"
+                            class="character-add-button"
+                            type="button"
+                        >
+                            ＋ ADD CHARACTER
+                        </button>
+                    </div>
+
+                    <div
+                        id="character-editor-list"
+                        class="character-editor-list"
+                    >
+                    </div>
+
+                </div>
+
+                <p id="game-form-message" class="form-message"></p>
+
+                <div class="editor-actions">
+
+                    <button
+                        class="modal-primary-button"
+                        type="submit"
+                    >
+                        SAVE RECORD
+                    </button>
+
+                    <button
+                        id="delete-game-btn"
+                        class="modal-danger-button hidden"
+                        type="button"
+                    >
+                        DELETE
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+<div id="character-modal" class="archive-modal">
+
+        <div class="archive-modal-backdrop"></div>
+
+        <div class="archive-modal-card character-modal-card">
+
+            <button
+                class="modal-close"
+                data-close-modal
+                type="button"
+            >
+                ×
+            </button>
+
+            <p class="modal-label">
+                CHARACTER RECORD
+            </p>
+
+            <h3 id="character-modal-title">
+                New character
+            </h3>
+
+            <form id="character-form">
+
+                <input id="character-id" type="hidden">
+                <input id="character-game-id" type="hidden">
+
+                <label>
+                    NAME
+                    <input
+                        id="character-name"
+                        type="text"
+                        required
+                    >
+                </label>
+
+                <label>
+                    SUBTITLE
+                    <input
+                        id="character-subtitle"
+                        type="text"
+                    >
+                </label>
+
+                <label>
+                    REVIEW
+                    <textarea
+                        id="character-review"
+                        rows="7"
+                    ></textarea>
+                </label>
+
+                <div class="form-grid">
+
+                    <label>
+                        RATING
+                        <input
+                            id="character-rating"
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                        >
+                    </label>
+
+                    <label>
+                        SORT ORDER
+                        <input
+                            id="character-sort-order"
+                            type="number"
+                        >
+                    </label>
+
+                </div>
+
+                <label>
+                    IMAGE URL
+                    <input
+                        id="character-image-url"
+                        type="url"
+                    >
+                </label>
+
+                <p
+                    id="character-form-message"
+                    class="form-message"
+                ></p>
+
+                <div class="editor-actions">
+
+                    <button
+                        class="modal-primary-button"
+                        type="submit"
+                    >
+                        SAVE CHARACTER
+                    </button>
+
+                    <button
+                        id="delete-character-btn"
+                        class="modal-danger-button hidden"
+                        type="button"
+                    >
+                        DELETE CHARACTER
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js?v=20260915-5"></script>
     <script src="article-common.js"></script>
-    <script src="games.js?v=20260915-1"></script>
+    <script src="games.js?v=20260915-2"></script>
+    <script src="site-nav.js?v=20260915-1"></script>
 </body>
 </html>

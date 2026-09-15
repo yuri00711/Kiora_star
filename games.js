@@ -226,7 +226,7 @@
     if (sessionResult.data.session?.user) {
         const admin = document.getElementById("games-admin-actions");
         const add = document.createElement("a");
-        add.href = "index.html?newGame=1#games";
+        add.href = "games.html?newGame=1";
         add.textContent = "＋ ADD RECORD";
         admin.append(add);
     }

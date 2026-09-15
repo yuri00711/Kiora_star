@@ -169,7 +169,7 @@
         if (dirty && !window.confirm("还有未保存的修改，确定离开写作页吗？草稿会保留在此设备。")) return;
         const stored = sessionStorage.getItem("yuri:return-scroll");
         if (stored) sessionStorage.setItem("yuri:restore-scroll", stored);
-        window.location.href = "index.html#writing";
+        window.location.href = "writing.html";
     }
     field("write-back").addEventListener("click", goBack);
 

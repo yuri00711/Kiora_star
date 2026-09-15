@@ -11,7 +11,7 @@
     function returnToJournal() {
         const stored = sessionStorage.getItem("yuri:return-scroll");
         if (stored) sessionStorage.setItem("yuri:restore-scroll", stored);
-        window.location.href = "index.html#writing";
+        window.location.href = "writing.html";
     }
 
     document.getElementById("reader-back").addEventListener("click", returnToJournal);

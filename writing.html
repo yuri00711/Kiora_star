@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Writing · Kiora</title>
+    <meta name="description" content="Kiora's writing archive — afterglow, moon notes and dream letters.">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="style.css?v=20260915-5">
+    <link rel="stylesheet" href="cms.css?v=20260915-5">
+    <link rel="stylesheet" href="standalone.css?v=20260915-1">
+    <link rel="stylesheet" href="site-nav.css?v=20260915-1">
+</head>
+<body data-page="writing" class="standalone-body">
+    <div class="standalone-atmosphere" aria-hidden="true"><i></i><i></i><i></i><span>✦</span><span>◇</span></div>
+    <header id="site-top-nav" class="site-top-nav">
+        <div class="site-top-nav-inner">
+            <a class="site-top-logo" href="/" aria-label="Kiora home">Kiora</a>
+            <nav class="site-desktop-nav" aria-label="Primary navigation">
+                <a href="/" data-page-link="home">HOME</a>
+                <a href="about.html" data-page-link="about">ABOUT</a>
+                <a href="archive.html" data-page-link="archive">ARCHIVE</a>
+                <a href="games.html" data-page-link="games">GAMES</a>
+                <a href="writing.html" data-page-link="writing">WRITING</a>
+            </nav>
+            <button id="site-mobile-menu-button" class="site-mobile-menu-button" type="button" aria-label="打开页面导航" aria-controls="site-mobile-menu" aria-expanded="false">
+                <span>MENU</span><i aria-hidden="true"></i>
+            </button>
+        </div>
+        <nav id="site-mobile-menu" class="site-mobile-menu" aria-label="Mobile navigation" aria-hidden="true">
+            <a href="/" data-page-link="home"><span>01</span>HOME</a>
+            <a href="about.html" data-page-link="about"><span>02</span>ABOUT</a>
+            <a href="archive.html" data-page-link="archive"><span>03</span>ARCHIVE</a>
+            <a href="games.html" data-page-link="games"><span>04</span>GAMES</a>
+            <a href="writing.html" data-page-link="writing"><span>05</span>WRITING</a>
+        </nav>
+    </header>
+    <main class="standalone-page standalone-writing">
+        <header class="standalone-page-heading">
+            <p>KIORA.SPACE / WRITING</p>
+            <h1>Writing</h1>
+        </header>
+<section
+        class="content-section writing-section reveal"
+        id="writing"
+    >
+
+        <h2>
+            WRITING
+        </h2>
+
+
+        <div class="writing-grid">
+
+            <article class="writing-card writing-category-game">
+                <div class="writing-card-mark">✦</div>
+                <p class="writing-card-index">01 / AFTERGLOW</p>
+                <div class="writing-card-note">
+                    <span>游戏感想</span>
+                    <span data-admin-slot="add-writing-game_review"></span>
+                </div>
+                <div class="writing-article-list" data-writing-list="game_review"></div>
+                <button class="writing-view-all" type="button" data-view-writing-category="game_review">VIEW ALL →</button>
+            </article>
+
+            <article class="writing-card writing-category-essay">
+                <div class="writing-card-mark">☾</div>
+                <p class="writing-card-index">02 / MOON NOTES</p>
+                <div class="writing-card-note">
+                    <span>随笔</span>
+                    <span data-admin-slot="add-writing-essay"></span>
+                </div>
+                <div class="writing-article-list" data-writing-list="essay"></div>
+                <button class="writing-view-all" type="button" data-view-writing-category="essay">VIEW ALL →</button>
+            </article>
+
+            <article class="writing-card writing-category-dream">
+                <div class="writing-card-mark">◇</div>
+                <p class="writing-card-index">03 / DREAM LETTERS</p>
+                <div class="writing-card-note">
+                    <span>梦向创作</span>
+                    <span data-admin-slot="add-writing-dream"></span>
+                </div>
+                <div class="writing-article-list" data-writing-list="dream"></div>
+                <button class="writing-view-all" type="button" data-view-writing-category="dream">VIEW ALL →</button>
+            </article>
+
+        </div>
+
+    </section>
+    </main>
+    <footer class="standalone-footer">
+        <span>Kiora's little universe</span><span>2026</span>
+    </footer>
+<div id="writing-archive-modal" class="archive-modal writing-archive-modal">
+        <div class="archive-modal-backdrop"></div>
+        <section class="archive-modal-card writing-archive-modal-card" aria-labelledby="writing-archive-title">
+            <button class="modal-close" data-close-modal type="button">×</button>
+            <p id="writing-archive-index" class="modal-label"></p>
+            <h3 id="writing-archive-title"></h3>
+            <p id="writing-archive-description" class="writing-archive-description"></p>
+            <div id="writing-archive-years" class="writing-archive-years"></div>
+        </section>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js?v=20260915-5"></script>
+    <script src="cms.js?v=20260915-5"></script>
+    <script src="site-nav.js?v=20260915-1"></script>
+</body>
+</html>

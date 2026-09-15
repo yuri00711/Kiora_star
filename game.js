@@ -154,8 +154,8 @@
     const isAdmin = Boolean(sessionResult.data.session?.user);
     if (isAdmin) {
         const actions = document.getElementById("game-admin-actions");
-        document.getElementById("game-edit-record").href = `index.html?editGame=${encodeURIComponent(game.id)}#games`;
-        document.getElementById("game-add-character").href = `index.html?editGame=${encodeURIComponent(game.id)}&addCharacter=1#games`;
+        document.getElementById("game-edit-record").href = `games.html?editGame=${encodeURIComponent(game.id)}`;
+        document.getElementById("game-add-character").href = `games.html?editGame=${encodeURIComponent(game.id)}&addCharacter=1`;
         actions.hidden = false;
     }
 

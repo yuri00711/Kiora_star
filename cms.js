@@ -497,71 +497,9 @@
         }
     }
 
-    // Top navigation: horizontal index on desktop, compact dropdown on mobile.
-    const topNavigation = byId("site-top-nav");
-    const mobileMenu = byId("site-mobile-menu");
-    const mobileMenuButton = byId("site-mobile-menu-button");
-    let navigationLockUntil = 0;
-
-    function setActiveNavigation(sectionId) {
-        document.querySelectorAll("[data-home-section]").forEach((link) => {
-            link.classList.toggle("active", link.dataset.homeSection === sectionId);
-        });
-    }
-
-    function setMobileMenu(open, returnFocus = false) {
-        mobileMenu?.classList.toggle("active", open);
-        mobileMenu?.setAttribute("aria-hidden", String(!open));
-        mobileMenuButton?.setAttribute("aria-expanded", String(open));
-        if (open) mobileMenu?.querySelector("a")?.focus();
-        else if (returnFocus) mobileMenuButton?.focus();
-    }
-
-    mobileMenuButton?.addEventListener("click", () => {
-        setMobileMenu(mobileMenuButton.getAttribute("aria-expanded") !== "true");
-    });
-    mobileMenu?.querySelectorAll("a").forEach((link) => {
-        link.addEventListener("click", () => setMobileMenu(false));
-    });
-    document.querySelectorAll('[data-home-section][href^="#"]').forEach((link) => {
-        link.addEventListener("click", () => {
-            navigationLockUntil = performance.now() + 700;
-            setActiveNavigation(link.dataset.homeSection);
-        });
-    });
-    document.addEventListener("click", (event) => {
-        if (mobileMenu?.classList.contains("active") && !topNavigation?.contains(event.target)) setMobileMenu(false);
-    });
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && mobileMenu?.classList.contains("active")) setMobileMenu(false, true);
-    });
-    window.addEventListener("resize", () => {
-        if (window.innerWidth > 900) setMobileMenu(false);
-    });
-
-    const updateNavigationSurface = () => topNavigation?.classList.toggle("is-scrolled", window.scrollY > 18);
-    updateNavigationSurface();
-    window.addEventListener("scroll", updateNavigationSurface, { passive: true });
-
-    const visibleHomeSections = new Map();
-    const sectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting) visibleHomeSections.set(entry.target.id, entry);
-            else visibleHomeSections.delete(entry.target.id);
-        });
-        const visible = [...visibleHomeSections.values()]
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
-        if (performance.now() < navigationLockUntil) return;
-        setActiveNavigation(visible.target.id);
-    }, { rootMargin: "-28% 0px -58%", threshold: [0, 0.08, 0.25] });
-    ["home", "about", "writing", "archive"].forEach((id) => {
-        const section = byId(id);
-        if (section) sectionObserver.observe(section);
-    });
-
     // Profile loading and rendering
     async function loadProfile() {
+        if (!byId("profile-content")) return;
         byId("profile-status")?.classList.remove("hidden");
         showMessage("profile-status", "Loading profile…");
         const queries = await Promise.all([
@@ -594,6 +532,7 @@
     }
 
     function renderProfile() {
+        if (!byId("profile-content")) return;
         renderProfileIdentity();
         byId("free-space-content").innerHTML = state.profile.free_space_content
             ? markdownToHtml(state.profile.free_space_content)
@@ -1115,6 +1054,7 @@
 
     // Writings
     async function loadWritings() {
+        if (!document.querySelector("[data-writing-list]")) return;
         document.querySelectorAll("[data-writing-list]").forEach((list) => {
             list.replaceChildren(emptyState("Loading…"));
         });

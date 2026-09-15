@@ -36,7 +36,7 @@ a { color: inherit; text-decoration: none; }
 .games-stars span:nth-child(3) { right: 6%; top: 29%; animation-delay: -4s; }
 .games-stars span:nth-child(4) { right: 27%; bottom: 8%; animation-delay: -1s; }
 
-.games-header { width: min(1480px, calc(100% - 96px)); margin: 0 auto; padding: 62px 0 44px; display: grid; grid-template-columns: 230px 1fr auto; align-items: end; gap: 46px; border-bottom: 1px solid var(--line); }
+.games-header { width: min(1480px, calc(100% - 96px)); margin: 0 auto; padding: 62px 0 44px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 46px; border-bottom: 1px solid var(--line); }
 .games-home, .games-header-nav a, #games-admin-actions a { font-size: 10px; letter-spacing: 3px; color: var(--muted); transition: color .25s ease; }
 .games-home:hover, .games-header-nav a:hover, #games-admin-actions a:hover { color: #735f78; }
 .games-heading-copy p, .games-result-heading p, .filter-section > p, .search-section label { margin: 0 0 12px; color: #9b7c9b; font-size: 9px; letter-spacing: 4px; }
@@ -104,8 +104,7 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 1080px) {
     .games-header, .games-layout, .games-footer { width: min(100% - 56px, 1100px); }
-    .games-header { grid-template-columns: 180px 1fr; }
-    .games-header-nav { grid-column: 2; }
+    .games-header { grid-template-columns: 1fr auto; }
     .games-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 30px; }
     .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .game-index-row { grid-template-columns: 30px 42px 1fr 92px 110px 38px; gap: 10px; }
@@ -114,7 +113,6 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 760px) {
     body.sheet-open { overflow: hidden; }
     .games-header { width: calc(100% - 36px); padding: 32px 0 27px; display: block; }
-    .games-home { display: inline-block; margin-bottom: 34px; }
     .games-heading-copy p { margin-bottom: 9px; font-size: 8px; }
     .games-heading-copy h1 { font-size: clamp(35px, 11vw, 48px); }
     .games-heading-copy > span { max-width: 300px; font-size: 11px; line-height: 1.7; }

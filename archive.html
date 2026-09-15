@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Archive · Kiora</title>
+    <meta name="description" content="Kiora's collection and music archive.">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="style.css?v=20260915-5">
+    <link rel="stylesheet" href="cms.css?v=20260915-5">
+    <link rel="stylesheet" href="music.css?v=20260914-1">
+    <link rel="stylesheet" href="standalone.css?v=20260915-1">
+    <link rel="stylesheet" href="site-nav.css?v=20260915-1">
+</head>
+<body data-page="archive" class="standalone-body">
+    <div class="standalone-atmosphere" aria-hidden="true"><i></i><i></i><i></i><span>✦</span><span>◇</span></div>
+    <header id="site-top-nav" class="site-top-nav">
+        <div class="site-top-nav-inner">
+            <a class="site-top-logo" href="/" aria-label="Kiora home">Kiora</a>
+            <nav class="site-desktop-nav" aria-label="Primary navigation">
+                <a href="/" data-page-link="home">HOME</a>
+                <a href="about.html" data-page-link="about">ABOUT</a>
+                <a href="archive.html" data-page-link="archive">ARCHIVE</a>
+                <a href="games.html" data-page-link="games">GAMES</a>
+                <a href="writing.html" data-page-link="writing">WRITING</a>
+            </nav>
+            <button id="site-mobile-menu-button" class="site-mobile-menu-button" type="button" aria-label="打开页面导航" aria-controls="site-mobile-menu" aria-expanded="false">
+                <span>MENU</span><i aria-hidden="true"></i>
+            </button>
+        </div>
+        <nav id="site-mobile-menu" class="site-mobile-menu" aria-label="Mobile navigation" aria-hidden="true">
+            <a href="/" data-page-link="home"><span>01</span>HOME</a>
+            <a href="about.html" data-page-link="about"><span>02</span>ABOUT</a>
+            <a href="archive.html" data-page-link="archive"><span>03</span>ARCHIVE</a>
+            <a href="games.html" data-page-link="games"><span>04</span>GAMES</a>
+            <a href="writing.html" data-page-link="writing"><span>05</span>WRITING</a>
+        </nav>
+    </header>
+    <main class="standalone-page standalone-archive">
+        <header class="standalone-page-heading">
+            <p>KIORA.SPACE / ARCHIVE</p>
+            <h1>Archive</h1>
+        </header>
+<section
+        class="content-section reveal"
+        id="archive"
+    >
+
+        <h2>
+            ARCHIVE
+        </h2>
+
+        <section class="music-archive" aria-labelledby="music-archive-title">
+            <div class="music-sky" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+            </div>
+            <header class="music-archive-heading">
+                <div>
+                    <p>MUSIC / NOW PLAYING</p>
+                    <h3 id="music-archive-title">MUSIC ARCHIVE</h3>
+                    <span>Sounds kept in a small constellation.</span>
+                </div>
+                <div id="music-admin-actions"></div>
+            </header>
+            <p id="music-status" class="music-status" role="status">Loading music archive…</p>
+            <div id="music-now-playing" class="music-now-playing" hidden></div>
+            <section id="music-library" class="music-library" hidden>
+                <div class="music-library-heading"><p>ARCHIVED TRACKS</p><span id="music-count"></span></div>
+                <div id="music-list" class="music-list"></div>
+            </section>
+        </section>
+    </section>
+    </main>
+    <footer class="standalone-footer">
+        <span>Kiora's little universe</span><span>2026</span>
+    </footer>
+<div id="music-modal" class="archive-modal" data-protect-draft>
+        <div class="archive-modal-backdrop"></div>
+        <section class="archive-modal-card music-editor-card" aria-labelledby="music-modal-title">
+            <button class="modal-close" data-close-modal type="button">×</button>
+            <p class="modal-label">MUSIC RECORD</p>
+            <h3 id="music-modal-title">New music</h3>
+            <form id="music-form">
+                <input id="music-id" type="hidden">
+                <label>TITLE<input id="music-title" type="text" required maxlength="240"></label>
+                <label>ARTIST<input id="music-artist" type="text" maxlength="240"></label>
+                <div class="form-grid">
+                    <label>PROVIDER<select id="music-provider" required><option value="netease">NETEASE</option><option value="spotify">SPOTIFY</option><option value="youtube">YOUTUBE</option><option value="apple_music">APPLE MUSIC</option></select></label>
+                    <label>SORT ORDER<input id="music-sort-order" type="number"></label>
+                </div>
+                <label>MUSIC URL<input id="music-url" type="url" required placeholder="Official music page URL"></label>
+                <label>COVER IMAGE URL<input id="music-cover-url" type="url" placeholder="https://..."></label>
+                <label>MY NOTE<textarea id="music-note" rows="4"></textarea></label>
+                <label>LYRIC EXCERPT<textarea id="music-lyric-excerpt" rows="3" placeholder="Only text you have the right to display"></textarea></label>
+                <label>LRC DATA<textarea id="music-lrc-data" rows="6" placeholder="[00:12.50] lyric line"></textarea></label>
+                <p id="music-form-message" class="form-message" role="status"></p>
+                <div class="editor-actions">
+                    <button class="modal-primary-button" type="submit">SAVE MUSIC</button>
+                    <button id="delete-music-btn" class="modal-danger-button hidden" type="button">DELETE</button>
+                </div>
+            </form>
+        </section>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js?v=20260915-5"></script>
+    <script src="music-archive.js?v=20260915-1"></script>
+    <script src="site-nav.js?v=20260915-1"></script>
+</body>
+</html>

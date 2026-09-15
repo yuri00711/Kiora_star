@@ -3,6 +3,7 @@
 
     const bridge = window.yuriArchive;
     if (!bridge) return;
+    if (!document.getElementById("music-archive-title") || !document.getElementById("music-form")) return;
     const db = bridge.supabaseClient;
     const byId = (id) => document.getElementById(id);
     const state = { tracks: [], currentId: null, youtubePlayer: null, youtubeTimer: null, manualUntil: 0 };

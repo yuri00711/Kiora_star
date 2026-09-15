@@ -13,7 +13,7 @@
     function saveDraft() { if (!dirty) return; localStorage.setItem(draftKey, JSON.stringify(collect())); byId("settings-save-state").textContent = "DRAFT SAVED"; }
     form.addEventListener("input", () => { dirty = true; byId("settings-save-state").textContent = "UNSAVED"; clearTimeout(timer); timer = setTimeout(saveDraft, 2500); });
     window.addEventListener("beforeunload", (event) => { if (!dirty) return; saveDraft(); event.preventDefault(); event.returnValue = ""; });
-    function back() { if (dirty && !confirm("还有未保存的修改，确定返回吗？草稿会保留在此设备。")) return; window.location.href = "index.html#about"; }
+    function back() { if (dirty && !confirm("还有未保存的修改，确定返回吗？草稿会保留在此设备。")) return; window.location.href = "about.html"; }
     byId("settings-back").addEventListener("click", back);
     const { data: { session } } = await db.auth.getSession();
     if (!session?.user) { byId("settings-gate").textContent = "此页面仅限管理员使用，正在返回首页……"; setTimeout(() => location.href = "index.html", 900); return; }

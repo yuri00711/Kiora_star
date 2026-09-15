@@ -816,6 +816,10 @@ if (gameForm) {
 
             await loadGames();
 
+            if (document.body.dataset.page === "games") {
+                window.location.replace("games.html");
+            }
+
         }
     );
 
@@ -882,6 +886,10 @@ if (deleteGameButton) {
             );
 
             await loadGames();
+
+            if (document.body.dataset.page === "games") {
+                window.location.replace("games.html");
+            }
 
         }
     );
