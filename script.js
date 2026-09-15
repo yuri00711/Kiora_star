@@ -366,41 +366,95 @@ if (loginForm) {
             message.textContent =
                 "Checking archive key…";
 
-            const {
-                data,
-                error
-            } =
-                await supabaseClient
-                    .auth
-                    .signInWithPassword({
-                        email,
-                        password
-                    });
+            const submitButton =
+                loginForm.querySelector(
+                    'button[type="submit"]'
+                );
 
-            if (error) {
-
-                message.textContent =
-                    "登录失败：" +
-                    error.message;
-
-                return;
+            if (submitButton) {
+                submitButton.disabled = true;
             }
 
-            currentUser =
-                data.user;
+            try {
+                const {
+                    data: loginData,
+                    error: invokeError
+                } =
+                    await supabaseClient
+                        .functions
+                        .invoke(
+                            "admin-login",
+                            {
+                                body: {
+                                    username,
+                                    password
+                                }
+                            }
+                        );
 
-            message.textContent =
-                "";
+                if (
+                    invokeError ||
+                    !loginData?.access_token ||
+                    !loginData?.refresh_token
+                ) {
+                    message.textContent =
+                        "登录失败：ID 或密码不正确。";
+                    return;
+                }
 
-            loginForm.reset();
+                const {
+                    data: sessionData,
+                    error: sessionError
+                } =
+                    await supabaseClient
+                        .auth
+                        .setSession({
+                            access_token:
+                                loginData.access_token,
+                            refresh_token:
+                                loginData.refresh_token
+                        });
 
-            closeModal(
-                loginModal
-            );
+                if (
+                    sessionError ||
+                    !sessionData?.session ||
+                    !sessionData?.user
+                ) {
+                    message.textContent =
+                        "登录服务暂时不可用，请稍后再试。";
+                    return;
+                }
 
-            updateAdminUI();
+                currentUser =
+                    sessionData.user;
 
-            await loadGames();
+                message.textContent =
+                    "";
+
+                loginForm.reset();
+
+                closeModal(
+                    loginModal
+                );
+
+                updateAdminUI();
+
+                await loadGames();
+
+            } catch (error) {
+                console.error(
+                    "管理员登录请求失败：",
+                    error
+                );
+
+                message.textContent =
+                    "登录服务暂时不可用，请稍后再试。";
+
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+            }
 
         }
     );

@@ -163,11 +163,12 @@
             <form id="login-form">
 
                 <label>
-                    EMAIL
+                    ID
                     <input
-                        id="login-email"
-                        type="email"
-                        autocomplete="email"
+                        id="login-username"
+                        type="text"
+                        autocomplete="username"
+                        spellcheck="false"
                         required
                     >
                 </label>
@@ -178,6 +179,7 @@
                         id="login-password"
                         type="password"
                         autocomplete="current-password"
+                        inputmode="numeric"
                         required
                     >
                 </label>
@@ -195,7 +197,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js?v=20260915-5"></script>
+    <script src="script.js?v=20260915-6"></script>
     <script src="cms.js?v=20260915-7"></script>
     <script src="site-nav.js?v=20260915-1"></script>
 </body>
