@@ -3,6 +3,7 @@
 
     const common = window.yuriArticles;
     const db = common.getClient();
+    const auth = window.KioraAuth;
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
     const status = document.getElementById("reader-status");
@@ -56,10 +57,20 @@
         return;
     }
 
-    const { data: { session } } = await db.auth.getSession();
-    let articleQuery = db.from("writings").select("*").eq("id", id);
-    if (!session?.user) articleQuery = articleQuery.eq("is_public", true);
-    const { data: writing, error } = await articleQuery.maybeSingle();
+    await auth.initialize(db);
+    let writing;
+    let error;
+    if (auth.role === "editor") {
+        const result = await auth.readForEditor("writing_get", { id });
+        writing = result.data;
+        error = result.error;
+    } else {
+        let articleQuery = db.from("writings").select("*").eq("id", id);
+        if (auth.role !== "owner") articleQuery = articleQuery.eq("is_public", true);
+        const result = await articleQuery.maybeSingle();
+        writing = result.data;
+        error = result.error;
+    }
     if (error || !writing || writing.category === "archive") {
         status.textContent = error?.message || "这篇文字不存在或暂未公开。";
         return;

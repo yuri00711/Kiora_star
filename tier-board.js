@@ -2,6 +2,7 @@
     "use strict";
 
     const db = window.yuriArticles.getClient();
+    const auth = window.KioraAuth;
     const statusLine = document.getElementById("tier-status");
     const boardRoot = document.getElementById("tier-board");
     let games = [];
@@ -18,12 +19,12 @@
 
     async function loadAll() {
         const params = new URLSearchParams(location.search);
-        const [gamesResult, boardsResult, sessionResult] = await Promise.all([
+        const [gamesResult, boardsResult] = await Promise.all([
             db.from("games").select("id,title,cover_url,sort_order").order("sort_order", { ascending: true, nullsFirst: false }),
             db.from("tier_boards").select("id,title,description,sort_order,created_at,updated_at").order("sort_order", { ascending: true, nullsFirst: false }),
-            db.auth.getSession()
+            auth.initialize(db)
         ]);
-        isAdmin = Boolean(sessionResult.data.session?.user);
+        isAdmin = auth.can("tier-board:create") || auth.can("tier-board:edit");
         if (boardsResult.error) {
             statusLine.textContent = boardsResult.error.message.includes("tier_boards")
                 ? "Tier Board 尚未启用。请先运行 supabase-games-migration.sql。"
@@ -128,9 +129,9 @@
         root.append(
             button("EDIT BOARD", editBoard),
             button("＋ ADD TIER", createTierSection),
-            button("EXPORT TIER IMAGE", exportBoard, "export-button"),
-            button("DELETE BOARD", deleteBoard, "danger-button")
+            button("EXPORT TIER IMAGE", exportBoard, "export-button")
         );
+        if (auth.role === "owner") root.append(button("DELETE BOARD", deleteBoard, "danger-button"));
         const label = document.createElement("label");
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
@@ -162,9 +163,9 @@
                 handle,
                 button("↑", () => shiftTier(section.id, -1), "tier-order-button"),
                 button("↓", () => shiftTier(section.id, 1), "tier-order-button"),
-                button("EDIT", () => editTier(section)),
-                button("×", () => deleteTier(section), "danger-button")
+                button("EDIT", () => editTier(section))
             );
+            if (auth.role === "owner") controls.append(button("×", () => deleteTier(section), "danger-button"));
             heading.append(controls);
         }
         const dropzone = document.createElement("div");
@@ -203,8 +204,11 @@
             handle.dataset.dragKind = "game";
             handle.dataset.dragId = game.id;
             tile.append(handle);
-            if (item) tile.append(button("×", () => removeGame(item), "remove-game"));
-            else if (sections.length) tile.append(button("＋", () => moveGame(game.id, sections[0].id), "quick-add-game"));
+            if (item) {
+                if (auth.role === "owner") tile.append(button("×", () => removeGame(item), "remove-game"));
+            } else if (sections.length) {
+                tile.append(button("＋", () => moveGame(game.id, sections[0].id), "quick-add-game"));
+            }
         }
         return tile;
     }
@@ -226,7 +230,8 @@
         const title = prompt("Tier Board title");
         if (!title?.trim()) return;
         const description = prompt("Description (optional)") || null;
-        const { data, error } = await db.from("tier_boards").insert({ title: title.trim(), description, sort_order: boards.length }).select("id,title,description,sort_order,created_at,updated_at").single();
+        const payload = { title: title.trim(), description, sort_order: boards.length };
+        const { data, error } = await auth.write("tier_board_create", payload, () => db.from("tier_boards").insert(payload).select("id,title,description,sort_order,created_at,updated_at").single());
         if (error) return alert(`Create failed: ${error.message}`);
         boards.push(data); activeBoard = data; sections = []; items = [];
         history.replaceState(null, "", `?id=${encodeURIComponent(data.id)}`);
@@ -237,12 +242,14 @@
         const title = prompt("Tier Board title", activeBoard.title);
         if (!title?.trim()) return;
         const description = prompt("Description (optional)", activeBoard.description || "") || null;
-        const { error } = await db.from("tier_boards").update({ title: title.trim(), description }).eq("id", activeBoard.id);
+        const payload = { id: activeBoard.id, title: title.trim(), description };
+        const { error } = await auth.write("tier_board_update", payload, () => db.from("tier_boards").update({ title: payload.title, description }).eq("id", activeBoard.id));
         if (error) return alert(`Save failed: ${error.message}`);
         Object.assign(activeBoard, { title: title.trim(), description }); renderTabs(); renderBoard();
     }
 
     async function deleteBoard() {
+        if (auth.role !== "owner") return;
         if (!confirm(`Delete “${activeBoard.title}” and all of its tiers?`)) return;
         const { error } = await db.from("tier_boards").delete().eq("id", activeBoard.id);
         if (error) return alert(`Delete failed: ${error.message}`);
@@ -254,7 +261,8 @@
         const title = prompt("Tier title");
         if (!title?.trim()) return;
         const description = prompt("Tier description (optional)") || null;
-        const { data, error } = await db.from("tier_sections").insert({ board_id: activeBoard.id, title: title.trim(), description, sort_order: sections.length }).select("id,board_id,title,description,sort_order,created_at,updated_at").single();
+        const payload = { board_id: activeBoard.id, title: title.trim(), description, sort_order: sections.length };
+        const { data, error } = await auth.write("tier_section_create", payload, () => db.from("tier_sections").insert(payload).select("id,board_id,title,description,sort_order,created_at,updated_at").single());
         if (error) return alert(`Create failed: ${error.message}`);
         sections.push(data); renderBoard();
     }
@@ -263,12 +271,14 @@
         const title = prompt("Tier title", section.title);
         if (!title?.trim()) return;
         const description = prompt("Tier description (optional)", section.description || "") || null;
-        const { error } = await db.from("tier_sections").update({ title: title.trim(), description }).eq("id", section.id);
+        const payload = { id: section.id, title: title.trim(), description };
+        const { error } = await auth.write("tier_section_update", payload, () => db.from("tier_sections").update({ title: payload.title, description }).eq("id", section.id));
         if (error) return alert(`Save failed: ${error.message}`);
         Object.assign(section, { title: title.trim(), description }); renderBoard();
     }
 
     async function deleteTier(section) {
+        if (auth.role !== "owner") return;
         if (!confirm(`Delete tier “${section.title}”? Its games will return to UNFILED.`)) return;
         const { error } = await db.from("tier_sections").delete().eq("id", section.id);
         if (error) return alert(`Delete failed: ${error.message}`);
@@ -294,8 +304,9 @@
     }
 
     async function persistTierOrder() {
-        const results = await Promise.all(sections.map((section, index) => db.from("tier_sections").update({ sort_order: index }).eq("id", section.id)));
-        const failed = results.find((result) => result.error);
+        const order = sections.map((section, index) => ({ id: section.id, sort_order: index }));
+        const result = await auth.write("tier_sections_reorder", { items: order }, () => Promise.all(order.map((entry) => db.from("tier_sections").update({ sort_order: entry.sort_order }).eq("id", entry.id))).then((results) => ({ data: null, error: results.find((entry) => entry.error)?.error || null })));
+        const failed = result.error ? { error: result.error } : null;
         if (failed) alert(`Sort failed: ${failed.error.message}`);
         sections.forEach((section, index) => { section.sort_order = index; });
     }
@@ -307,10 +318,11 @@
         const nextOrder = beforeIndex < 0 ? sectionItems.length : beforeIndex;
         let result;
         if (existing) {
-            result = await db.from("tier_items").update({ section_id: sectionId, sort_order: nextOrder }).eq("id", existing.id);
+            result = await auth.write("tier_item_move", { id: existing.id, section_id: sectionId, sort_order: nextOrder }, () => db.from("tier_items").update({ section_id: sectionId, sort_order: nextOrder }).eq("id", existing.id));
             if (!result.error) Object.assign(existing, { section_id: sectionId, sort_order: nextOrder });
         } else {
-            result = await db.from("tier_items").insert({ board_id: activeBoard.id, section_id: sectionId, game_id: gameId, sort_order: nextOrder }).select("id,board_id,section_id,game_id,sort_order,created_at,updated_at").single();
+            const payload = { board_id: activeBoard.id, section_id: sectionId, game_id: gameId, sort_order: nextOrder };
+            result = await auth.write("tier_item_move", payload, () => db.from("tier_items").insert(payload).select("id,board_id,section_id,game_id,sort_order,created_at,updated_at").single());
             if (!result.error) items.push(result.data);
         }
         if (result.error) return alert(`Move failed: ${result.error.message}`);
@@ -322,6 +334,7 @@
     }
 
     async function removeGame(item) {
+        if (auth.role !== "owner") return;
         const { error } = await db.from("tier_items").delete().eq("id", item.id);
         if (error) return alert(`Remove failed: ${error.message}`);
         items = items.filter((entry) => entry !== item); await normalizeItemOrders(); renderBoard();
@@ -332,11 +345,11 @@
         sections.forEach((section) => {
             items.filter((item) => String(item.section_id) === String(section.id)).sort(byOrder).forEach((item, index) => {
                 item.sort_order = index;
-                updates.push(db.from("tier_items").update({ sort_order: index }).eq("id", item.id));
+                updates.push({ id: item.id, sort_order: index });
             });
         });
-        const results = await Promise.all(updates);
-        const failed = results.find((result) => result.error);
+        const result = await auth.write("tier_items_reorder", { items: updates }, () => Promise.all(updates.map((entry) => db.from("tier_items").update({ sort_order: entry.sort_order }).eq("id", entry.id))).then((results) => ({ data: null, error: results.find((entry) => entry.error)?.error || null })));
+        const failed = result.error ? { error: result.error } : null;
         if (failed) alert(`Sort failed: ${failed.error.message}`);
     }
 

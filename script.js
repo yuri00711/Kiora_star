@@ -108,6 +108,8 @@ const supabaseClient =
         supabaseKey
     );
 
+const kioraAuth = window.KioraAuth;
+
 
 /* =========================================
    STATE
@@ -123,10 +125,17 @@ window.yuriArchive = Object.freeze({
     get currentUser() {
         return currentUser;
     },
+    get authState() {
+        return kioraAuth.state;
+    },
     get games() {
         return gamesCache.slice();
     },
     supabaseClient,
+    can: kioraAuth.can,
+    write: kioraAuth.write,
+    readForEditor: kioraAuth.readForEditor,
+    uploadSiteMedia: kioraAuth.uploadSiteMedia,
     openModal,
     closeModal,
     safeImageUrl
@@ -254,7 +263,7 @@ if (loginStar) {
             点击星星询问是否退出
             */
 
-            if (currentUser) {
+            if (kioraAuth.role !== "viewer") {
 
                 const shouldLogout =
                     window.confirm(
@@ -263,9 +272,9 @@ if (loginStar) {
 
                 if (shouldLogout) {
 
-                    await supabaseClient
-                        .auth
-                        .signOut();
+                    await kioraAuth.logout();
+                    currentUser = null;
+                    updateAdminUI();
 
                 }
 
@@ -334,33 +343,6 @@ document
    LOGIN
 ========================================= */
 
-async function getAdminLoginErrorCode(
-    invokeError,
-    responseData
-) {
-    if (typeof responseData?.code === "string") {
-        return responseData.code;
-    }
-
-    const response = invokeError?.context;
-
-    if (!response || typeof response.json !== "function") {
-        return "FUNCTION_ERROR";
-    }
-
-    try {
-        const errorBody =
-            await response.clone().json();
-
-        return typeof errorBody?.code === "string"
-            ? errorBody.code
-            : "FUNCTION_ERROR";
-    } catch (_) {
-        return "FUNCTION_ERROR";
-    }
-}
-
-
 function getAdminLoginMessage(errorCode) {
     const messages = {
         INVALID_CREDENTIALS:
@@ -372,7 +354,13 @@ function getAdminLoginMessage(errorCode) {
         SESSION_ERROR:
             "登录会话建立失败，请重试。",
         FUNCTION_ERROR:
-            "管理员登录服务暂时不可用。"
+            "登录服务暂时不可用。",
+        RATE_LIMITED:
+            "尝试次数过多，请稍后再试。",
+        EDITOR_SESSION_INVALID:
+            "编辑会话无效，请重新登录。",
+        EDITOR_SESSION_EXPIRED:
+            "编辑会话已过期，请重新登录。"
     };
 
     return messages[errorCode]
@@ -421,84 +409,23 @@ if (loginForm) {
             }
 
             try {
-                const {
-                    data: loginData,
-                    error: invokeError
-                } =
-                    await supabaseClient
-                        .functions
-                        .invoke(
-                            "admin-login",
-                            {
-                                body: {
-                                    username,
-                                    password
-                                }
-                            }
-                        );
+                const ownerLogin = username.includes("@");
+                const result = ownerLogin
+                    ? await kioraAuth.loginOwner(username, password)
+                    : await kioraAuth.loginEditor(username, password);
 
-                if (invokeError) {
-                    const errorCode =
-                        await getAdminLoginErrorCode(
-                            invokeError,
-                            loginData
-                        );
-
-                    console.error(
-                        "admin-login failed:",
-                        errorCode
-                    );
-
-                    message.textContent =
-                        getAdminLoginMessage(
-                            errorCode
-                        );
-                    return;
-                }
-
-                if (
-                    !loginData?.access_token ||
-                    !loginData?.refresh_token
-                ) {
-                    console.error(
-                        "admin-login failed:",
-                        "FUNCTION_ERROR"
-                    );
-
-                    message.textContent =
-                        getAdminLoginMessage(
-                            "FUNCTION_ERROR"
-                        );
-                    return;
-                }
-
-                const {
-                    data: sessionData,
-                    error: sessionError
-                } =
-                    await supabaseClient
-                        .auth
-                        .setSession({
-                            access_token:
-                                loginData.access_token,
-                            refresh_token:
-                                loginData.refresh_token
-                        });
-
-                if (
-                    sessionError ||
-                    !sessionData?.session ||
-                    !sessionData?.user
-                ) {
-                    message.textContent =
-                        getAdminLoginMessage(
-                            "SESSION_ERROR"
-                        );
+                if (result.error) {
+                    const errorCode = result.error.code || "INVALID_CREDENTIALS";
+                    message.textContent = ownerLogin
+                        ? "登录失败：邮箱或密码不正确。"
+                        : getAdminLoginMessage(errorCode);
                     return;
                 }
 
                 currentUser =
-                    sessionData.user;
+                    kioraAuth.role === "owner"
+                        ? result.data.user
+                        : null;
 
                 message.textContent =
                     "";
@@ -515,7 +442,7 @@ if (loginForm) {
 
             } catch (error) {
                 console.error(
-                    "admin-login failed:",
+                    "login failed:",
                     "FUNCTION_ERROR"
                 );
 
@@ -541,20 +468,24 @@ if (loginForm) {
 ========================================= */
 
 async function initialiseAuth() {
+    const state =
+        await kioraAuth.initialize(
+            supabaseClient
+        );
 
-    const {
-        data
-    } =
-        await supabaseClient
-            .auth
-            .getSession();
-
-    currentUser =
-        data.session?.user
-        ?? null;
+    if (state.role === "owner") {
+        const { data } =
+            await supabaseClient
+                .auth
+                .getSession();
+        currentUser = data.session?.user ?? null;
+    } else {
+        currentUser = null;
+    }
 
     updateAdminUI();
     publishGames(gamesCache);
+    openRequestedGameEditor();
 
 }
 
@@ -567,6 +498,10 @@ supabaseClient
             currentUser =
                 session?.user
                 ?? null;
+
+            kioraAuth.syncOwnerSession(
+                session
+            );
 
             updateAdminUI();
 
@@ -581,7 +516,10 @@ supabaseClient
 function updateAdminUI() {
     window.dispatchEvent(
         new CustomEvent("yuri:authchange", {
-            detail: { user: currentUser }
+            detail: {
+                user: currentUser,
+                authState: kioraAuth.state
+            }
         })
     );
 
@@ -643,7 +581,7 @@ function publishGames(games) {
 }
 
 function openRequestedGameEditor() {
-    if (requestedGameEditorOpened || !currentUser) return;
+    if (requestedGameEditorOpened || !(kioraAuth.can("game:create") || kioraAuth.can("game:edit"))) return;
     const editorParams = new URLSearchParams(window.location.search);
     if (editorParams.get("newGame") === "1") {
         requestedGameEditorOpened = true;
@@ -668,8 +606,7 @@ function openRequestedGameEditor() {
 ========================================= */
 
 function openGameEditor(game) {
-
-    if (!currentUser) return;
+    if (!kioraAuth.can(game ? "game:edit" : "game:create")) return;
 
     currentGameForCharacters = game && game.id ? game : null;
     charactersCache = [];
@@ -767,11 +704,10 @@ function openGameEditor(game) {
         modalTitle.textContent =
             "Edit record";
 
-        deleteGameButton
-            .classList
-            .remove(
-                "hidden"
-            );
+        deleteGameButton.classList.toggle(
+            "hidden",
+            kioraAuth.role !== "owner"
+        );
 
     } else {
 
@@ -816,15 +752,15 @@ if (gameForm) {
 
             event.preventDefault();
 
-            if (!currentUser)
-                return;
-
             const id =
                 document
                     .getElementById(
                         "game-id"
                     )
                     .value;
+
+            if (!kioraAuth.can(id ? "game:edit" : "game:create"))
+                return;
 
             const message =
                 document
@@ -896,29 +832,13 @@ if (gameForm) {
             let result;
 
 
-            if (id) {
-
-                result =
-                    await supabaseClient
-                        .from("games")
-                        .update(
-                            payload
-                        )
-                        .eq(
-                            "id",
-                            id
-                        );
-
-            } else {
-
-                result =
-                    await supabaseClient
-                        .from("games")
-                        .insert(
-                            payload
-                        );
-
-            }
+            result = await kioraAuth.write(
+                id ? "game_update" : "game_create",
+                id ? { id, data: payload } : { data: payload },
+                () => id
+                    ? supabaseClient.from("games").update(payload).eq("id", id)
+                    : supabaseClient.from("games").insert(payload)
+            );
 
 
             if (result.error) {
@@ -964,7 +884,7 @@ if (deleteGameButton) {
         "click",
         async () => {
 
-            if (!currentUser)
+            if (kioraAuth.role !== "owner")
                 return;
 
             const id =
@@ -1300,7 +1220,7 @@ function openCharacterEditor(character) {
         currentGameForCharacters
     );
 
-    if (!currentUser) {
+    if (!kioraAuth.can(character ? "character:edit" : "character:create")) {
         console.warn("无法打开角色编辑器：未登录");
         return;
     }
@@ -1397,11 +1317,10 @@ function openCharacterEditor(character) {
             "Edit character";
 
 
-        deleteCharacterButton
-            .classList
-            .remove(
-                "hidden"
-            );
+        deleteCharacterButton.classList.toggle(
+            "hidden",
+            kioraAuth.role !== "owner"
+        );
 
     } else {
 
@@ -1445,16 +1364,15 @@ if (characterForm) {
 
                 event.preventDefault();
 
-                if (!currentUser)
-                    return;
-
-
                 const id =
                     document
                         .getElementById(
                             "character-id"
                         )
                         .value;
+
+                if (!kioraAuth.can(id ? "character:edit" : "character:create"))
+                    return;
 
 
                 const gameId =
@@ -1540,29 +1458,13 @@ if (characterForm) {
                 let result;
 
 
-                if (id) {
-
-                    result =
-                        await supabaseClient
-                            .from("characters")
-                            .update(
-                                payload
-                            )
-                            .eq(
-                                "id",
-                                id
-                            );
-
-                } else {
-
-                    result =
-                        await supabaseClient
-                            .from("characters")
-                            .insert(
-                                payload
-                            );
-
-                }
+                result = await kioraAuth.write(
+                    id ? "character_update" : "character_create",
+                    id ? { id, data: payload } : { data: payload },
+                    () => id
+                        ? supabaseClient.from("characters").update(payload).eq("id", id)
+                        : supabaseClient.from("characters").insert(payload)
+                );
 
 
                 if (result.error) {
@@ -1608,7 +1510,7 @@ if (deleteCharacterButton) {
             "click",
             async () => {
 
-                if (!currentUser)
+                if (kioraAuth.role !== "owner")
                     return;
 
 

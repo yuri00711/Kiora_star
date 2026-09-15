@@ -3,6 +3,7 @@
 
     const common = window.yuriArticles;
     const db = common.getClient();
+    const auth = window.KioraAuth;
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
     const status = document.getElementById("game-detail-status");
@@ -49,9 +50,9 @@
         return;
     }
 
-    const [{ data: game, error }, sessionResult] = await Promise.all([
+    const [{ data: game, error }] = await Promise.all([
         db.from("games").select("*").eq("id", id).maybeSingle(),
-        db.auth.getSession()
+        auth.initialize(db)
     ]);
     if (error || !game) {
         status.textContent = error?.message || "这条游戏档案不存在。";
@@ -151,7 +152,7 @@
         document.getElementById("game-links-section").hidden = false;
     }
 
-    const isAdmin = Boolean(sessionResult.data.session?.user);
+    const isAdmin = auth.can("game:edit") || auth.can("character:create");
     if (isAdmin) {
         const actions = document.getElementById("game-admin-actions");
         document.getElementById("game-edit-record").href = `games.html?editGame=${encodeURIComponent(game.id)}`;

@@ -3,6 +3,7 @@
 
     const common = window.yuriArticles;
     const db = common.getClient();
+    const auth = window.KioraAuth;
     const params = new URLSearchParams(window.location.search);
     const writingId = params.get("id");
     const requestedType = params.get("type");
@@ -180,9 +181,9 @@
         if (file.size > 5 * 1024 * 1024) throw new Error("图片不能超过 5MB。");
         const extension = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
         const path = `writings/${crypto.randomUUID()}.${extension}`;
-        const { error } = await db.storage.from("site-media").upload(path, file, { cacheControl: "3600", contentType: file.type, upsert: false });
+        const { data, error } = await auth.uploadSiteMedia(file, path);
         if (error) throw error;
-        return db.storage.from("site-media").getPublicUrl(path).data.publicUrl;
+        return data.publicUrl;
     }
 
     function managedPath(url) {
@@ -197,6 +198,7 @@
     }
 
     async function removeOldCover(oldUrl, newUrl) {
+        if (auth.role !== "owner") return;
         if (!oldUrl || oldUrl === newUrl) return;
         const path = managedPath(oldUrl);
         if (path) await db.storage.from("site-media").remove([path]);
@@ -236,9 +238,13 @@
             return;
         }
 
-        const result = currentWriting
-            ? await db.from("writings").update(payload).eq("id", currentWriting.id).select("id").single()
-            : await db.from("writings").insert(payload).select("id").single();
+        const result = await auth.write(
+            currentWriting ? "writing_update" : "writing_create",
+            currentWriting ? { id: currentWriting.id, data: payload } : { data: payload },
+            () => currentWriting
+                ? db.from("writings").update(payload).eq("id", currentWriting.id).select("id").single()
+                : db.from("writings").insert(payload).select("id").single()
+        );
         if (result.error) {
             setMessage(`保存失败：${result.error.message}`, true);
             saveState.textContent = "SAVE FAILED";
@@ -257,7 +263,7 @@
     });
 
     field("delete-writing").addEventListener("click", async () => {
-        if (!adminUser) return;
+        if (auth.role !== "owner") return;
         if (!currentWriting || !window.confirm(`确定删除《${currentWriting.title}》吗？`)) return;
         const { error } = await db.from("writings").delete().eq("id", currentWriting.id);
         if (error) {
@@ -278,16 +284,18 @@
         }
     });
 
-    const { data: { session } } = await db.auth.getSession();
-    if (!session?.user) {
+    await auth.initialize(db);
+    if (!(auth.can("writing:create") || auth.can("writing:edit"))) {
         gateStatus.textContent = "此页面仅限管理员使用，正在返回首页……";
         window.setTimeout(() => { window.location.href = "index.html"; }, 900);
         return;
     }
-    adminUser = session.user;
+    adminUser = auth.state.identity || auth.role;
 
     if (writingId) {
-        const { data, error } = await db.from("writings").select("*").eq("id", writingId).maybeSingle();
+        const { data, error } = auth.role === "editor"
+            ? await auth.readForEditor("writing_get", { id: writingId })
+            : await db.from("writings").select("*").eq("id", writingId).maybeSingle();
         if (error || !data || data.category === "archive") {
             gateStatus.textContent = error?.message || "文章不存在。";
             return;
@@ -308,7 +316,7 @@
         });
         field("write-page-title").textContent = "Edit writing";
         field("write-mode").textContent = common.categories[data.category]?.label || "WRITING EDITOR";
-        field("delete-writing").hidden = false;
+        field("delete-writing").hidden = auth.role !== "owner";
         document.title = `Edit ${data.title} · Kiora`;
     } else {
         applyDraft({ date: localDate(), category: initialType, isPublic: true });

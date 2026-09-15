@@ -8,6 +8,7 @@
     }
 
     const db = bridge.supabaseClient;
+    const auth = window.KioraAuth;
     const categoryLabels = {
         game_review: "AFTERGLOW",
         essay: "MOON NOTES",
@@ -41,7 +42,8 @@
     };
 
     const byId = (id) => document.getElementById(id);
-    const isAdmin = () => Boolean(bridge.currentUser);
+    const isAdmin = () => auth.role !== "viewer";
+    const isOwner = () => auth.role === "owner";
     const value = (id) => byId(id)?.value ?? "";
     const optional = (text) => text.trim() || null;
     const numberOrNull = (text) => text === "" ? null : Number(text);
@@ -172,13 +174,8 @@
         if (file.size > 5 * 1024 * 1024) throw new Error("图片不能超过 5MB。");
         const extension = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
         const path = `${folder}/${crypto.randomUUID()}.${extension}`;
-        const { error } = await db.storage.from("site-media").upload(path, file, {
-            cacheControl: "3600",
-            contentType: file.type,
-            upsert: false
-        });
+        const { data, error } = await bridge.uploadSiteMedia(file, path);
         if (error) throw error;
-        const { data } = db.storage.from("site-media").getPublicUrl(path);
         return data.publicUrl;
     }
 
@@ -195,6 +192,7 @@
     }
 
     async function removeReplacedImage(oldUrl, newUrl) {
+        if (!isOwner()) return;
         if (!oldUrl || oldUrl === newUrl) return;
         const path = managedStoragePath(oldUrl);
         if (!path) return;
@@ -215,11 +213,13 @@
                 Object.entries(attributes).forEach(([key, value]) => { button.dataset[key] = value; });
                 return button;
             };
-            controls?.append(
-                makeButton("EDIT PROFILE", { editProfile: "" }),
-                makeButton("EXPORT PROFILE", { exportProfileOpen: "" }),
-                makeButton("EDIT EXPORT PROFILE", { editExportProfile: "" })
-            );
+            controls?.append(makeButton("EDIT PROFILE", { editProfile: "" }));
+            if (isOwner()) {
+                controls?.append(
+                    makeButton("EXPORT PROFILE", { exportProfileOpen: "" }),
+                    makeButton("EDIT EXPORT PROFILE", { editExportProfile: "" })
+                );
+            }
             document.querySelector('[data-admin-slot="add-fandom"]')?.append(makeButton("＋ ADD", { addItem: "fandom" }));
             document.querySelector('[data-admin-slot="add-favorite"]')?.append(makeButton("＋ ADD", { addItem: "favorite" }));
             document.querySelector('[data-admin-slot="edit-otome"]')?.append(makeButton("EDIT", { editOtome: "" }));
@@ -817,6 +817,8 @@
         byId("profile-edit-free-title").value = state.profile.free_space_title || "";
         byId("profile-edit-free-content").value = state.profile.free_space_content || "";
         byId("site-manual-updated-at").value = state.settings.manual_updated_at || "";
+        const updatedSettings = byId("site-manual-updated-at")?.closest("fieldset");
+        if (updatedSettings) updatedSettings.hidden = !isOwner();
         const automatic = byId("profile-updated")?.textContent?.replace("UPDATED / ", "") || "—";
         byId("site-updated-mode").textContent = state.settings.manual_updated_at
             ? `当前使用手动日期：${formatCompactDate(state.settings.manual_updated_at)}`
@@ -846,18 +848,24 @@
             free_space_title: optional(value("profile-edit-free-title")),
             free_space_content: optional(value("profile-edit-free-content"))
         };
-        const { error } = await db.from("site_profile").upsert(payload, { onConflict: "id" });
+        const { error } = await bridge.write(
+            "profile_update",
+            { data: payload },
+            () => db.from("site_profile").upsert(payload, { onConflict: "id" })
+        );
         if (error) {
             showMessage("profile-form-message", `保存失败：${error.message}`, true);
             return;
         }
-        const { error: settingsError } = await db.from("site_settings").upsert({
-            id: 1,
-            manual_updated_at: optional(value("site-manual-updated-at"))
-        }, { onConflict: "id" });
-        if (settingsError) {
-            showMessage("profile-form-message", `更新时间保存失败：${settingsError.message}。请先运行 supabase-site-settings-migration.sql。`, true);
-            return;
+        if (isOwner()) {
+            const { error: settingsError } = await db.from("site_settings").upsert({
+                id: 1,
+                manual_updated_at: optional(value("site-manual-updated-at"))
+            }, { onConflict: "id" });
+            if (settingsError) {
+                showMessage("profile-form-message", `更新时间保存失败：${settingsError.message}。请先运行 supabase-site-settings-migration.sql。`, true);
+                return;
+            }
         }
         await removeReplacedImage(state.profile.avatar_url, avatarUrl);
         byId("profile-modal").dataset.dirty = "false";
@@ -866,7 +874,7 @@
     });
 
     byId("restore-auto-updated")?.addEventListener("click", async () => {
-        if (!isAdmin()) return;
+        if (!isOwner()) return;
         showMessage("profile-form-message", "正在恢复自动更新时间…");
         const { error } = await db.from("site_settings").upsert({
             id: 1,
@@ -945,7 +953,7 @@
         byId("profile-item-symbol").value = item?.symbol || "";
         byId("profile-item-description").value = item?.description || item?.note || "";
         byId("profile-item-sort").value = item?.sort_order ?? "";
-        byId("profile-item-delete").classList.toggle("hidden", !item);
+        byId("profile-item-delete").classList.toggle("hidden", !item || !isOwner());
         showMessage("profile-item-message", "");
         bridge.openModal(byId("profile-item-modal"));
     }
@@ -992,10 +1000,13 @@
             };
         }
         showMessage("profile-item-message", "Saving…");
-        const query = id
-            ? db.from(itemTables[kind]).update(payload).eq("id", id)
-            : db.from(itemTables[kind]).insert(payload);
-        const { error } = await query;
+        const { error } = await bridge.write(
+            id ? "profile_item_update" : "profile_item_create",
+            id ? { kind, id, data: payload } : { kind, data: payload },
+            () => id
+                ? db.from(itemTables[kind]).update(payload).eq("id", id)
+                : db.from(itemTables[kind]).insert(payload)
+        );
         if (error) {
             showMessage("profile-item-message", `保存失败：${error.message}`, true);
             return;
@@ -1007,7 +1018,7 @@
     });
 
     byId("profile-item-delete")?.addEventListener("click", async () => {
-        if (!isAdmin()) return;
+        if (!isOwner()) return;
         const kind = value("profile-item-kind");
         const id = value("profile-item-id");
         if (!id || !window.confirm("确定删除这条资料吗？")) return;
@@ -1078,7 +1089,11 @@
             not_my_type: splitTags(value("otome-edit-not-my-type"))
         };
         showMessage("otome-form-message", "Saving…");
-        const { error } = await db.from("otome_profile").upsert(payload, { onConflict: "id" });
+        const { error } = await bridge.write(
+            "otome_update",
+            { data: payload },
+            () => db.from("otome_profile").upsert(payload, { onConflict: "id" })
+        );
         if (error) {
             showMessage("otome-form-message", `保存失败：${error.message}`, true);
             return;
@@ -1096,14 +1111,24 @@
         });
         showMessage("home-writing-status", "Reading the latest pages…");
         showMessage("writing-page-status", "Reading the archive…");
-        let query = db.from("writings")
-            .select("*")
-            .neq("category", "archive")
-            .order("is_pinned", { ascending: false })
-            .order("sort_order", { ascending: true, nullsFirst: false })
-            .order("published_at", { ascending: false });
-        if (!isAdmin()) query = query.eq("is_public", true);
-        const { data, error } = await query;
+        let data;
+        let error;
+        if (auth.role === "editor") {
+            const result = await bridge.readForEditor("writing_list");
+            data = (result.data || []).filter((item) => item.category !== "archive");
+            error = result.error;
+        } else {
+            let query = db.from("writings")
+                .select("*")
+                .neq("category", "archive")
+                .order("is_pinned", { ascending: false })
+                .order("sort_order", { ascending: true, nullsFirst: false })
+                .order("published_at", { ascending: false });
+            if (!isAdmin()) query = query.eq("is_public", true);
+            const result = await query;
+            data = result.data;
+            error = result.error;
+        }
         if (error) {
             document.querySelectorAll("[data-writing-list]").forEach((list) => {
                 list.replaceChildren(emptyState(errorMessage(error)));
@@ -1205,11 +1230,8 @@
         featuredFooter.append(create("time", "", writingDate(featured)), writingAction("READ STORY →", "read", featured.id));
         if (isAdmin()) {
             const actions = create("div", "writing-flow-admin");
-            actions.append(
-                writingAction("EDIT", "edit", featured.id),
-                writingAction(featured.is_pinned ? "UNPIN" : "PIN", "pin", featured.id),
-                writingAction("DELETE", "delete", featured.id)
-            );
+            actions.append(writingAction("EDIT", "edit", featured.id), writingAction(featured.is_pinned ? "UNPIN" : "PIN", "pin", featured.id));
+            if (isOwner()) actions.append(writingAction("DELETE", "delete", featured.id));
             featuredFooter.append(actions);
         }
         featuredHost.append(featuredFooter);
@@ -1230,11 +1252,8 @@
             meta.append(create("time", "", writingDate(writing)), writingAction("READ STORY →", "read", writing.id));
             if (isAdmin()) {
                 const actions = create("div", "writing-flow-admin");
-                actions.append(
-                    writingAction("EDIT", "edit", writing.id),
-                    writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id),
-                    writingAction("DELETE", "delete", writing.id)
-                );
+                actions.append(writingAction("EDIT", "edit", writing.id), writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id));
+                if (isOwner()) actions.append(writingAction("DELETE", "delete", writing.id));
                 meta.append(actions);
             }
             row.append(copy, meta);
@@ -1280,11 +1299,8 @@
         footer.append(read);
         if (isAdmin()) {
             const actions = create("div", "writing-admin-actions");
-            actions.append(
-                writingAction("EDIT", "edit", writing.id),
-                writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id),
-                writingAction("DELETE", "delete", writing.id)
-            );
+            actions.append(writingAction("EDIT", "edit", writing.id), writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id));
+            if (isOwner()) actions.append(writingAction("DELETE", "delete", writing.id));
             footer.append(actions);
         }
         copy.append(footer);
@@ -1354,6 +1370,14 @@
 
     function findWriting(id) {
         return state.writings.find((item) => String(item.id) === String(id));
+    }
+
+    async function deleteWriting(writing) {
+        if (!isOwner() || !writing?.id) return;
+        if (!window.confirm(`确定删除《${writing.title || "UNTITLED"}》吗？`)) return;
+        const { error } = await db.from("writings").delete().eq("id", writing.id);
+        if (error) window.alert(`删除失败：${error.message}`);
+        else await loadWritings();
     }
 
     function openWritingEditor(category, writing = null) {
@@ -1430,11 +1454,13 @@
             return openReading(writing);
         }
         if (action.dataset.writingAction === "edit") return openWritingEditor(writing.category, writing);
-        if (action.dataset.writingAction === "delete") return deleteWriting(writing);
+        if (action.dataset.writingAction === "delete" && isOwner()) return deleteWriting(writing);
         if (action.dataset.writingAction === "pin" && isAdmin()) {
-            const { error } = await db.from("writings")
-                .update({ is_pinned: !writing.is_pinned })
-                .eq("id", writing.id);
+            const { error } = await bridge.write(
+                "writing_pin",
+                { id: writing.id, is_pinned: !writing.is_pinned },
+                () => db.from("writings").update({ is_pinned: !writing.is_pinned }).eq("id", writing.id)
+            );
             if (error) window.alert(`更新失败：${error.message}`);
             else await loadWritings();
         }

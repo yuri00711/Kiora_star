@@ -5,12 +5,12 @@
     if (!bridge) return;
     if (!document.getElementById("music-archive-title") || !document.getElementById("music-form")) return;
     const db = bridge.supabaseClient;
+    const auth = window.KioraAuth;
     const byId = (id) => document.getElementById(id);
     const state = { tracks: [], currentId: null, youtubePlayer: null, youtubeTimer: null, manualUntil: 0 };
     let youtubeApiPromise = null;
-    let musicUser = bridge.currentUser;
-
-    const isAdmin = () => Boolean(bridge.currentUser || musicUser);
+    const isAdmin = () => auth.role !== "viewer";
+    const isOwner = () => auth.role === "owner";
     const clean = (value) => String(value ?? "").trim();
     const safeUrl = (value) => bridge.safeImageUrl(clean(value));
     const create = (tag, className, text) => {
@@ -300,7 +300,7 @@
         byId("music-lrc-data").value = track?.lrc_data || "";
         byId("music-sort-order").value = track?.sort_order ?? "";
         byId("music-modal-title").textContent = track ? "Edit music" : "New music";
-        byId("delete-music-btn").classList.toggle("hidden", !track);
+        byId("delete-music-btn").classList.toggle("hidden", !track || !isOwner());
         byId("music-form-message").textContent = "";
         bridge.openModal(byId("music-modal"));
     }
@@ -319,7 +319,11 @@
         const message = byId("music-form-message");
         if (!payload.music_url) { message.textContent = "请输入有效的官方音乐页面 URL。"; return; }
         message.textContent = "Saving…";
-        const result = id ? await db.from("music").update(payload).eq("id", id) : await db.from("music").insert(payload);
+        const result = await bridge.write(
+            id ? "music_update" : "music_create",
+            id ? { id, data: payload } : { data: payload },
+            () => id ? db.from("music").update(payload).eq("id", id) : db.from("music").insert(payload)
+        );
         if (result.error) { message.textContent = `保存失败：${result.error.message}`; return; }
         byId("music-modal").dataset.dirty = "false";
         bridge.closeModal(byId("music-modal"));
@@ -327,7 +331,7 @@
     });
 
     byId("delete-music-btn").addEventListener("click", async () => {
-        if (!isAdmin()) return;
+        if (!isOwner()) return;
         const id = clean(byId("music-id").value);
         if (!id || !window.confirm("确定要从 MUSIC ARCHIVE 删除这条记录吗？")) return;
         const { error } = await db.from("music").delete().eq("id", id);
@@ -339,14 +343,12 @@
     });
 
     window.addEventListener("yuri:authchange", () => {
-        musicUser = bridge.currentUser;
         renderAdminActions();
         renderNowPlaying();
     });
     window.kioraMusic = Object.freeze({ parseMusicUrl, parseLrc });
     loadMusic();
-    db.auth.getSession().then(({ data }) => {
-        musicUser = data.session?.user || null;
+    auth.initialize(db).then(() => {
         renderAdminActions();
         renderNowPlaying();
     });

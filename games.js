@@ -2,6 +2,7 @@
     "use strict";
 
     const db = window.yuriArticles.getClient();
+    const auth = window.KioraAuth;
     const STATES = ["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"];
     const PLATFORMS = ["SWITCH", "STEAM", "PC", "PSVITA", "PSP", "PS4", "PS5", "MOBILE", "OTHER"];
     const FAVORITES = ["FAVORITE", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME"];
@@ -210,9 +211,9 @@
     document.getElementById("apply-filters").addEventListener("click", closeSheet);
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !sheet.hidden) closeSheet(); });
 
-    const [{ data, error }, sessionResult] = await Promise.all([
+    const [{ data, error }] = await Promise.all([
         db.from("games").select("*").order("sort_order", { ascending: true, nullsFirst: false }),
-        db.auth.getSession()
+        auth.initialize(db)
     ]);
     if (error) {
         statusLine.textContent = `Archive unavailable: ${error.message}`;
@@ -223,7 +224,7 @@
     syncFilters();
     render();
 
-    if (sessionResult.data.session?.user) {
+    if (auth.can("game:create")) {
         const admin = document.getElementById("games-admin-actions");
         const add = document.createElement("a");
         add.href = "games.html?newGame=1";

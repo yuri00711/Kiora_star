@@ -1,2 +1,8 @@
 [functions.admin-login]
 verify_jwt = false
+
+[functions.editor-login]
+verify_jwt = false
+
+[functions.editor-api]
+verify_jwt = false
