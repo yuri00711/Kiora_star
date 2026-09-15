@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Game Archive · Kiora</title>
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="game.css">
+    <link rel="stylesheet" href="game.css?v=20260915-2">
 </head>
 <body>
     <div class="game-sky" aria-hidden="true"></div>
@@ -41,6 +41,8 @@
                     <dl class="game-detail-facts">
                         <div id="game-rating-fact"><dt>RATING</dt><dd id="game-detail-rating"></dd></div>
                         <div id="game-status-fact" hidden><dt>STATUS</dt><dd id="game-detail-play-status"></dd></div>
+                        <div id="game-platform-fact" hidden><dt>PLATFORM</dt><dd id="game-detail-platforms"></dd></div>
+                        <div id="game-favorite-fact" hidden><dt>FAVORITE LEVEL</dt><dd id="game-detail-favorite"></dd></div>
                         <div id="game-date-fact" hidden><dt>PLAYED</dt><dd id="game-detail-date"></dd></div>
                     </dl>
 
@@ -72,6 +74,13 @@
                 <div id="game-detail-note" class="game-detail-reading"></div>
             </section>
 
+            <section id="game-links-section" class="game-detail-section game-links-section" hidden>
+                <div class="game-detail-section-heading">
+                    <div><p class="game-detail-label">LINKS</p><span>OFFICIAL / STORE</span></div>
+                </div>
+                <div id="game-detail-links" class="game-detail-links"></div>
+            </section>
+
             <section id="game-characters-section" class="game-detail-section" hidden>
                 <div class="game-detail-section-heading">
                     <div><p class="game-detail-label">CHARACTER ARCHIVE</p><span>ROUTES IN THIS CONSTELLATION</span></div>
@@ -89,6 +98,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="article-common.js"></script>
-    <script src="game.js"></script>
+    <script src="game.js?v=20260915-2"></script>
 </body>
 </html>

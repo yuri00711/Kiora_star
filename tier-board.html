@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Tier Board · Kiora</title>
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="tier-board.css?v=20260915-1">
+</head>
+<body>
+    <div class="tier-sky" aria-hidden="true"><span></span><span></span></div>
+    <header class="tier-nav"><a href="games.html">← GAMES ARCHIVE</a><a href="index.html">KIORA.SPACE</a></header>
+    <main class="tier-shell">
+        <header class="tier-page-heading">
+            <div><p>CELESTIAL CLASSIFICATION</p><h1>Tier Board</h1><span>Personal constellations, arranged freely.</span></div>
+            <div id="tier-admin-actions" class="tier-admin-actions"></div>
+        </header>
+        <nav id="board-tabs" class="board-tabs" aria-label="Tier boards"></nav>
+        <p id="tier-status" class="tier-status" role="status">Reading the boards…</p>
+        <article id="tier-board" class="tier-board" hidden>
+            <header class="board-heading"><div><p>TIER ARCHIVE</p><h2 id="board-title"></h2><span id="board-description"></span></div><div id="board-editor-actions"></div></header>
+            <div id="tier-sections" class="tier-sections"></div>
+            <section id="unassigned-section" class="unassigned-section" hidden><header><p>UNFILED GAMES</p><span>Drag a cover into any tier.</span></header><div id="unassigned-games" class="unassigned-games"></div></section>
+        </article>
+    </main>
+    <footer class="tier-footer"><span>KIORA / KIORA.SPACE</span><span>PRIVATE GAME ARCHIVE</span></footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="article-common.js"></script>
+    <script src="tier-board.js?v=20260915-1"></script>
+</body>
+</html>

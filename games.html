@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Games Archive · Kiora</title>
+    <meta name="description" content="Kiora's quiet archive of games, stories and constellations.">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="games.css?v=20260915-1">
+</head>
+<body>
+    <div class="games-atmosphere" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="games-stars" aria-hidden="true"><span>✦</span><span>·</span><span>◇</span><span>·</span></div>
+
+    <header class="games-header">
+        <a class="games-home" href="index.html">KIORA.SPACE</a>
+        <div class="games-heading-copy">
+            <p>PRIVATE CELESTIAL INDEX / 03</p>
+            <h1>Games Archive</h1>
+            <span>A quiet catalogue of stories once held close.</span>
+        </div>
+        <nav class="games-header-nav" aria-label="Games archive links">
+            <a href="tier-board.html">TIER BOARD →</a>
+            <span id="games-admin-actions"></span>
+        </nav>
+    </header>
+
+    <main class="games-layout">
+        <aside class="games-index" aria-label="Game filters">
+            <div class="filter-section search-section">
+                <label for="games-search">SEARCH</label>
+                <div class="search-line"><input id="games-search" type="search" autocomplete="off" placeholder="TITLE / TAG"><span>⌕</span></div>
+            </div>
+            <div id="desktop-filters"></div>
+            <button id="desktop-clear" class="clear-filters" type="button" hidden>CLEAR SELECTIONS</button>
+            <p class="index-footnote">SELECT ACROSS SECTIONS TO NARROW THE CONSTELLATION.</p>
+        </aside>
+
+        <section class="games-content" aria-labelledby="games-result-heading">
+            <div class="mobile-toolbar">
+                <label class="mobile-search" for="games-search-mobile"><span>SEARCH</span><input id="games-search-mobile" type="search" autocomplete="off" placeholder="Title or tag"></label>
+                <button id="open-filters" type="button">FILTER <span id="mobile-filter-count"></span></button>
+                <div class="view-switch" aria-label="View style">
+                    <button type="button" data-view="grid" aria-pressed="true">GRID</button>
+                    <span>/</span>
+                    <button type="button" data-view="index" aria-pressed="false">INDEX</button>
+                </div>
+            </div>
+
+            <div class="games-result-heading">
+                <div><p>CATALOGUE</p><h2 id="games-result-heading">All records</h2></div>
+                <div class="desktop-view-switch view-switch" aria-label="View style">
+                    <button type="button" data-view="grid" aria-pressed="true">GRID</button><span>/</span><button type="button" data-view="index" aria-pressed="false">INDEX</button>
+                </div>
+                <p id="games-count" aria-live="polite"></p>
+            </div>
+            <div id="active-filters" class="active-filters" hidden></div>
+            <p id="games-status" class="games-status" role="status">Reading the archive…</p>
+            <div id="games-list" class="games-grid" hidden></div>
+        </section>
+    </main>
+
+    <footer class="games-footer"><span>KIORA / PRIVATE ARCHIVE</span><a href="index.html">RETURN HOME ↑</a></footer>
+
+    <div id="filter-sheet" class="filter-sheet" hidden>
+        <button class="filter-sheet-backdrop" type="button" aria-label="Close filters"></button>
+        <section class="filter-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="filter-sheet-title">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <header><div><p>ARCHIVE INDEX</p><h2 id="filter-sheet-title">Filter records</h2></div><button id="close-filters" type="button" aria-label="Close filters">×</button></header>
+            <div id="mobile-filters" class="mobile-filter-content"></div>
+            <div class="sheet-actions"><button id="mobile-clear" type="button">CLEAR</button><button id="apply-filters" type="button">VIEW RECORDS</button></div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="article-common.js"></script>
+    <script src="games.js?v=20260915-1"></script>
+</body>
+</html>

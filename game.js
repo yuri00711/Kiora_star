@@ -9,9 +9,11 @@
     const detail = document.getElementById("game-detail");
 
     function returnToGames() {
-        const stored = sessionStorage.getItem("yuri:return-scroll");
-        if (stored) sessionStorage.setItem("yuri:restore-scroll", stored);
-        window.location.href = "index.html#games";
+        if (document.referrer && new URL(document.referrer).pathname.endsWith("/games.html")) {
+            history.back();
+            return;
+        }
+        window.location.href = "games.html";
     }
 
     document.getElementById("game-back").addEventListener("click", returnToGames);
@@ -97,6 +99,18 @@
     tagContainer.hidden = !tags.length;
     document.getElementById("game-detail-keywords-label").hidden = !tags.length;
 
+    const platforms = formatTags(game.platforms).map((item) => item.toUpperCase());
+    if (platforms.length) {
+        document.getElementById("game-platform-fact").hidden = false;
+        document.getElementById("game-detail-platforms").textContent = platforms.join(" · ");
+    }
+
+    const favorite = firstValue(game, ["favorite_level"]);
+    if (favorite) {
+        document.getElementById("game-favorite-fact").hidden = false;
+        document.getElementById("game-detail-favorite").textContent = String(favorite).toUpperCase();
+    }
+
     const description = firstValue(game, ["description", "summary", "introduction"]);
     if (description) {
         document.getElementById("game-description-section").hidden = false;
@@ -109,6 +123,32 @@
         document.getElementById("game-note-preview-text").textContent = plainText(note);
         document.getElementById("game-note-section").hidden = false;
         document.getElementById("game-detail-note").innerHTML = common.markdownToHtml(note);
+    }
+
+    const links = [];
+    const officialUrl = common.safeUrl(game.official_site_url);
+    if (officialUrl) links.push({ label: "OFFICIAL SITE", url: officialUrl });
+    let storeLinks = game.store_links;
+    if (typeof storeLinks === "string") {
+        try { storeLinks = JSON.parse(storeLinks); } catch (_) { storeLinks = []; }
+    }
+    if (Array.isArray(storeLinks)) {
+        storeLinks.forEach((item) => {
+            const url = common.safeUrl(item?.url);
+            if (url) links.push({ label: String(item?.label || "STORE").toUpperCase(), url });
+        });
+    }
+    if (links.length) {
+        const linkContainer = document.getElementById("game-detail-links");
+        links.forEach((item) => {
+            const anchor = document.createElement("a");
+            anchor.href = item.url;
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+            anchor.textContent = `${item.label} ↗`;
+            linkContainer.append(anchor);
+        });
+        document.getElementById("game-links-section").hidden = false;
     }
 
     const isAdmin = Boolean(sessionResult.data.session?.user);

@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="cms.css">
-    <link rel="stylesheet" href="music.css">
+    <link rel="stylesheet" href="music.css?v=20260914-1">
 
 </head>
 
@@ -70,7 +70,7 @@
             <p class="site-sidebar-label">A LITTLE UNIVERSE</p>
             <nav>
                 <a href="#about" data-section="about">PROFILE <i>✦</i></a>
-                <a href="#games" data-section="games">GAMES <i>☆</i></a>
+                <a href="games.html">GAMES <i>☆</i></a>
                 <a href="#writing" data-section="writing">WRITING <i>☾</i></a>
                 <a href="#archive" data-section="archive">ARCHIVE <i>◇</i></a>
             </nav>
@@ -748,6 +748,62 @@
                     <textarea id="profile-edit-free-content" rows="9"></textarea>
                     <small class="format-help">支持段落、# 标题、&gt; 引用、**粗体**、*斜体*、![说明](图片网址) 与 [文字](链接)。</small>
                 </label>
+
+                <div class="form-grid">
+                    <label>
+                        STATUS
+                        <select id="game-status">
+                            <option value="">—</option>
+                            <option value="PLAYING">PLAYING</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="PAUSED">PAUSED</option>
+                            <option value="DROPPED">DROPPED</option>
+                            <option value="WISHLIST">WISHLIST</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        FAVORITE LEVEL
+                        <select id="game-favorite-level">
+                            <option value="">—</option>
+                            <option value="FAVORITE">FAVORITE</option>
+                            <option value="LOVE">LOVE</option>
+                            <option value="LIKE">LIKE</option>
+                            <option value="NEUTRAL">NEUTRAL</option>
+                            <option value="NOT FOR ME">NOT FOR ME</option>
+                        </select>
+                    </label>
+                </div>
+
+                <fieldset class="game-platform-editor">
+                    <legend>PLATFORM</legend>
+                    <div class="game-platform-options">
+                        <label><input type="checkbox" name="game-platform" value="SWITCH"> SWITCH</label>
+                        <label><input type="checkbox" name="game-platform" value="STEAM"> STEAM</label>
+                        <label><input type="checkbox" name="game-platform" value="PC"> PC</label>
+                        <label><input type="checkbox" name="game-platform" value="PSVITA"> PSVITA</label>
+                        <label><input type="checkbox" name="game-platform" value="PSP"> PSP</label>
+                        <label><input type="checkbox" name="game-platform" value="PS4"> PS4</label>
+                        <label><input type="checkbox" name="game-platform" value="PS5"> PS5</label>
+                        <label><input type="checkbox" name="game-platform" value="MOBILE"> MOBILE</label>
+                        <label><input type="checkbox" name="game-platform" value="OTHER"> OTHER</label>
+                    </div>
+                </fieldset>
+
+                <label>
+                    TAGS <span class="field-hint">逗号分隔</span>
+                    <input id="game-tags" type="text" placeholder="乙女, 文字冒险, 悬疑">
+                </label>
+
+                <label>
+                    OFFICIAL SITE URL
+                    <input id="game-official-site-url" type="url" placeholder="https://...">
+                </label>
+
+                <label>
+                    STORE LINKS <span class="field-hint">每行：名称 | URL</span>
+                    <textarea id="game-store-links" rows="3" placeholder="Nintendo eShop | https://...&#10;Steam | https://..."></textarea>
+                </label>
                 <fieldset class="updated-date-settings">
                     <legend>UPDATED DATE</legend>
                     <label>手动更新时间<input id="site-manual-updated-at" type="date"></label>
@@ -864,9 +920,9 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js"></script>
+<script src="script.js?v=20260915-2"></script>
 <script src="cms.js"></script>
-<script src="music-archive.js"></script>
+<script src="music-archive.js?v=20260914-1"></script>
 
 </body>
 

@@ -811,8 +811,15 @@ function renderGames(games) {
 }
 
 function openRequestedGameEditor() {
-    if (requestedGameEditorOpened || !currentUser || !gamesCache.length) return;
-    const requestedId = new URLSearchParams(window.location.search).get("editGame");
+    if (requestedGameEditorOpened || !currentUser) return;
+    const editorParams = new URLSearchParams(window.location.search);
+    if (editorParams.get("newGame") === "1") {
+        requestedGameEditorOpened = true;
+        openGameEditor(null);
+        return;
+    }
+    if (!gamesCache.length) return;
+    const requestedId = editorParams.get("editGame");
     if (!requestedId) return;
     const game = gamesCache.find((item) => String(item.id) === requestedId);
     if (!game) return;
@@ -872,6 +879,28 @@ function openGameEditor(game) {
             "game-modal-title"
         );
 
+    const normalizeList = (value) => {
+        if (Array.isArray(value)) return value.map(String).filter(Boolean);
+        if (typeof value === "string") {
+            try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+            } catch (_) {}
+            return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
+        }
+        return [];
+    };
+
+    const formatStoreLinks = (value) => {
+        let links = value;
+        if (typeof links === "string") {
+            try { links = JSON.parse(links); } catch (_) { links = []; }
+        }
+        return Array.isArray(links)
+            ? links.map((item) => `${item?.label || "LINK"} | ${item?.url || ""}`).join("\n")
+            : "";
+    };
+
 
     if (game) {
 
@@ -892,6 +921,16 @@ function openGameEditor(game) {
 
         sort.value =
             game.sort_order ?? "";
+
+        document.getElementById("game-status").value = (game.status || game.play_status || "").toUpperCase();
+        document.getElementById("game-favorite-level").value = (game.favorite_level || "").toUpperCase();
+        document.getElementById("game-tags").value = normalizeList(game.tags).join(", ");
+        document.getElementById("game-official-site-url").value = game.official_site_url || "";
+        document.getElementById("game-store-links").value = formatStoreLinks(game.store_links);
+        const selectedPlatforms = new Set(normalizeList(game.platforms).map((item) => item.toUpperCase()));
+        document.querySelectorAll('input[name="game-platform"]').forEach((input) => {
+            input.checked = selectedPlatforms.has(input.value);
+        });
 
         modalTitle.textContent =
             "Edit record";
@@ -1002,7 +1041,18 @@ if (gameForm) {
                             "game-sort-order"
                         )
                         .value
-                        || null
+                        || null,
+
+                status: document.getElementById("game-status").value || null,
+                favorite_level: document.getElementById("game-favorite-level").value || null,
+                platforms: Array.from(document.querySelectorAll('input[name="game-platform"]:checked')).map((input) => input.value),
+                tags: document.getElementById("game-tags").value.split(/[,，]/).map((item) => item.trim()).filter(Boolean),
+                official_site_url: document.getElementById("game-official-site-url").value.trim() || null,
+                store_links: document.getElementById("game-store-links").value.split("\n").map((line) => {
+                    const separator = line.indexOf("|");
+                    if (separator < 0) return null;
+                    return { label: line.slice(0, separator).trim(), url: line.slice(separator + 1).trim() };
+                }).filter((item) => item?.label && item?.url)
 
             };
 

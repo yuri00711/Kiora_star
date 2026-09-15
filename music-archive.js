@@ -7,8 +7,9 @@
     const byId = (id) => document.getElementById(id);
     const state = { tracks: [], currentId: null, youtubePlayer: null, youtubeTimer: null, manualUntil: 0 };
     let youtubeApiPromise = null;
+    let musicUser = bridge.currentUser;
 
-    const isAdmin = () => Boolean(bridge.currentUser);
+    const isAdmin = () => Boolean(bridge.currentUser || musicUser);
     const clean = (value) => String(value ?? "").trim();
     const safeUrl = (value) => bridge.safeImageUrl(clean(value));
     const create = (tag, className, text) => {
@@ -336,7 +337,16 @@
         await loadMusic();
     });
 
-    window.addEventListener("yuri:authchange", () => { renderAdminActions(); renderNowPlaying(); });
+    window.addEventListener("yuri:authchange", () => {
+        musicUser = bridge.currentUser;
+        renderAdminActions();
+        renderNowPlaying();
+    });
     window.kioraMusic = Object.freeze({ parseMusicUrl, parseLrc });
     loadMusic();
+    db.auth.getSession().then(({ data }) => {
+        musicUser = data.session?.user || null;
+        renderAdminActions();
+        renderNowPlaying();
+    });
 })();

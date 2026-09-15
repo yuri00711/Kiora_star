@@ -597,6 +597,13 @@ body.sidebar-open {
 .cms-modal-card { width: min(650px, 100%); }
 .writing-modal-card, .otome-modal-card { width: min(760px, 100%); }
 .archive-modal-card select { width: 100%; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(80, 67, 86, 0.18); border-radius: 0; outline: none; padding: 12px 2px; background: transparent; color: rgba(45, 40, 48, 0.9); font-family: inherit; font-size: 13px; }
+
+.game-platform-editor { border: 0; border-bottom: 1px solid rgba(80, 67, 86, 0.18); margin: 0; padding: 0 0 14px; }
+.game-platform-editor legend { color: rgba(55, 45, 62, .62); font-size: 10px; letter-spacing: 3px; padding: 0 0 10px; }
+.game-platform-options { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.archive-modal-card .game-platform-options label { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: rgba(55, 45, 62, .72); font-size: 10px; letter-spacing: 1.5px; }
+.archive-modal-card .game-platform-options input { width: auto; margin: 0; accent-color: #9a7898; }
+.field-hint { margin-left: 8px; font-size: 9px; letter-spacing: 1px; opacity: .65; }
 .format-help { color: rgba(92, 76, 97, 0.42); font-size: 9px; line-height: 1.8; letter-spacing: .7px; }
 .cms-check-row { display: flex; flex-wrap: wrap; gap: 25px; }
 .cms-check-row label { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 9px; }
