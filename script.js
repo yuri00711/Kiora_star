@@ -334,6 +334,51 @@ document
    LOGIN
 ========================================= */
 
+async function getAdminLoginErrorCode(
+    invokeError,
+    responseData
+) {
+    if (typeof responseData?.code === "string") {
+        return responseData.code;
+    }
+
+    const response = invokeError?.context;
+
+    if (!response || typeof response.json !== "function") {
+        return "FUNCTION_ERROR";
+    }
+
+    try {
+        const errorBody =
+            await response.clone().json();
+
+        return typeof errorBody?.code === "string"
+            ? errorBody.code
+            : "FUNCTION_ERROR";
+    } catch (_) {
+        return "FUNCTION_ERROR";
+    }
+}
+
+
+function getAdminLoginMessage(errorCode) {
+    const messages = {
+        INVALID_CREDENTIALS:
+            "登录失败：ID 或密码不正确。",
+        SERVER_CONFIG_ERROR:
+            "管理员登录服务尚未配置。",
+        ADMIN_AUTH_FAILED:
+            "管理员身份验证失败。",
+        SESSION_ERROR:
+            "登录会话建立失败，请重试。",
+        FUNCTION_ERROR:
+            "管理员登录服务暂时不可用。"
+    };
+
+    return messages[errorCode]
+        ?? messages.FUNCTION_ERROR;
+}
+
 if (loginForm) {
 
     loginForm.addEventListener(
@@ -392,13 +437,38 @@ if (loginForm) {
                             }
                         );
 
+                if (invokeError) {
+                    const errorCode =
+                        await getAdminLoginErrorCode(
+                            invokeError,
+                            loginData
+                        );
+
+                    console.error(
+                        "admin-login failed:",
+                        errorCode
+                    );
+
+                    message.textContent =
+                        getAdminLoginMessage(
+                            errorCode
+                        );
+                    return;
+                }
+
                 if (
-                    invokeError ||
                     !loginData?.access_token ||
                     !loginData?.refresh_token
                 ) {
+                    console.error(
+                        "admin-login failed:",
+                        "FUNCTION_ERROR"
+                    );
+
                     message.textContent =
-                        "登录失败：ID 或密码不正确。";
+                        getAdminLoginMessage(
+                            "FUNCTION_ERROR"
+                        );
                     return;
                 }
 
@@ -421,7 +491,9 @@ if (loginForm) {
                     !sessionData?.user
                 ) {
                     message.textContent =
-                        "登录服务暂时不可用，请稍后再试。";
+                        getAdminLoginMessage(
+                            "SESSION_ERROR"
+                        );
                     return;
                 }
 
@@ -443,12 +515,14 @@ if (loginForm) {
 
             } catch (error) {
                 console.error(
-                    "管理员登录请求失败：",
-                    error
+                    "admin-login failed:",
+                    "FUNCTION_ERROR"
                 );
 
                 message.textContent =
-                    "登录服务暂时不可用，请稍后再试。";
+                    getAdminLoginMessage(
+                        "FUNCTION_ERROR"
+                    );
 
             } finally {
                 if (submitButton) {

@@ -53,7 +53,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const headers = corsHeaders(origin);
 
   if (!headers) {
-    return jsonResponse(origin, { success: false, error: "Origin not allowed" }, 403);
+    return jsonResponse(origin, { success: false, code: "FUNCTION_ERROR" }, 403);
   }
 
   if (request.method === "OPTIONS") {
@@ -61,7 +61,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   }
 
   if (request.method !== "POST") {
-    return jsonResponse(origin, { success: false, error: "Method not allowed" }, 405);
+    return jsonResponse(origin, { success: false, code: "FUNCTION_ERROR" }, 405);
   }
 
   let payload: unknown;
@@ -69,22 +69,20 @@ Deno.serve(async (request: Request): Promise<Response> => {
   try {
     payload = await request.json();
   } catch {
-    return jsonResponse(origin, { success: false, error: "Invalid request" }, 400);
+    return jsonResponse(origin, { success: false, code: "FUNCTION_ERROR" }, 400);
   }
 
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    return jsonResponse(origin, { success: false, error: "Invalid request" }, 400);
+    return jsonResponse(origin, { success: false, code: "FUNCTION_ERROR" }, 400);
   }
 
   const credentials = payload as { username?: unknown; password?: unknown };
 
-  const username =
-    typeof credentials.username === "string" ? credentials.username.trim() : "";
-  const password =
-    typeof credentials.password === "string" ? credentials.password : "";
+  const username = String(credentials.username ?? "").trim();
+  const password = String(credentials.password ?? "");
 
   if (!username || !password) {
-    return jsonResponse(origin, { success: false, error: "Invalid request" }, 400);
+    return jsonResponse(origin, { success: false, code: "INVALID_CREDENTIALS" }, 400);
   }
 
   const expectedId = Deno.env.get("ADMIN_LOGIN_ID");
@@ -102,12 +100,20 @@ Deno.serve(async (request: Request): Promise<Response> => {
     !supabaseUrl ||
     !supabaseAnonKey
   ) {
-    console.error("admin-login is missing required environment variables");
-    return jsonResponse(origin, { success: false, error: "Login service unavailable" }, 500);
+    console.error("Missing required admin-login environment variables");
+    return jsonResponse(
+      origin,
+      { success: false, code: "SERVER_CONFIG_ERROR" },
+      500,
+    );
   }
 
   if (!safeEqual(username, expectedId) || !safeEqual(password, expectedPin)) {
-    return jsonResponse(origin, { success: false, error: "Invalid credentials" }, 401);
+    return jsonResponse(
+      origin,
+      { success: false, code: "INVALID_CREDENTIALS" },
+      401,
+    );
   }
 
   const authClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -125,16 +131,24 @@ Deno.serve(async (request: Request): Promise<Response> => {
       email: adminEmail,
       password: adminPassword,
     });
-  } catch (error) {
-    console.error("admin-login request to Supabase Auth failed", error);
-    return jsonResponse(origin, { success: false, error: "Login service unavailable" }, 500);
+  } catch {
+    console.error("ADMIN_AUTH_FAILED");
+    return jsonResponse(
+      origin,
+      { success: false, code: "ADMIN_AUTH_FAILED" },
+      500,
+    );
   }
 
   const { data, error } = authResult;
 
   if (error || !data.session) {
-    console.error("admin-login could not create the administrator session", error);
-    return jsonResponse(origin, { success: false, error: "Login service unavailable" }, 500);
+    console.error("ADMIN_AUTH_FAILED");
+    return jsonResponse(
+      origin,
+      { success: false, code: "ADMIN_AUTH_FAILED" },
+      500,
+    );
   }
 
   return jsonResponse(
