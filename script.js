@@ -371,72 +371,23 @@ if (loginForm) {
                 error
             } =
                 await supabaseClient
-                    .functions
-                    .invoke(
-                        "admin-login",
-                        {
-                            body: {
-                                username,
-                                password
-                            }
-                        }
-                    );
-
-            if (
-                error ||
-                !data ||
-                !data.success
-            ) {
-                message.textContent =
-                    "登录失败：账号或密码错误";
-
-                console.error(
-                    "admin-login error:",
-                    error,
-                    data
-                );
-
-                return;
-            }
-
-
-            /* 使用 Edge Function 返回的 token
-            建立真正的 Supabase 登录 Session */
-            const {
-                data: sessionData,
-                error: sessionError
-            } =
-                await supabaseClient
                     .auth
-                    .setSession({
-                        access_token:
-                            data.access_token,
-
-                        refresh_token:
-                            data.refresh_token
+                    .signInWithPassword({
+                        email,
+                        password
                     });
 
+            if (error) {
 
-            if (
-                sessionError ||
-                !sessionData.session ||
-                !sessionData.user
-            ) {
                 message.textContent =
-                    "登录失败：无法建立管理员会话";
-
-                console.error(
-                    "setSession error:",
-                    sessionError
-                );
+                    "登录失败：" +
+                    error.message;
 
                 return;
             }
 
-
-            /* 后面的代码仍然可以继续使用 currentUser */
             currentUser =
-                sessionData.user;
+                data.user;
 
             message.textContent =
                 "";
