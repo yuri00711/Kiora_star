@@ -191,6 +191,9 @@ a { color: inherit; text-decoration: none; }
 .game-editor-section-heading h4 { margin: 0; color: #766578; font-size: 10px; font-weight: 400; letter-spacing: 4px; }
 .game-basic-grid { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 36px; }
 .game-basic-fields { display: grid; align-content: start; gap: 24px; }
+.game-played-date { padding-top: 5px; }
+.game-played-date .game-control-label { margin: 0 0 14px; }
+.field-validation-message { min-height: 17px; margin: 8px 0 0; color: rgba(151,76,84,.82); font-size: 10px; line-height: 1.6; letter-spacing: .7px; }
 .game-cover-preview { aspect-ratio: 3 / 4; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); background: radial-gradient(circle at 60% 28%, rgba(208,190,218,.5), transparent 35%), rgba(255,255,255,.42); color: #ad9aae; font-size: 8px; letter-spacing: 2px; }
 .game-cover-preview img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .game-upload-button { min-height: 42px; margin-top: 12px; display: flex !important; place-items: initial; align-items: center; justify-content: center; border: 1px solid var(--line); background: rgba(255,255,255,.4); cursor: pointer; color: #78657a !important; transition: background .2s ease, border-color .2s ease; }

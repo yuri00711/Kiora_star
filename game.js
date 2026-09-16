@@ -61,11 +61,15 @@
         document.getElementById("game-detail-play-status").textContent = String(playStatus).toUpperCase();
     }
 
-    const playedAt = common.firstValue(game, ["played_at", "play_date", "completed_at", "started_at", "created_at"]);
-    if (playedAt) {
-        document.getElementById("game-date-fact").hidden = false;
-        document.getElementById("game-detail-date").textContent = common.formatDate(playedAt);
-    }
+    const startedDate = common.formatPureDate(common.firstValue(game, ["started_at", "start_date"]));
+    const completedDate = common.formatPureDate(common.firstValue(game, ["completed_at", "completed_date", "finished_at", "played_at", "played_date"]));
+    const playedText = startedDate && completedDate
+        ? `${startedDate} — ${completedDate}`
+        : startedDate
+            ? `${startedDate} —`
+            : completedDate || "—";
+    document.getElementById("game-date-fact").hidden = false;
+    document.getElementById("game-detail-date").textContent = playedText;
 
     const platforms = common.formatList(game.platforms).map((item) => item.toUpperCase());
     if (platforms.length) {

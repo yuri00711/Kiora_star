@@ -41,11 +41,14 @@
     document.getElementById("record-rating").textContent = game.rating !== null && game.rating !== undefined && game.rating !== ""
         ? `✦ ${game.rating} / 10`
         : "UNRATED";
-    const playedAt = common.firstValue(game, ["played_at", "play_date", "completed_at", "started_at", "created_at"]);
-    if (playedAt) {
-        document.getElementById("record-played").textContent = common.formatDate(playedAt);
-        document.getElementById("record-played-fact").hidden = false;
-    }
+    const startedDate = common.formatPureDate(common.firstValue(game, ["started_at", "start_date"]));
+    const completedDate = common.formatPureDate(common.firstValue(game, ["completed_at", "completed_date", "finished_at", "played_at", "played_date"]));
+    document.getElementById("record-played").textContent = startedDate && completedDate
+        ? `${startedDate} — ${completedDate}`
+        : startedDate
+            ? `${startedDate} —`
+            : completedDate || "—";
+    document.getElementById("record-played-fact").hidden = false;
 
     const description = common.firstValue(game, ["description", "summary", "introduction"]);
     if (description) {

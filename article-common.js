@@ -142,6 +142,11 @@
         return [part("year"), part("month"), part("day")].join(".");
     }
 
+    function formatPureDate(value) {
+        const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+        return match ? `${match[1]}.${match[2]}.${match[3]}` : "";
+    }
+
     function firstValue(record, keys) {
         for (const key of keys) {
             if (record?.[key] !== null && record?.[key] !== undefined && record?.[key] !== "") return record[key];
@@ -187,6 +192,7 @@
         escapeHtml,
         firstValue,
         formatDate,
+        formatPureDate,
         formatList,
         getClient,
         markdownToHtml,

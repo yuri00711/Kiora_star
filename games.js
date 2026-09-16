@@ -5,7 +5,7 @@
     const auth = window.KioraAuth;
     const STATES = ["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"];
     const PLATFORMS = ["SWITCH", "STEAM", "PC", "PSVITA", "PSP", "PS4", "PS5", "MOBILE", "OTHER"];
-    const FAVORITES = ["FAVORITE", "LOVE", "LIKE", "UNFILED"];
+    const FAVORITES = ["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME", "UNFILED"];
     const selection = { status: new Set(), platforms: new Set(), tags: new Set(), favorite: new Set() };
     let games = [];
     let query = "";
@@ -31,7 +31,7 @@
     const gameTags = (game) => normalizeList(game.tags);
     const favoriteLevel = (game) => {
         const value = String(game.favorite_level || "").toUpperCase();
-        return ["FAVORITE", "LOVE", "LIKE"].includes(value) ? value : "UNFILED";
+        return ["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME"].includes(value) ? value : "UNFILED";
     };
 
     function openEditor(game) {

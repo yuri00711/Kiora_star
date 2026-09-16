@@ -50,7 +50,7 @@ const ACTION_PAYLOAD_FIELDS: Record<string, string[]> = {
 
 const PROFILE_FIELDS = ["nickname", "avatar_url", "tagline", "summary", "about_text", "free_space_title", "free_space_content"];
 const WRITING_FIELDS = ["title", "subtitle", "body", "category", "published_at", "cover_url", "tags", "is_pinned", "is_public", "excerpt", "sort_order"];
-const GAME_FIELDS = ["title", "review", "rating", "cover_url", "sort_order", "status", "favorite_level", "platforms", "tags", "official_site_url", "store_links"];
+const GAME_FIELDS = ["title", "review", "rating", "cover_url", "sort_order", "started_at", "completed_at", "status", "favorite_level", "platforms", "tags", "official_site_url", "store_links"];
 const CHARACTER_FIELDS = ["game_id", "name", "subtitle", "review", "rating", "image_url", "sort_order"];
 const MUSIC_FIELDS = ["title", "artist", "cover_url", "music_url", "provider", "note", "lyric_excerpt", "lrc_data", "sort_order"];
 
@@ -109,6 +109,19 @@ function optionalNumber(value: unknown): number | null {
   return parsed;
 }
 
+function pureDateOrNull(value: unknown): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  const text = String(value);
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) throw new Error("INVALID_PAYLOAD");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) throw new Error("INVALID_PAYLOAD");
+  return text;
+}
+
 function textArray(value: unknown, maxItems = 100): string[] {
   if (!Array.isArray(value) || value.length > maxItems) throw new Error("INVALID_PAYLOAD");
   return value.map((item) => requiredText(item, 120));
@@ -154,8 +167,11 @@ function normalizeGame(data: JsonObject): JsonObject {
   const value = only(data, GAME_FIELDS);
   const status = nullableText(value.status, 40);
   const favorite = nullableText(value.favorite_level, 40);
+  const startedAt = pureDateOrNull(value.started_at);
+  const completedAt = pureDateOrNull(value.completed_at);
   if (status && !["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"].includes(status)) throw new Error("INVALID_PAYLOAD");
-  if (favorite && !["FAVORITE", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME"].includes(favorite)) throw new Error("INVALID_PAYLOAD");
+  if (favorite && !["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME"].includes(favorite)) throw new Error("INVALID_PAYLOAD");
+  if (startedAt && completedAt && completedAt < startedAt) throw new Error("INVALID_PAYLOAD");
   const links = Array.isArray(value.store_links) ? value.store_links.map((entry) => {
     const item = only(object(entry), ["label", "url"]);
     return { label: requiredText(item.label, 80), url: urlOrNull(item.url) };
@@ -166,6 +182,8 @@ function normalizeGame(data: JsonObject): JsonObject {
     rating: optionalNumber(value.rating),
     cover_url: urlOrNull(value.cover_url),
     sort_order: optionalNumber(value.sort_order),
+    started_at: startedAt,
+    completed_at: completedAt,
     status,
     favorite_level: favorite,
     platforms: textArray(value.platforms ?? [], 20),

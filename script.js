@@ -614,7 +614,7 @@ function openRequestedGameEditor() {
 ========================================= */
 
 const GAME_STATUSES = new Set(["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"]);
-const GAME_FAVORITES = new Set(["FAVORITE", "LOVE", "LIKE"]);
+const GAME_FAVORITES = new Set(["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME"]);
 let gameTagValues = [];
 let gameCoverPreviewObjectUrl = "";
 let gameSaveInProgress = false;
@@ -627,6 +627,11 @@ function normalizeGameList(value) {
         if (Array.isArray(parsed)) return parsed.map(String).map((item) => item.trim()).filter(Boolean);
     } catch (_) {}
     return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function gameDateInputValue(value) {
+    const match = String(value || "").match(/^\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : "";
 }
 
 function renderGameTags() {
@@ -713,6 +718,11 @@ document.getElementById("game-cover-upload")?.addEventListener("change", (event)
     gameCoverPreviewObjectUrl = URL.createObjectURL(file);
     updateGameCoverPreview(gameCoverPreviewObjectUrl);
 });
+document.querySelectorAll("#game-started-at, #game-completed-at").forEach((input) => {
+    input.addEventListener("input", () => {
+        document.getElementById("game-date-message").textContent = "";
+    });
+});
 
 function openGameEditor(game) {
     if (!kioraAuth.can(game ? "game:edit" : "game:create")) return;
@@ -721,6 +731,7 @@ function openGameEditor(game) {
     charactersCache = [];
     renderCharacterEditorList([]);
     document.getElementById("game-form-message").textContent = "";
+    document.getElementById("game-date-message").textContent = "";
 
     const id =
         document.getElementById(
@@ -782,6 +793,9 @@ function openGameEditor(game) {
 
         sort.value =
             game.sort_order ?? "";
+
+        document.getElementById("game-started-at").value = gameDateInputValue(game.started_at);
+        document.getElementById("game-completed-at").value = gameDateInputValue(game.completed_at);
 
         const statusValue = String(game.status || game.play_status || "").toUpperCase();
         const favoriteValue = String(game.favorite_level || "").toUpperCase();
@@ -854,6 +868,16 @@ if (gameForm) {
             if (!kioraAuth.can(id ? "game:edit" : "game:create"))
                 return;
 
+            const startedAt = document.getElementById("game-started-at").value || null;
+            const completedAt = document.getElementById("game-completed-at").value || null;
+            const dateMessage = document.getElementById("game-date-message");
+            dateMessage.textContent = "";
+            if (startedAt && completedAt && completedAt < startedAt) {
+                dateMessage.textContent = "COMPLETED 不能早于 STARTED。";
+                document.getElementById("game-completed-at").focus();
+                return;
+            }
+
             if (document.getElementById("game-tag-entry").value.trim()) addGameTag();
 
             const message =
@@ -921,6 +945,9 @@ if (gameForm) {
                         )
                         .value
                         || null,
+
+                started_at: startedAt,
+                completed_at: completedAt,
 
                 status: document.getElementById("game-status").value || null,
                 favorite_level: document.getElementById("game-favorite-level").value || null,

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="style.css?v=20260915-5">
     <link rel="stylesheet" href="cms.css?v=20260915-5">
-    <link rel="stylesheet" href="games.css?v=20260916-1">
+    <link rel="stylesheet" href="games.css?v=20260916-2">
     <link rel="stylesheet" href="site-nav.css?v=20260915-1">
 </head>
 <body data-page="games">
@@ -140,6 +140,14 @@
                                 <label>RATING<input id="game-rating" type="number" min="0" max="10" step="0.1" inputmode="decimal"></label>
                                 <label>SORT ORDER<input id="game-sort-order" type="number" inputmode="numeric"></label>
                             </div>
+                            <div class="game-played-date">
+                                <p class="game-control-label">PLAYED DATE</p>
+                                <div class="form-grid">
+                                    <label>STARTED<input id="game-started-at" type="date"></label>
+                                    <label>COMPLETED<input id="game-completed-at" type="date"></label>
+                                </div>
+                                <p id="game-date-message" class="field-validation-message" role="alert"></p>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -154,7 +162,7 @@
                         </label>
                         <label>FAVORITE LEVEL
                             <select id="game-favorite-level">
-                                <option value="">NONE / UNFILED</option><option value="FAVORITE">FAVORITE</option><option value="LOVE">LOVE</option><option value="LIKE">LIKE</option>
+                                <option value="">NONE / UNFILED</option><option value="FAVORITE">FAVORITE</option><option value="BELOVED">BELOVED</option><option value="LOVE">LOVE</option><option value="LIKE">LIKE</option><option value="NEUTRAL">NEUTRAL</option><option value="NOT FOR ME">NOT FOR ME</option>
                             </select>
                         </label>
                     </div>
@@ -361,9 +369,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260915-1"></script>
-    <script src="script.js?v=20260916-1"></script>
-    <script src="article-common.js"></script>
-    <script src="games.js?v=20260916-1"></script>
+    <script src="script.js?v=20260916-2"></script>
+    <script src="article-common.js?v=20260916-2"></script>
+    <script src="games.js?v=20260916-2"></script>
     <script src="site-nav.js?v=20260915-1"></script>
 </body>
 </html>
