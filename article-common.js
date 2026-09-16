@@ -142,6 +142,35 @@
         return [part("year"), part("month"), part("day")].join(".");
     }
 
+    function firstValue(record, keys) {
+        for (const key of keys) {
+            if (record?.[key] !== null && record?.[key] !== undefined && record?.[key] !== "") return record[key];
+        }
+        return "";
+    }
+
+    function formatList(value) {
+        if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
+        if (typeof value !== "string" || !value.trim()) return [];
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return parsed.map(String).map((item) => item.trim()).filter(Boolean);
+        } catch (_) {}
+        return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
+    }
+
+    function plainText(markdown) {
+        const holder = document.createElement("div");
+        holder.innerHTML = markdownToHtml(markdown || "");
+        return holder.textContent.trim();
+    }
+
+    function truncateText(value, maximum = 240) {
+        const text = String(value || "").replace(/\s+/g, " ").trim();
+        if (text.length <= maximum) return text;
+        return `${text.slice(0, maximum).trimEnd()}…`;
+    }
+
     function wordCount(value) {
         const text = String(value || "").replace(/[#>*_~`\[\]()!-]/g, " ");
         const cjk = (text.match(/[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]/g) || []).length;
@@ -156,11 +185,15 @@
     window.yuriArticles = Object.freeze({
         categories,
         escapeHtml,
+        firstValue,
         formatDate,
+        formatList,
         getClient,
         markdownToHtml,
+        plainText,
         readingMinutes,
         safeUrl,
+        truncateText,
         wordCount
     });
 })();

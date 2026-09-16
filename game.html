@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Game Archive · Kiora</title>
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="game.css?v=20260915-2">
+    <link rel="stylesheet" href="game.css?v=20260916-1">
 </head>
 <body>
     <div class="game-sky" aria-hidden="true"></div>
@@ -49,7 +49,7 @@
                     <div id="game-note-preview" class="game-note-preview" hidden>
                         <p class="game-detail-label">PERSONAL RECORD</p>
                         <p id="game-note-preview-text"></p>
-                        <a href="#game-note-section">READ FULL NOTE →</a>
+                        <a id="game-read-full-note" href="game-record.html">READ FULL NOTE →</a>
                     </div>
 
                     <p id="game-detail-keywords-label" class="game-detail-keywords-label" hidden>KEYWORDS</p>
@@ -62,43 +62,12 @@
                 </div>
             </header>
 
-            <section id="game-description-section" class="game-detail-section" hidden>
-                <p class="game-detail-label">INTRODUCTION</p>
-                <div id="game-detail-description" class="game-detail-reading"></div>
-            </section>
-
-            <section id="game-note-section" class="game-detail-section game-note-section" hidden>
-                <div class="game-detail-section-heading">
-                    <div><p class="game-detail-label">PERSONAL RECORD</p><span>GAME NOTE / PRIVATE IMPRESSION</span></div>
-                </div>
-                <div id="game-detail-note" class="game-detail-reading"></div>
-            </section>
-
-            <section id="game-links-section" class="game-detail-section game-links-section" hidden>
-                <div class="game-detail-section-heading">
-                    <div><p class="game-detail-label">LINKS</p><span>OFFICIAL / STORE</span></div>
-                </div>
-                <div id="game-detail-links" class="game-detail-links"></div>
-            </section>
-
-            <section id="game-characters-section" class="game-detail-section" hidden>
-                <div class="game-detail-section-heading">
-                    <div><p class="game-detail-label">CHARACTER ARCHIVE</p><span>ROUTES IN THIS CONSTELLATION</span></div>
-                    <span id="game-character-count"></span>
-                </div>
-                <div id="game-character-list" class="game-character-list"></div>
-            </section>
-
-            <footer class="game-detail-footer">
-                <button id="game-back-bottom" type="button">← RETURN TO GAMES</button>
-                <time id="game-detail-updated"></time>
-            </footer>
         </article>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260915-1"></script>
-    <script src="article-common.js"></script>
-    <script src="game.js?v=20260915-4"></script>
+    <script src="article-common.js?v=20260916-1"></script>
+    <script src="game.js?v=20260916-1"></script>
 </body>
 </html>

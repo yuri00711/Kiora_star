@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Full Game Record · Kiora</title>
+    <meta name="description" content="Kiora private game record and character archive.">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="game.css?v=20260916-1">
+</head>
+<body class="game-record-page">
+    <div class="game-sky" aria-hidden="true"></div>
+    <div class="game-starfall" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="game-orbits" aria-hidden="true"><span></span><span></span></div>
+
+    <nav class="game-detail-nav" aria-label="Game record navigation">
+        <a id="record-back" href="game.html">← BACK TO GAME</a>
+        <a href="index.html">KIORA.SPACE</a>
+    </nav>
+
+    <main class="game-detail-shell game-full-record-shell">
+        <p id="record-status" class="game-detail-status" role="status">Loading full record…</p>
+
+        <article id="full-game-record" class="game-full-record" hidden>
+            <header class="game-record-masthead">
+                <div>
+                    <p id="record-archive-number" class="game-detail-kicker">ARCHIVE</p>
+                    <h1 id="record-title"></h1>
+                    <p id="record-original" class="game-detail-original" hidden></p>
+                </div>
+                <dl class="game-record-summary">
+                    <div><dt>RATING</dt><dd id="record-rating"></dd></div>
+                    <div id="record-played-fact" hidden><dt>PLAYED</dt><dd id="record-played"></dd></div>
+                </dl>
+            </header>
+
+            <section id="record-description-section" class="game-detail-section" hidden>
+                <p class="game-detail-label">INTRODUCTION</p>
+                <div id="record-description" class="game-detail-reading"></div>
+            </section>
+
+            <section id="record-note-section" class="game-detail-section game-note-section" hidden>
+                <div class="game-detail-section-heading">
+                    <div><p class="game-detail-label">PERSONAL RECORD</p><span>GAME NOTE / PRIVATE IMPRESSION</span></div>
+                </div>
+                <div id="record-note" class="game-detail-reading"></div>
+            </section>
+
+            <section id="record-links-section" class="game-detail-section game-links-section" hidden>
+                <div class="game-detail-section-heading">
+                    <div><p class="game-detail-label">LINKS</p><span>OFFICIAL / STORE</span></div>
+                </div>
+                <div id="record-links" class="game-detail-links"></div>
+            </section>
+
+            <section id="record-characters-section" class="game-detail-section">
+                <div class="game-detail-section-heading">
+                    <div><p class="game-detail-label">CHARACTER ARCHIVE</p><span>ROUTES IN THIS CONSTELLATION</span></div>
+                    <span id="record-character-count">00 ROUTES</span>
+                </div>
+                <div id="record-character-list" class="game-character-list"></div>
+                <p id="record-character-empty" class="game-record-empty" hidden>No character records in this constellation.</p>
+            </section>
+
+            <footer class="game-detail-footer">
+                <a id="record-back-bottom" href="game.html">← RETURN TO GAME</a>
+                <time id="record-updated"></time>
+            </footer>
+        </article>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js?v=20260915-1"></script>
+    <script src="article-common.js?v=20260916-1"></script>
+    <script src="game-record.js?v=20260916-1"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Character Record · Kiora</title>
+    <meta name="description" content="Kiora character archive record.">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="game.css?v=20260916-1">
+</head>
+<body class="character-record-page">
+    <div class="game-sky" aria-hidden="true"></div>
+    <div class="game-starfall" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="game-orbits" aria-hidden="true"><span></span><span></span></div>
+
+    <nav class="game-detail-nav" aria-label="Character navigation">
+        <a id="character-back" href="game-record.html">← BACK TO GAME RECORD</a>
+        <a href="index.html">KIORA.SPACE</a>
+    </nav>
+
+    <main class="game-detail-shell character-detail-shell">
+        <p id="character-status" class="game-detail-status" role="status">Loading character record…</p>
+        <article id="character-detail" class="character-detail" hidden>
+            <header class="character-detail-header">
+                <figure id="character-image-frame" class="character-detail-image-frame" hidden>
+                    <img id="character-image" alt="" loading="eager">
+                </figure>
+                <div class="character-detail-heading">
+                    <p id="character-index" class="game-detail-kicker">CHARACTER RECORD</p>
+                    <h1 id="character-name"></h1>
+                    <p id="character-subtitle" class="game-detail-original" hidden></p>
+                    <dl class="game-record-summary character-facts">
+                        <div><dt>RATING</dt><dd id="character-rating"></dd></div>
+                        <div><dt>GAME</dt><dd id="character-game-title"></dd></div>
+                    </dl>
+                </div>
+            </header>
+
+            <section id="character-review-section" class="game-detail-section game-note-section" hidden>
+                <div class="game-detail-section-heading">
+                    <div><p class="game-detail-label">PERSONAL RECORD</p><span>CHARACTER NOTE / PRIVATE IMPRESSION</span></div>
+                </div>
+                <div id="character-review" class="game-detail-reading"></div>
+            </section>
+
+            <footer class="game-detail-footer">
+                <a id="character-back-bottom" href="game-record.html">← RETURN TO GAME RECORD</a>
+            </footer>
+        </article>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="article-common.js?v=20260916-1"></script>
+    <script src="character.js?v=20260916-1"></script>
+</body>
+</html>
