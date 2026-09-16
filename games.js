@@ -5,7 +5,7 @@
     const auth = window.KioraAuth;
     const STATES = ["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"];
     const PLATFORMS = ["SWITCH", "STEAM", "PC", "PSVITA", "PSP", "PS4", "PS5", "MOBILE", "OTHER"];
-    const FAVORITES = ["FAVORITE", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME"];
+    const FAVORITES = ["FAVORITE", "LOVE", "LIKE", "UNFILED"];
     const selection = { status: new Set(), platforms: new Set(), tags: new Set(), favorite: new Set() };
     let games = [];
     let query = "";
@@ -29,7 +29,25 @@
     const gameStatus = (game) => String(game.status || game.play_status || "").toUpperCase();
     const gamePlatforms = (game) => normalizeList(game.platforms).map((item) => item.toUpperCase());
     const gameTags = (game) => normalizeList(game.tags);
-    const favoriteLevel = (game) => String(game.favorite_level || "").toUpperCase();
+    const favoriteLevel = (game) => {
+        const value = String(game.favorite_level || "").toUpperCase();
+        return ["FAVORITE", "LOVE", "LIKE"].includes(value) ? value : "UNFILED";
+    };
+
+    function openEditor(game) {
+        window.yuriArchive?.openGameEditor(game || null);
+    }
+
+    function editButton(game) {
+        if (!auth.can("game:edit")) return null;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "game-record-edit";
+        button.textContent = "EDIT";
+        button.setAttribute("aria-label", `Edit ${game.title || "game"}`);
+        button.addEventListener("click", () => openEditor(game));
+        return button;
+    }
 
     function filterGroup(title, key, options) {
         const section = document.createElement("section");
@@ -130,6 +148,8 @@
     }
 
     function createGridCard(game, index) {
+        const shell = document.createElement("article");
+        shell.className = "game-record-shell";
         const card = document.createElement("a");
         card.className = "game-card";
         card.href = `game.html?id=${encodeURIComponent(game.id)}`;
@@ -154,10 +174,15 @@
         foot.append(tagLine, rating);
         copy.append(number, title, meta, foot);
         card.append(copy);
-        return card;
+        shell.append(card);
+        const edit = editButton(game);
+        if (edit) shell.append(edit);
+        return shell;
     }
 
     function createIndexRow(game, index) {
+        const shell = document.createElement("article");
+        shell.className = "game-index-shell";
         const row = document.createElement("a");
         row.className = "game-index-row";
         row.href = `game.html?id=${encodeURIComponent(game.id)}`;
@@ -168,7 +193,10 @@
         const platform = document.createElement("span"); platform.textContent = gamePlatforms(game).join(" · ") || "—";
         const rating = document.createElement("span"); rating.textContent = ratingText(game.rating);
         row.append(title, state, platform, rating);
-        return row;
+        shell.append(row);
+        const edit = editButton(game);
+        if (edit) shell.append(edit);
+        return shell;
     }
 
     function render() {
@@ -224,11 +252,27 @@
     syncFilters();
     render();
 
-    if (auth.can("game:create")) {
+    window.addEventListener("yuri:gameschange", (event) => {
+        games = Array.isArray(event.detail?.games) ? event.detail.games : [];
+        renderFilterSets();
+        syncFilters();
+        render();
+    });
+
+    window.addEventListener("yuri:authchange", () => {
+        render();
+        renderAdminAction();
+    });
+
+    function renderAdminAction() {
         const admin = document.getElementById("games-admin-actions");
-        const add = document.createElement("a");
-        add.href = "games.html?newGame=1";
+        admin.replaceChildren();
+        if (!auth.can("game:create")) return;
+        const add = document.createElement("button");
+        add.type = "button";
         add.textContent = "＋ ADD RECORD";
+        add.addEventListener("click", () => openEditor(null));
         admin.append(add);
     }
+    renderAdminAction();
 })();

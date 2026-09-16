@@ -118,6 +118,7 @@ const kioraAuth = window.KioraAuth;
 let currentUser = null;
 let gamesCache = [];
 let requestedGameEditorOpened = false;
+let lockedPageScrollY = 0;
 
 // Small public bridge used by the optional profile/writing CMS module.
 // The existing auth and Supabase client remain the single source of truth.
@@ -136,6 +137,7 @@ window.yuriArchive = Object.freeze({
     write: kioraAuth.write,
     readForEditor: kioraAuth.readForEditor,
     uploadSiteMedia: kioraAuth.uploadSiteMedia,
+    openGameEditor,
     openModal,
     closeModal,
     safeImageUrl
@@ -150,6 +152,9 @@ function openModal(modal) {
 
     if (!modal) return;
 
+    if (!document.querySelector(".archive-modal.active")) {
+        lockedPageScrollY = window.scrollY;
+    }
     modal.classList.add("active");
     if (modal.hasAttribute("data-protect-draft")) modal.dataset.dirty = "false";
 
@@ -170,8 +175,11 @@ function closeModal(modal) {
 
     modal.classList.remove("active");
 
-    document.body.style.overflow =
-        document.querySelector(".archive-modal.active") ? "hidden" : "";
+    const anotherModalIsOpen = document.querySelector(".archive-modal.active");
+    document.body.style.overflow = anotherModalIsOpen ? "hidden" : "";
+    if (!anotherModalIsOpen) {
+        window.scrollTo(0, lockedPageScrollY);
+    }
 }
 
 
@@ -605,6 +613,107 @@ function openRequestedGameEditor() {
    OPEN EDITOR
 ========================================= */
 
+const GAME_STATUSES = new Set(["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"]);
+const GAME_FAVORITES = new Set(["FAVORITE", "LOVE", "LIKE"]);
+let gameTagValues = [];
+let gameCoverPreviewObjectUrl = "";
+let gameSaveInProgress = false;
+
+function normalizeGameList(value) {
+    if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
+    if (typeof value !== "string" || !value.trim()) return [];
+    try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed.map(String).map((item) => item.trim()).filter(Boolean);
+    } catch (_) {}
+    return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function renderGameTags() {
+    const list = document.getElementById("game-tag-list");
+    const hidden = document.getElementById("game-tags");
+    if (!list || !hidden) return;
+    list.replaceChildren();
+    gameTagValues.forEach((tag) => {
+        const chip = document.createElement("span");
+        chip.textContent = tag;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.setAttribute("aria-label", `Remove ${tag}`);
+        remove.textContent = "×";
+        remove.addEventListener("click", () => {
+            gameTagValues = gameTagValues.filter((value) => value !== tag);
+            renderGameTags();
+        });
+        chip.append(remove);
+        list.append(chip);
+    });
+    hidden.value = JSON.stringify(gameTagValues);
+}
+
+function addGameTag() {
+    const entry = document.getElementById("game-tag-entry");
+    const value = entry?.value.trim();
+    if (!value) return;
+    if (!gameTagValues.some((tag) => tag.toLocaleLowerCase() === value.toLocaleLowerCase())) {
+        gameTagValues.push(value);
+        renderGameTags();
+    }
+    entry.value = "";
+    entry.focus();
+}
+
+function updateGameCoverPreview(url) {
+    const preview = document.getElementById("game-cover-preview");
+    if (!preview) return;
+    preview.replaceChildren();
+    const safeUrl = String(url || "").startsWith("blob:") ? String(url) : safeImageUrl(url);
+    if (!safeUrl) {
+        const empty = document.createElement("span");
+        empty.textContent = "NO COVER";
+        preview.append(empty);
+        preview.classList.remove("has-image");
+        return;
+    }
+    const image = document.createElement("img");
+    image.src = safeUrl;
+    image.alt = "Game cover preview";
+    image.addEventListener("error", () => updateGameCoverPreview(""), { once: true });
+    preview.classList.add("has-image");
+    preview.append(image);
+}
+
+function setGameEditorMode(game) {
+    const editing = Boolean(game?.id);
+    document.getElementById("game-editor-mode").textContent = editing ? "EDIT MODE" : "CREATE MODE";
+    document.getElementById("game-modal-title").textContent = editing ? "Edit record" : "New record";
+    document.getElementById("game-editor-description").textContent = editing
+        ? `Archive ${String(game.sort_order ?? game.id).padStart(3, "0")} / ${game.title || "UNTITLED"}`
+        : "Create a new archive entry.";
+    addCharacterButton.disabled = !editing;
+    deleteGameButton.classList.toggle("hidden", !editing || kioraAuth.role !== "owner");
+}
+
+document.getElementById("game-add-tag")?.addEventListener("click", addGameTag);
+document.getElementById("game-tag-entry")?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addGameTag();
+});
+document.getElementById("game-cover-url")?.addEventListener("input", (event) => {
+    if (!document.getElementById("game-cover-upload")?.files?.length) updateGameCoverPreview(event.target.value.trim());
+});
+document.getElementById("game-cover-upload")?.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+        updateGameCoverPreview(document.getElementById("game-cover-url").value.trim());
+        return;
+    }
+    if (gameCoverPreviewObjectUrl) URL.revokeObjectURL(gameCoverPreviewObjectUrl);
+    gameCoverPreviewObjectUrl = URL.createObjectURL(file);
+    updateGameCoverPreview(gameCoverPreviewObjectUrl);
+});
+
 function openGameEditor(game) {
     if (!kioraAuth.can(game ? "game:edit" : "game:create")) return;
 
@@ -643,23 +752,6 @@ function openGameEditor(game) {
             "game-sort-order"
         );
 
-    const modalTitle =
-        document.getElementById(
-            "game-modal-title"
-        );
-
-    const normalizeList = (value) => {
-        if (Array.isArray(value)) return value.map(String).filter(Boolean);
-        if (typeof value === "string") {
-            try {
-                const parsed = JSON.parse(value);
-                if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
-            } catch (_) {}
-            return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
-        }
-        return [];
-    };
-
     const formatStoreLinks = (value) => {
         let links = value;
         if (typeof links === "string") {
@@ -691,23 +783,20 @@ function openGameEditor(game) {
         sort.value =
             game.sort_order ?? "";
 
-        document.getElementById("game-status").value = (game.status || game.play_status || "").toUpperCase();
-        document.getElementById("game-favorite-level").value = (game.favorite_level || "").toUpperCase();
-        document.getElementById("game-tags").value = normalizeList(game.tags).join(", ");
+        const statusValue = String(game.status || game.play_status || "").toUpperCase();
+        const favoriteValue = String(game.favorite_level || "").toUpperCase();
+        document.getElementById("game-status").value = GAME_STATUSES.has(statusValue) ? statusValue : "";
+        document.getElementById("game-favorite-level").value = GAME_FAVORITES.has(favoriteValue) ? favoriteValue : "";
+        gameTagValues = normalizeGameList(game.tags);
+        renderGameTags();
         document.getElementById("game-official-site-url").value = game.official_site_url || "";
         document.getElementById("game-store-links").value = formatStoreLinks(game.store_links);
-        const selectedPlatforms = new Set(normalizeList(game.platforms).map((item) => item.toUpperCase()));
+        const selectedPlatforms = new Set(normalizeGameList(game.platforms).map((item) => item.toUpperCase()));
         document.querySelectorAll('input[name="game-platform"]').forEach((input) => {
             input.checked = selectedPlatforms.has(input.value);
         });
 
-        modalTitle.textContent =
-            "Edit record";
-
-        deleteGameButton.classList.toggle(
-            "hidden",
-            kioraAuth.role !== "owner"
-        );
+        setGameEditorMode(game);
 
     } else {
 
@@ -716,16 +805,16 @@ function openGameEditor(game) {
         id.value =
             "";
 
-        modalTitle.textContent =
-            "New record";
-
-        deleteGameButton
-            .classList
-            .add(
-                "hidden"
-            );
+        gameTagValues = [];
+        renderGameTags();
+        setGameEditorMode(null);
 
     }
+
+    document.getElementById("game-cover-upload").value = "";
+    if (gameCoverPreviewObjectUrl) URL.revokeObjectURL(gameCoverPreviewObjectUrl);
+    gameCoverPreviewObjectUrl = "";
+    updateGameCoverPreview(game?.cover_url || "");
 
     if (game && game.id) {
 
@@ -736,6 +825,8 @@ function openGameEditor(game) {
     openModal(
         gameModal
     );
+    const editorCard = gameModal.querySelector(".game-editor-card");
+    if (editorCard) editorCard.scrollTop = 0;
 
 }
 
@@ -751,6 +842,7 @@ if (gameForm) {
         async (event) => {
 
             event.preventDefault();
+            if (gameSaveInProgress) return;
 
             const id =
                 document
@@ -762,11 +854,37 @@ if (gameForm) {
             if (!kioraAuth.can(id ? "game:edit" : "game:create"))
                 return;
 
+            if (document.getElementById("game-tag-entry").value.trim()) addGameTag();
+
             const message =
                 document
                     .getElementById(
                         "game-form-message"
                     );
+
+            const coverFile = document.getElementById("game-cover-upload").files?.[0];
+            let coverUrl = document.getElementById("game-cover-url").value.trim() || null;
+
+            if (coverFile) {
+                if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(coverFile.type)) {
+                    message.textContent = "仅支持 JPG、PNG、WEBP 或 GIF 图片。";
+                    return;
+                }
+                if (coverFile.size > 5 * 1024 * 1024) {
+                    message.textContent = "图片不能超过 5MB。";
+                    return;
+                }
+                const extension = (coverFile.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+                const uploadPath = `collections/games/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension || "jpg"}`;
+                message.textContent = "Uploading cover…";
+                const upload = await kioraAuth.uploadSiteMedia(coverFile, uploadPath);
+                if (upload.error) {
+                    message.textContent = "封面上传失败：" + upload.error.message;
+                    return;
+                }
+                coverUrl = upload.data.publicUrl;
+                document.getElementById("game-cover-url").value = coverUrl;
+            }
 
             const payload = {
 
@@ -794,14 +912,7 @@ if (gameForm) {
                         .value
                         || null,
 
-                cover_url:
-                    document
-                        .getElementById(
-                            "game-cover-url"
-                        )
-                        .value
-                        .trim()
-                        || null,
+                cover_url: coverUrl,
 
                 sort_order:
                     document
@@ -814,7 +925,7 @@ if (gameForm) {
                 status: document.getElementById("game-status").value || null,
                 favorite_level: document.getElementById("game-favorite-level").value || null,
                 platforms: Array.from(document.querySelectorAll('input[name="game-platform"]:checked')).map((input) => input.value),
-                tags: document.getElementById("game-tags").value.split(/[,，]/).map((item) => item.trim()).filter(Boolean),
+                tags: gameTagValues.slice(),
                 official_site_url: document.getElementById("game-official-site-url").value.trim() || null,
                 store_links: document.getElementById("game-store-links").value.split("\n").map((line) => {
                     const separator = line.indexOf("|");
@@ -825,20 +936,27 @@ if (gameForm) {
             };
 
 
-            message.textContent =
-                "Saving…";
+            message.textContent = "Saving…";
+            gameSaveInProgress = true;
+            const submitButton = gameForm.querySelector('button[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
 
 
             let result;
 
 
-            result = await kioraAuth.write(
-                id ? "game_update" : "game_create",
-                id ? { id, data: payload } : { data: payload },
-                () => id
-                    ? supabaseClient.from("games").update(payload).eq("id", id)
-                    : supabaseClient.from("games").insert(payload)
-            );
+            try {
+                result = await kioraAuth.write(
+                    id ? "game_update" : "game_create",
+                    id ? { id, data: payload } : { data: payload },
+                    () => id
+                        ? supabaseClient.from("games").update(payload).eq("id", id).select("*").single()
+                        : supabaseClient.from("games").insert(payload).select("*").single()
+                );
+            } finally {
+                gameSaveInProgress = false;
+                if (submitButton) submitButton.disabled = false;
+            }
 
 
             if (result.error) {
@@ -855,18 +973,23 @@ if (gameForm) {
             }
 
 
-            message.textContent =
-                "";
-
-            closeModal(
-                gameModal
-            );
-
             await loadGames();
+            const returned = Array.isArray(result.data) ? result.data[0] : result.data;
+            const savedId = String(returned?.id ?? id);
+            const savedGame = gamesCache.find((item) => String(item.id) === savedId);
 
-            if (document.body.dataset.page === "games") {
-                window.location.replace("games.html");
+            if (!id && savedGame) {
+                currentGameForCharacters = savedGame;
+                document.getElementById("game-id").value = savedGame.id;
+                document.getElementById("game-cover-upload").value = "";
+                setGameEditorMode(savedGame);
+                renderCharacterEditorList([]);
+                message.textContent = "Record created. You can add characters now.";
+                return;
             }
+
+            message.textContent = "";
+            closeModal(gameModal);
 
         }
     );
@@ -934,10 +1057,6 @@ if (deleteGameButton) {
             );
 
             await loadGames();
-
-            if (document.body.dataset.page === "games") {
-                window.location.replace("games.html");
-            }
 
         }
     );
@@ -1057,7 +1176,7 @@ function renderCharacterEditorList(characters) {
         empty.textContent =
             currentGameForCharacters
                 ? "还没有角色记录。点击 ＋ ADD CHARACTER 添加第一位攻略角色。"
-                : "请先保存游戏记录，再重新打开 EDIT 添加攻略角色。";
+                : "创建游戏记录后即可添加攻略角色。";
 
         characterEditorList
             .appendChild(
@@ -1227,7 +1346,7 @@ function openCharacterEditor(character) {
 
     if (!currentGameForCharacters) {
         document.getElementById("game-form-message").textContent =
-            "请先保存游戏记录，再重新打开 EDIT 添加攻略角色。";
+            "创建游戏记录后即可添加攻略角色。";
         return;
     }
 
