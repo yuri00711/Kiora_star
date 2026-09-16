@@ -629,6 +629,41 @@ function normalizeGameList(value) {
     return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
 }
 
+function formatGameStoreLinks(value) {
+    const links = window.yuriArticles?.normalizeStoreLinks?.(value) || [];
+    return links.map((item) => `${item.label} | ${item.url}`).join("\n");
+}
+
+function parseGameStoreLinks(value) {
+    const links = [];
+    const invalidLines = [];
+
+    String(value || "").split(/\r?\n/).forEach((rawLine, index) => {
+        const line = rawLine.trim();
+        if (!line) return;
+        const separator = line.search(/[|｜\t]/);
+        if (separator < 0) {
+            invalidLines.push(index + 1);
+            return;
+        }
+
+        const label = line.slice(0, separator).trim();
+        const url = line.slice(separator + 1).trim();
+        let validUrl = false;
+        try {
+            validUrl = ["http:", "https:"].includes(new URL(url).protocol);
+        } catch (_) {}
+
+        if (!label || !validUrl) {
+            invalidLines.push(index + 1);
+            return;
+        }
+        links.push({ label, url });
+    });
+
+    return { links, invalidLines };
+}
+
 function gameDateInputValue(value) {
     const match = String(value || "").match(/^\d{4}-\d{2}-\d{2}/);
     return match ? match[0] : "";
@@ -763,17 +798,6 @@ function openGameEditor(game) {
             "game-sort-order"
         );
 
-    const formatStoreLinks = (value) => {
-        let links = value;
-        if (typeof links === "string") {
-            try { links = JSON.parse(links); } catch (_) { links = []; }
-        }
-        return Array.isArray(links)
-            ? links.map((item) => `${item?.label || "LINK"} | ${item?.url || ""}`).join("\n")
-            : "";
-    };
-
-
     if (game) {
 
         id.value =
@@ -804,7 +828,7 @@ function openGameEditor(game) {
         gameTagValues = normalizeGameList(game.tags);
         renderGameTags();
         document.getElementById("game-official-site-url").value = game.official_site_url || "";
-        document.getElementById("game-store-links").value = formatStoreLinks(game.store_links);
+        document.getElementById("game-store-links").value = formatGameStoreLinks(game.store_links);
         const selectedPlatforms = new Set(normalizeGameList(game.platforms).map((item) => item.toUpperCase()));
         document.querySelectorAll('input[name="game-platform"]').forEach((input) => {
             input.checked = selectedPlatforms.has(input.value);
@@ -886,6 +910,13 @@ if (gameForm) {
                         "game-form-message"
                     );
 
+            const parsedStoreLinks = parseGameStoreLinks(document.getElementById("game-store-links").value);
+            if (parsedStoreLinks.invalidLines.length) {
+                message.textContent = `STORE LINKS 第 ${parsedStoreLinks.invalidLines.join("、")} 行格式或 URL 无效，请使用 LABEL | https://...`;
+                document.getElementById("game-store-links").focus();
+                return;
+            }
+
             const coverFile = document.getElementById("game-cover-upload").files?.[0];
             let coverUrl = document.getElementById("game-cover-url").value.trim() || null;
 
@@ -954,11 +985,7 @@ if (gameForm) {
                 platforms: Array.from(document.querySelectorAll('input[name="game-platform"]:checked')).map((input) => input.value),
                 tags: gameTagValues.slice(),
                 official_site_url: document.getElementById("game-official-site-url").value.trim() || null,
-                store_links: document.getElementById("game-store-links").value.split("\n").map((line) => {
-                    const separator = line.indexOf("|");
-                    if (separator < 0) return null;
-                    return { label: line.slice(0, separator).trim(), url: line.slice(separator + 1).trim() };
-                }).filter((item) => item?.label && item?.url)
+                store_links: parsedStoreLinks.links
 
             };
 

@@ -169,6 +169,7 @@ button, a { font: inherit; }
 .game-detail-links { display: flex; flex-wrap: wrap; gap: 12px 32px; }
 .game-detail-links a { padding: 9px 0; border-bottom: 1px solid rgba(116, 91, 121, .28); color: #755f78; font-size: 10px; letter-spacing: 2px; transition: color .2s ease, border-color .2s ease; }
 .game-detail-links a:hover { color: #513f56; border-color: rgba(81, 63, 86, .62); }
+.game-links-section .game-detail-links { flex-direction: column; align-items: flex-start; gap: 8px; }
 
 /* Full game record */
 .game-full-record-shell { max-width: 1080px; }

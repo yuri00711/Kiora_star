@@ -164,6 +164,55 @@
         return value.split(/[,，]/).map((item) => item.trim()).filter(Boolean);
     }
 
+    function normalizeStoreLinks(value) {
+        const links = [];
+
+        const addLink = (label, url) => {
+            const normalizedLabel = String(label || "STORE").trim();
+            const normalizedUrl = String(url || "").trim();
+            if (normalizedLabel && normalizedUrl) links.push({ label: normalizedLabel, url: normalizedUrl });
+        };
+
+        const visit = (entry) => {
+            if (entry === null || entry === undefined || entry === "") return;
+            if (Array.isArray(entry)) {
+                entry.forEach(visit);
+                return;
+            }
+            if (typeof entry === "object") {
+                const directUrl = entry.url ?? entry.href ?? entry.link;
+                if (directUrl) {
+                    addLink(entry.label ?? entry.name ?? entry.store, directUrl);
+                    return;
+                }
+                Object.entries(entry).forEach(([label, url]) => {
+                    if (typeof url === "string") addLink(label, url);
+                });
+                return;
+            }
+            if (typeof entry !== "string") return;
+
+            const text = entry.trim();
+            if (!text) return;
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed !== text) {
+                    visit(parsed);
+                    return;
+                }
+            } catch (_) {}
+
+            text.split(/\r?\n/).forEach((line) => {
+                const separator = line.search(/[|｜\t]/);
+                if (separator < 0) return;
+                addLink(line.slice(0, separator), line.slice(separator + 1));
+            });
+        };
+
+        visit(value);
+        return links;
+    }
+
     function plainText(markdown) {
         const holder = document.createElement("div");
         holder.innerHTML = markdownToHtml(markdown || "");
@@ -194,6 +243,7 @@
         formatDate,
         formatPureDate,
         formatList,
+        normalizeStoreLinks,
         getClient,
         markdownToHtml,
         plainText,

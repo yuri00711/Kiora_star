@@ -65,16 +65,10 @@
     const links = [];
     const officialUrl = common.safeUrl(game.official_site_url);
     if (officialUrl) links.push({ label: "OFFICIAL SITE", url: officialUrl });
-    let storeLinks = game.store_links;
-    if (typeof storeLinks === "string") {
-        try { storeLinks = JSON.parse(storeLinks); } catch (_) { storeLinks = []; }
-    }
-    if (Array.isArray(storeLinks)) {
-        storeLinks.forEach((item) => {
-            const url = common.safeUrl(item?.url);
-            if (url) links.push({ label: String(item?.label || "STORE").toUpperCase(), url });
-        });
-    }
+    common.normalizeStoreLinks(game.store_links).forEach((item) => {
+        const url = common.safeUrl(item.url);
+        if (url) links.push({ label: String(item.label || "STORE").toUpperCase(), url });
+    });
     if (links.length) {
         const container = document.getElementById("record-links");
         links.forEach((item) => {
