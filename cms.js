@@ -613,12 +613,16 @@
     }
 
     function renderProfileSidebarMeta() {
-        const tags = [
+        const legacyTags = [
             ...(state.otome.play_styles || []),
             ...(state.otome.favorite_elements || []),
             ...state.favorites.map((item) => item.name)
         ].filter((tag, index, all) => tag && all.indexOf(tag) === index).slice(0, 10);
-        renderTags("profile-sidebar-tags", tags);
+        const current = state.settings.currently_playing || {};
+        const tags = Object.prototype.hasOwnProperty.call(current, "tags")
+            ? (Array.isArray(current.tags) ? current.tags : [])
+            : legacyTags;
+        renderTags("profile-sidebar-tags", tags, false);
 
         renderUpdatedDate();
         renderCurrentGame(bridge.games || []);
@@ -771,12 +775,12 @@
         });
     }
 
-    function renderTags(containerId, tags) {
+    function renderTags(containerId, tags, showEmpty = true) {
         const container = byId(containerId);
         if (!container) return;
         container.replaceChildren();
         (tags || []).forEach((tag) => container.append(create("span", "", tag)));
-        if (!tags?.length) container.append(emptyState("—"));
+        if (showEmpty && !tags?.length) container.append(emptyState("—"));
     }
 
     function renderOtome() {

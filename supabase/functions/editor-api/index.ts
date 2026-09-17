@@ -18,6 +18,8 @@ const ACTIONS = new Set([
   "writing_pin",
   "game_create",
   "game_update",
+  "game_repo_get",
+  "game_repo_upsert",
   "character_create",
   "character_update",
   "music_create",
@@ -38,6 +40,7 @@ const ACTION_PAYLOAD_FIELDS: Record<string, string[]> = {
   profile_item_create: ["kind", "data"], profile_item_update: ["kind", "id", "data"],
   otome_update: ["data"], writing_create: ["data"], writing_update: ["id", "data"],
   writing_pin: ["id", "is_pinned"], game_create: ["data"], game_update: ["id", "data"],
+  game_repo_get: ["game_id"], game_repo_upsert: ["game_id", "config"],
   character_create: ["data"], character_update: ["id", "data"], music_create: ["data"],
   music_update: ["id", "data"], currently_playing_update: ["data"],
   tier_board_create: ["title", "description", "sort_order"],
@@ -206,6 +209,32 @@ function normalizeCharacter(data: JsonObject): JsonObject {
   };
 }
 
+function normalizeRepoConfig(data: JsonObject): JsonObject {
+  const fields = [
+    "title", "cover_url", "started_at", "completed_at", "play_time", "platform", "language", "completion",
+    "played_because", "profile", "favorites", "my_favorite", "note", "review_title", "review_route",
+    "review_keywords", "long_review", "visibility", "cover_position", "favorite_position"
+  ];
+  const value = only(data, fields);
+  const encoded = JSON.stringify(value);
+  if (encoded.length > 500_000) throw new Error("INVALID_PAYLOAD");
+  value.title = nullableText(value.title, 240);
+  value.cover_url = urlOrNull(value.cover_url);
+  value.started_at = pureDateOrNull(value.started_at);
+  value.completed_at = pureDateOrNull(value.completed_at);
+  value.play_time = nullableText(value.play_time, 80);
+  value.platform = nullableText(value.platform, 80);
+  value.language = nullableText(value.language, 80);
+  value.completion = nullableText(value.completion, 80);
+  value.played_because = nullableText(value.played_because, 1000);
+  value.note = nullableText(value.note, 5000);
+  value.review_title = nullableText(value.review_title, 240);
+  value.review_route = nullableText(value.review_route, 500);
+  value.long_review = nullableText(value.long_review, 200000);
+  value.review_keywords = textArray(value.review_keywords ?? [], 30);
+  return value;
+}
+
 function normalizeMusic(data: JsonObject): JsonObject {
   const value = only(data, MUSIC_FIELDS);
   const provider = String(value.provider ?? "");
@@ -293,6 +322,12 @@ async function execute(action: string, context: ActionContext): Promise<unknown>
     case "game_update":
       result = await db.from("games").update(normalizeGame(object(payload.data))).eq("id", id(payload.id)).select("id").single();
       break;
+    case "game_repo_get":
+      result = await db.from("game_repo").select("id,game_id,config,updated_at").eq("game_id", id(payload.game_id)).maybeSingle();
+      break;
+    case "game_repo_upsert":
+      result = await db.from("game_repo").upsert({ game_id: id(payload.game_id), owner_id: ownerUuid(ownerId), config: normalizeRepoConfig(object(payload.config)) }, { onConflict: "game_id" }).select("id,game_id,config,updated_at").single();
+      break;
     case "character_create":
       result = await db.from("characters").insert(normalizeCharacter(object(payload.data))).select("id").single();
       break;
@@ -306,7 +341,8 @@ async function execute(action: string, context: ActionContext): Promise<unknown>
       result = await db.from("music").update(normalizeMusic(object(payload.data))).eq("id", id(payload.id)).select("id").single();
       break;
     case "currently_playing_update": {
-      const current = payload.data === null ? null : only(object(payload.data), ["game_id", "title", "subtitle", "status", "note"]);
+      const currentValue = payload.data === null ? null : only(object(payload.data), ["game_id", "title", "subtitle", "status", "note", "tags"]);
+      const current = currentValue === null ? null : { ...currentValue, tags: textArray(currentValue.tags ?? [], 30) };
       result = await db.from("site_settings").upsert({ id: 1, currently_playing: current }, { onConflict: "id" }).select("id").single();
       break;
     }

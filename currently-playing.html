@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Edit Currently Playing · Kiora</title>
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="settings-editor.css">
+    <link rel="stylesheet" href="settings-editor.css?v=20260916-1">
 </head>
 <body>
     <nav class="settings-nav"><button id="settings-back" type="button">← BACK TO PROFILE</button><span id="settings-save-state" class="settings-save-state">CHECKING…</span></nav>
@@ -22,12 +22,20 @@
                         <label>STATUS<select id="currently-status"><option value="">不显示</option><option value="playing">PLAYING</option><option value="replaying">REPLAYING</option><option value="completed">COMPLETED</option><option value="paused">PAUSED</option></select></label>
                         <label>SHORT NOTE<input id="currently-note" type="text" maxlength="260"></label>
                     </div>
+                    <div class="settings-tag-field">
+                        <p class="settings-tag-label">TAGS / KEYWORDS</p>
+                        <div id="currently-tag-list" class="settings-tag-list" aria-live="polite"></div>
+                        <div class="settings-tag-entry">
+                            <input id="currently-tag-entry" type="text" maxlength="120" autocomplete="off" aria-label="New tag" placeholder="输入中文、日文或英文标签">
+                            <button id="currently-add-tag" type="button">＋ ADD TAG</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="settings-actions"><button class="primary" type="submit">SAVE CURRENTLY PLAYING</button><button id="currently-clear" type="button">CLEAR SETTING</button></div>
                 <p id="settings-message" class="settings-message" role="status"></p>
             </form>
         </section>
     </main>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="auth.js?v=20260915-1"></script><script src="article-common.js"></script><script src="currently-playing.js?v=20260915-2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="auth.js?v=20260915-1"></script><script src="article-common.js"></script><script src="currently-playing.js?v=20260916-1"></script>
 </body>
 </html>

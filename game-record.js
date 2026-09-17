@@ -141,4 +141,6 @@
     document.getElementById("record-updated").textContent = updatedAt ? `UPDATED / ${common.formatDate(updatedAt)}` : "";
     status.hidden = true;
     record.hidden = false;
+    window.KioraGameRecordData = { game, characters: characterList };
+    window.dispatchEvent(new CustomEvent("kiora:game-record-ready", { detail: window.KioraGameRecordData }));
 })();
