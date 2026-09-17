@@ -49,8 +49,51 @@ const heroBg =
 const heroCenter =
     document.querySelector(".hero-center");
 
+const heroStarfall =
+    document.querySelector(".starfall-layer");
+
+const heroTwinkles =
+    document.querySelector(".hero-twinkle-layer");
+
+const heroOrbitParallax =
+    document.querySelector(".hero-orbit-parallax");
+
 
 if (hero && heroBg && heroCenter) {
+
+    let heroPointerFrame = 0;
+
+    const setHeroDepth = (x, y) => {
+        const desktop = window.matchMedia("(min-width: 1024px)").matches;
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        if (reducedMotion) {
+            heroBg.style.transform = "translate3d(0, 0, 0)";
+            if (heroStarfall) heroStarfall.style.transform = "translate3d(0, 0, 0)";
+            if (heroTwinkles) heroTwinkles.style.transform = "translate3d(0, 0, 0)";
+            if (heroOrbitParallax) {
+                heroOrbitParallax.style.setProperty("--orbit-parallax-x", "0px");
+                heroOrbitParallax.style.setProperty("--orbit-parallax-y", "0px");
+            }
+            heroCenter.style.transform = "translate3d(0, 0, 0)";
+            return;
+        }
+
+        if (desktop) {
+            heroBg.style.transform = `translate3d(${x * 3}px, ${y * 3}px, 0)`;
+            if (heroStarfall) heroStarfall.style.transform = `translate3d(${x * 4}px, ${y * 4}px, 0)`;
+            if (heroTwinkles) heroTwinkles.style.transform = `translate3d(${x * 8}px, ${y * 7}px, 0)`;
+            if (heroOrbitParallax) {
+                heroOrbitParallax.style.setProperty("--orbit-parallax-x", `${x * 10}px`);
+                heroOrbitParallax.style.setProperty("--orbit-parallax-y", `${y * 8}px`);
+            }
+            heroCenter.style.transform = "translate3d(0, 0, 0)";
+            return;
+        }
+
+        heroBg.style.transform = `translate(${x * 18}px, ${y * 18}px)`;
+        heroCenter.style.transform = `translate(${x * -7}px, ${y * -7}px)`;
+    };
 
     hero.addEventListener(
         "mousemove",
@@ -66,12 +109,11 @@ if (hero && heroBg && heroCenter) {
                 event.clientY / rect.height - 0.5;
 
 
-            heroBg.style.transform =
-                `translate(${x * 18}px, ${y * 18}px)`;
-
-
-            heroCenter.style.transform =
-                `translate(${x * -7}px, ${y * -7}px)`;
+            if (heroPointerFrame) cancelAnimationFrame(heroPointerFrame);
+            heroPointerFrame = requestAnimationFrame(() => {
+                setHeroDepth(x, y);
+                heroPointerFrame = 0;
+            });
 
         }
     );
@@ -81,11 +123,9 @@ if (hero && heroBg && heroCenter) {
         "mouseleave",
         () => {
 
-            heroBg.style.transform =
-                "translate(0, 0)";
-
-            heroCenter.style.transform =
-                "translate(0, 0)";
+            if (heroPointerFrame) cancelAnimationFrame(heroPointerFrame);
+            heroPointerFrame = 0;
+            setHeroDepth(0, 0);
 
         }
     );

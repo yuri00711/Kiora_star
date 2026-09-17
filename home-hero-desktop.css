@@ -115,6 +115,39 @@
         display: block;
         overflow: hidden;
         pointer-events: none;
+        -webkit-mask-image: radial-gradient(ellipse 31% 27% at 50% 43%, rgba(0,0,0,.18), rgba(0,0,0,.62) 52%, #000 82%);
+        mask-image: radial-gradient(ellipse 31% 27% at 50% 43%, rgba(0,0,0,.18), rgba(0,0,0,.62) 52%, #000 82%);
+    }
+
+    .home-cover .starfall-layer::before,
+    .home-cover .starfall-layer::after {
+        content: "";
+        position: absolute;
+        inset: -95% 0 0;
+        background-repeat: repeat;
+        will-change: transform, opacity;
+    }
+
+    .home-cover .starfall-layer::before {
+        opacity: .42;
+        background-image:
+            radial-gradient(circle, rgba(126,105,148,.62) 0 .65px, transparent .95px),
+            radial-gradient(circle, rgba(112,138,171,.48) 0 .8px, transparent 1.1px),
+            radial-gradient(circle, rgba(181,143,111,.42) 0 .65px, transparent 1px),
+            radial-gradient(circle, rgba(153,120,155,.45) 0 1px, transparent 1.3px);
+        background-position: 17px 31px, 83px 121px, 151px 59px, 233px 177px;
+        background-size: 137px 181px, 211px 257px, 293px 337px, 367px 421px;
+        animation: heroFarStarFlow 38s linear -17s infinite;
+    }
+
+    .home-cover .starfall-layer::after {
+        opacity: .3;
+        background-image:
+            radial-gradient(circle, rgba(255,255,255,.9) 0 .75px, rgba(139,112,155,.32) 1.1px, transparent 1.8px),
+            radial-gradient(circle, rgba(255,255,255,.86) 0 .65px, rgba(111,137,173,.28) 1px, transparent 1.65px);
+        background-position: 41px 73px, 186px 19px;
+        background-size: 247px 313px, 359px 443px;
+        animation: heroFarStarFlow 54s linear -39s infinite reverse;
     }
 
     .home-cover .starfall-layer i {
@@ -128,7 +161,30 @@
         background: rgba(255, 254, 255, .92);
         box-shadow: 0 0 6px rgba(130, 110, 153, .48);
         animation: heroStarFall var(--fall-speed) linear var(--fall-delay) infinite;
+        --fade-in: .26;
+        --peak: .7;
+        --fade-out: .32;
         will-change: transform, opacity;
+    }
+
+    .home-cover .starfall-layer i.is-far {
+        --fade-in: .1;
+        --peak: .3;
+        --fade-out: .13;
+        filter: blur(.15px);
+    }
+
+    .home-cover .starfall-layer i.is-bright {
+        --fade-in: .35;
+        --peak: .92;
+        --fade-out: .44;
+        box-shadow: 0 0 5px rgba(255,255,255,.9), 0 0 13px rgba(133,105,151,.48);
+    }
+
+    .home-cover .starfall-layer i.is-streak {
+        --fade-in: .3;
+        --peak: .86;
+        --fade-out: .4;
     }
 
     .home-cover .starfall-layer i.has-tail::before {
@@ -168,6 +224,14 @@
         animation: none;
     }
 
+    .home-cover .hero-twinkle-layer i.is-major {
+        border-radius: 1px;
+        background: rgba(255,255,255,.93);
+        box-shadow: 0 0 6px rgba(255,255,255,.82), 0 0 15px rgba(141,109,151,.42);
+        transform: rotate(45deg);
+        animation-name: heroMajorStarBreathe;
+    }
+
     .home-cover .hero-center {
         width: min(880px, 82vw);
         display: flex;
@@ -183,6 +247,15 @@
         display: grid;
         place-items: center;
         isolation: isolate;
+    }
+
+    .home-cover .hero-orbit-parallax {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        transform: translate3d(var(--orbit-parallax-x, 0), var(--orbit-parallax-y, 0), 0);
+        transition: transform .42s cubic-bezier(.22,.8,.25,1);
+        pointer-events: none;
     }
 
     .home-cover .hero-orbit-system::before {
@@ -218,6 +291,22 @@
         z-index: 0;
         animation: heroOrbitSystemReveal 1.8s cubic-bezier(.22,.8,.25,1) .25s both;
     }
+
+    .home-cover .orbit-runner circle {
+        fill: rgba(255,255,255,.96);
+        stroke: rgba(133,105,151,.72);
+        stroke-width: .55px;
+    }
+
+    .home-cover .orbit-runner line {
+        stroke: rgba(145,116,156,.26);
+        stroke-width: .75px;
+        stroke-linecap: round;
+    }
+
+    .home-cover .orbit-runner-small { opacity: .68; }
+    .home-cover .orbit-runner-faint { opacity: .42; }
+    .home-cover .orbit-runner-distant circle { fill: rgba(218,226,239,.9); stroke: rgba(112,137,170,.48); }
 
     .home-cover .hero-orbit-motion {
         transform-box: view-box;
@@ -343,18 +432,18 @@
     }
 
     @keyframes heroOrbitMainDrift {
-        from { transform: translate3d(-3px, 1px, 0) rotate(-1.1deg) scale(.997); }
-        to { transform: translate3d(4px, -2px, 0) rotate(1.2deg) scale(1.006); }
+        from { opacity: .72; transform: translate3d(-3px, 1px, 0) rotate(-1.1deg) scale(.997); }
+        to { opacity: 1; transform: translate3d(4px, -2px, 0) rotate(1.2deg) scale(1.006); }
     }
 
     @keyframes heroOrbitInclinedDrift {
-        from { transform: translate3d(2px, -3px, 0) rotate(1.7deg) scale(1.004); }
-        to { transform: translate3d(-3px, 3px, 0) rotate(-1.4deg) scale(.994); }
+        from { opacity: .62; transform: translate3d(2px, -3px, 0) rotate(1.7deg) scale(1.004); }
+        to { opacity: .92; transform: translate3d(-3px, 3px, 0) rotate(-1.4deg) scale(.994); }
     }
 
     @keyframes heroOrbitDistantDrift {
-        from { transform: translate3d(-2px, -1px, 0) rotate(-.7deg) scale(1); }
-        to { transform: translate3d(3px, 2px, 0) rotate(.8deg) scale(1.009); }
+        from { opacity: .3; transform: translate3d(-2px, -1px, 0) rotate(-.7deg) scale(1); }
+        to { opacity: .58; transform: translate3d(3px, 2px, 0) rotate(.8deg) scale(1.009); }
     }
 
     @keyframes heroTitleReveal {
@@ -379,16 +468,26 @@
 
     @keyframes heroStarFall {
         0% { opacity: 0; transform: translate3d(0, -8vh, 0) scale(.8); }
-        13% { opacity: .22; }
-        46% { opacity: .72; }
-        82% { opacity: .3; }
+        13% { opacity: var(--fade-in); }
+        46% { opacity: var(--peak); }
+        82% { opacity: var(--fade-out); }
         100% { opacity: 0; transform: translate3d(var(--drift), 112vh, 0) scale(1); }
     }
 
+    @keyframes heroFarStarFlow {
+        from { transform: translate3d(0, -7%, 0); }
+        to { transform: translate3d(-16px, 58%, 0); }
+    }
+
     @keyframes heroTwinkle {
-        0%, 100% { opacity: .25; transform: scale(.8); }
-        48% { opacity: .8; transform: scale(1.15); }
-        74% { opacity: .35; transform: scale(.9); }
+        0%, 100% { opacity: .25; transform: translate3d(-1px, 1px, 0) scale(.8); }
+        48% { opacity: .8; transform: translate3d(2px, -3px, 0) scale(1.15); }
+        74% { opacity: .35; transform: translate3d(1px, -1px, 0) scale(.9); }
+    }
+
+    @keyframes heroMajorStarBreathe {
+        0%, 100% { opacity: .34; transform: rotate(45deg) scale(.82); }
+        50% { opacity: .88; transform: rotate(45deg) scale(1.16); }
     }
 
     @keyframes heroGlowBreathe {
@@ -418,6 +517,7 @@
     .home-cover .hero-orbit-system::before,
     .home-cover .hero-orbit-system .hero-title.intro,
     .home-cover .hero-orbit-system .star.intro,
+    .home-cover .orbit-runner,
     .home-cover .hero-center .jp-line,
     .home-cover .hero-desktop-divider,
     .home-cover .hero-desktop-epigraph,
@@ -445,6 +545,7 @@
 
     .home-cover .hero-orbit-system::before { opacity: .42; }
     .home-cover .hero-twinkle-layer i:not(.is-static) { opacity: .35; transform: none; }
+    .home-cover .orbit-runner { display: none; }
 
     .home-cover .starfall-layer { display: none; }
 }
