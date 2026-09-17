@@ -213,7 +213,7 @@ function normalizeRepoConfig(data: JsonObject): JsonObject {
   const fields = [
     "title", "cover_url", "started_at", "completed_at", "play_time", "platform", "language", "completion",
     "played_because", "profile", "favorites", "my_favorite", "note", "review_title", "review_route",
-    "review_keywords", "long_review", "visibility", "cover_position", "favorite_position"
+    "review_keywords", "long_review", "visibility", "layout", "cover_position", "favorite_position"
   ];
   const value = only(data, fields);
   const encoded = JSON.stringify(value);
