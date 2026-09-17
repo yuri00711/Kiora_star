@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f3eef3">
     <title>Reading · Kiora</title>
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="read.css">
+    <link rel="stylesheet" href="read.css?v=20260917-3">
 </head>
 <body>
     <header class="reader-nav">
@@ -36,21 +36,30 @@
                 <h1 id="article-title"></h1>
                 <p id="article-subtitle" class="article-subtitle"></p>
                 <div id="article-tags" class="article-tags"></div>
+                <p id="article-reading-info" class="article-reading-info" hidden></p>
             </header>
             <img id="article-cover" class="article-cover" alt="" hidden>
             <div id="article-body" class="article-body"></div>
+            <nav id="article-page-pager" class="article-page-pager" aria-label="文章页码" hidden>
+                <button id="previous-page" type="button"><span class="page-label-long">← PREVIOUS PAGE</span><span class="page-label-short">← PREV</span></button>
+                <div class="article-page-position">
+                    <span id="article-page-label">PAGE 01 / 01</span>
+                    <span class="article-page-progress" aria-hidden="true"><i id="article-page-progress"></i></span>
+                </div>
+                <button id="next-page" type="button"><span class="page-label-long">NEXT PAGE →</span><span class="page-label-short">NEXT →</span></button>
+            </nav>
             <p id="article-updated" class="article-updated"></p>
-            <nav class="article-pager" aria-label="文章导航">
-                <a id="previous-article" href="#" hidden>← PREVIOUS</a>
+            <nav class="article-pager" aria-label="上一篇和下一篇文章">
+                <a id="previous-article" href="#" hidden>← PREVIOUS ARTICLE</a>
                 <button id="back-to-category" type="button">BACK TO JOURNAL</button>
-                <a id="next-article" href="#" hidden>NEXT →</a>
+                <a id="next-article" href="#" hidden>NEXT ARTICLE →</a>
             </nav>
         </article>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260915-1"></script>
-    <script src="article-common.js"></script>
-    <script src="read.js?v=20260915-2"></script>
+    <script src="article-common.js?v=20260917-3"></script>
+    <script src="read.js?v=20260917-3"></script>
 </body>
 </html>

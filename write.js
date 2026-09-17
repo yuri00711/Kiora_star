@@ -81,9 +81,9 @@
     }
 
     function updateStats() {
-        const count = common.wordCount(body.value);
-        field("word-count").textContent = `${count} 字`;
-        field("reading-time").textContent = `约 ${common.readingMinutes(body.value)} 分钟阅读`;
+        const stats = common.readingStats(body.value);
+        field("word-count").textContent = `${stats.characters} 字`;
+        field("reading-time").textContent = `约 ${stats.minutes} 分钟阅读`;
         if (previewing) preview.innerHTML = common.markdownToHtml(body.value);
     }
 

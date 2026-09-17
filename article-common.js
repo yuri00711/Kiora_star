@@ -225,15 +225,104 @@
         return `${text.slice(0, maximum).trimEnd()}…`;
     }
 
+    function textMetricsFromPlainText(value) {
+        const text = String(value || "").replace(/\s+/g, " ").trim();
+        const cjkPattern = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
+        const cjkCharacters = (text.match(cjkPattern) || []).length;
+        const nonCjk = text.replace(cjkPattern, " ");
+        const latinWords = (nonCjk.match(/[\p{L}\p{N}]+(?:['’.-][\p{L}\p{N}]+)*/gu) || []).length;
+        return {
+            cjkCharacters,
+            latinWords,
+            characters: cjkCharacters + latinWords,
+            readingUnits: cjkCharacters + latinWords * 2
+        };
+    }
+
+    function readingStats(value) {
+        const metrics = textMetricsFromPlainText(plainText(value));
+        const minutes = Math.max(1, Math.ceil(metrics.cjkCharacters / 450 + metrics.latinWords / 225));
+        return { ...metrics, minutes };
+    }
+
     function wordCount(value) {
-        const text = String(value || "").replace(/[#>*_~`\[\]()!-]/g, " ");
-        const cjk = (text.match(/[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]/g) || []).length;
-        const latin = (text.replace(/[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]/g, " ").match(/[\p{L}\p{N}]+/gu) || []).length;
-        return cjk + latin;
+        return readingStats(value).characters;
     }
 
     function readingMinutes(value) {
-        return Math.max(1, Math.ceil(wordCount(value) / 400));
+        return readingStats(value).minutes;
+    }
+
+    function renderedBlockUnits(block) {
+        const metrics = textMetricsFromPlainText(block.textContent || "");
+        const tag = block.tagName.toLowerCase();
+        let visualWeight = 0;
+        if (/^h[2-4]$/.test(tag)) visualWeight += 180;
+        if (tag === "blockquote") visualWeight += 120;
+        if (tag === "pre") visualWeight += 180;
+        if (tag === "hr") visualWeight += 140;
+        visualWeight += block.querySelectorAll("img").length * 720;
+        return Math.max(1, metrics.readingUnits + visualWeight);
+    }
+
+    function paginateRenderedBlocks(container, options = {}) {
+        const target = Number(options.target) || 3000;
+        const minimumForPagination = Number(options.minimumForPagination) || 3600;
+        const maximum = Number(options.maximum) || 3500;
+        const blocks = Array.from(container.children);
+        const weights = blocks.map(renderedBlockUnits);
+        const totalUnits = weights.reduce((sum, value) => sum + value, 0);
+        if (blocks.length < 2 || totalUnits <= minimumForPagination) {
+            return [{ html: container.innerHTML, units: totalUnits }];
+        }
+
+        const pages = [];
+        let pageBlocks = [];
+        let pageUnits = 0;
+        const flush = () => {
+            if (!pageBlocks.length) return;
+            pages.push({ html: pageBlocks.map((block) => block.outerHTML).join(""), units: pageUnits });
+            pageBlocks = [];
+            pageUnits = 0;
+        };
+
+        blocks.forEach((block, index) => {
+            const units = weights[index];
+            const tag = block.tagName.toLowerCase();
+            const nextUnits = weights[index + 1] || 0;
+            const headingWithNext = /^h[2-4]$/.test(tag) ? units + nextUnits : units;
+
+            if (pageBlocks.length && pageUnits >= target * 0.62 && pageUnits + headingWithNext > maximum) flush();
+            if (pageBlocks.length && pageUnits + units > maximum && pageUnits >= target * 0.62) {
+                const last = pageBlocks[pageBlocks.length - 1];
+                if (last && /^h[2-4]$/.test(last.tagName.toLowerCase())) {
+                    pageBlocks.pop();
+                    const headingUnits = renderedBlockUnits(last);
+                    pageUnits -= headingUnits;
+                    flush();
+                    pageBlocks.push(last);
+                    pageUnits = headingUnits;
+                } else {
+                    flush();
+                }
+            }
+
+            pageBlocks.push(block);
+            pageUnits += units;
+            if (pageUnits >= target && !/^h[2-4]$/.test(tag)) flush();
+        });
+        flush();
+
+        if (pages.length > 1) {
+            const last = pages[pages.length - 1];
+            const previous = pages[pages.length - 2];
+            if (last.units < target * 0.4 && previous.units + last.units <= maximum * 1.08) {
+                previous.html += last.html;
+                previous.units += last.units;
+                pages.pop();
+            }
+        }
+        return pages;
     }
 
     window.yuriArticles = Object.freeze({
@@ -246,8 +335,10 @@
         normalizeStoreLinks,
         getClient,
         markdownToHtml,
+        paginateRenderedBlocks,
         plainText,
         readingMinutes,
+        readingStats,
         safeUrl,
         truncateText,
         wordCount
