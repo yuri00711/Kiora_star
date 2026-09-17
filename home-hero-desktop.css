@@ -1,11 +1,15 @@
 .hero-orbits,
 .orbit-star,
+.starfall-layer,
+.hero-twinkle-layer,
 .hero-desktop-divider,
 .hero-desktop-epigraph,
 .site-home-tail,
 .site-home-logo-star {
     display: none;
 }
+
+.jp-line { display: block; }
 
 @media (min-width: 1024px) {
     .home-cover .site-top-nav {
@@ -92,8 +96,76 @@
         padding-top: 20px;
     }
 
+    .home-cover > .starlight-waterfall {
+        display: none;
+    }
+
     .home-cover .hero-bg .orbit {
         display: none;
+    }
+
+    .home-cover .hero-bg > .dust {
+        display: none;
+    }
+
+    .home-cover .starfall-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        display: block;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .home-cover .starfall-layer i {
+        position: absolute;
+        top: -7%;
+        left: var(--x);
+        width: var(--size);
+        height: var(--size);
+        border-radius: 50%;
+        opacity: 0;
+        background: rgba(255, 254, 255, .92);
+        box-shadow: 0 0 6px rgba(130, 110, 153, .48);
+        animation: heroStarFall var(--fall-speed) linear var(--fall-delay) infinite;
+        will-change: transform, opacity;
+    }
+
+    .home-cover .starfall-layer i.has-tail::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: .7px;
+        height: var(--tail);
+        transform: translate(-50%, -2px);
+        transform-origin: bottom;
+        background: linear-gradient(to top, rgba(133, 114, 153, .25), transparent);
+    }
+
+    .home-cover .hero-twinkle-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        display: block;
+        pointer-events: none;
+    }
+
+    .home-cover .hero-twinkle-layer i {
+        position: absolute;
+        top: var(--y);
+        left: var(--x);
+        width: var(--size);
+        height: var(--size);
+        border-radius: 50%;
+        background: rgba(117, 103, 143, .58);
+        box-shadow: 0 0 6px rgba(255,255,255,.86);
+        animation: heroTwinkle var(--twinkle-speed) ease-in-out var(--twinkle-delay) infinite;
+    }
+
+    .home-cover .hero-twinkle-layer i.is-static {
+        opacity: .34;
+        animation: none;
     }
 
     .home-cover .hero-center {
@@ -113,6 +185,18 @@
         isolation: isolate;
     }
 
+    .home-cover .hero-orbit-system::before {
+        content: "";
+        position: absolute;
+        z-index: 1;
+        width: 470px;
+        height: 235px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(215, 195, 225, .2), rgba(226, 211, 234, .08) 35%, transparent 68%);
+        animation: heroGlowBreathe 7.8s ease-in-out infinite alternate;
+        pointer-events: none;
+    }
+
     .home-cover .hero-orbits {
         position: absolute;
         inset: 0;
@@ -130,16 +214,19 @@
         stroke-width: .8px;
     }
 
-    .home-cover .hero-orbits-back { z-index: 0; }
-    .home-cover .hero-orbits-front { z-index: 4; }
+    .home-cover .hero-orbits-back {
+        z-index: 0;
+        animation: heroOrbitSystemReveal 1.8s cubic-bezier(.22,.8,.25,1) .25s both;
+    }
 
-    .home-cover .hero-orbit-spin {
+    .home-cover .hero-orbit-motion {
         transform-box: view-box;
         transform-origin: 360px 155px;
     }
 
-    .home-cover .hero-orbit-spin-a { animation: heroOrbitTurn 46s linear infinite; }
-    .home-cover .hero-orbit-spin-b { animation: heroOrbitTurnReverse 58s linear infinite; }
+    .home-cover .hero-orbit-main { animation: heroOrbitMainDrift 34s ease-in-out infinite alternate; }
+    .home-cover .hero-orbit-inclined { animation: heroOrbitInclinedDrift 43s ease-in-out -12s infinite alternate; }
+    .home-cover .hero-orbit-distant { animation: heroOrbitDistantDrift 56s ease-in-out -24s infinite alternate; }
 
     .home-cover .hero-orbit-system .hero-title {
         position: relative;
@@ -150,6 +237,12 @@
         font-size: clamp(82px, 8vw, 116px);
         letter-spacing: .12em;
         text-shadow: 0 1px 0 rgba(255,255,255,.96), 0 0 25px rgba(255,255,255,.78), 0 14px 38px rgba(77,57,87,.14);
+    }
+
+    .home-cover .hero-orbit-system .hero-title.intro {
+        opacity: 0;
+        filter: blur(8px);
+        animation: heroTitleReveal 1.45s cubic-bezier(.22,.8,.25,1) .48s forwards;
     }
 
     .home-cover .hero-orbit-system .star {
@@ -163,9 +256,13 @@
         transform: translateX(-50%);
     }
 
+    .home-cover .hero-orbit-system .star.intro {
+        animation: heroLoginStarReveal 1.15s cubic-bezier(.22,.8,.25,1) .3s both, heroLoginStarPulse 5.4s ease-in-out 1.6s infinite;
+    }
+
     .home-cover .orbit-star {
         position: absolute;
-        z-index: 2;
+        z-index: 4;
         display: block;
         color: rgba(135, 111, 146, .58);
         line-height: 1;
@@ -174,21 +271,34 @@
         pointer-events: none;
     }
 
-    .home-cover .orbit-star-1 { top: 27%; left: 12%; font-size: 11px; }
-    .home-cover .orbit-star-2 { top: 18%; right: 22%; z-index: 5; font-size: 7px; animation-delay: -2s; }
-    .home-cover .orbit-star-3 { right: 8%; bottom: 33%; font-size: 5px; animation-delay: -4.5s; }
-    .home-cover .orbit-star-4 { left: 20%; bottom: 18%; font-size: 15px; animation-delay: -1s; }
-    .home-cover .orbit-star-5 { right: 30%; bottom: 11%; z-index: 5; font-size: 9px; animation-delay: -3.2s; }
-    .home-cover .orbit-star-6 { top: 38%; left: 31%; z-index: 5; font-size: 4px; animation-delay: -5s; }
+    .home-cover .orbit-star-1 { top: 31%; left: 11%; font-size: 10px; animation-duration: 6.4s; }
+    .home-cover .orbit-star-2 { top: 17%; right: 24%; font-size: 7px; --travel-x:-16px; --travel-y:8px; animation: heroOrbitStarDrift 20s ease-in-out -7s infinite alternate; }
+    .home-cover .orbit-star-3 { right: 7%; bottom: 34%; font-size: 5px; animation-duration: 4.9s; animation-delay: -3.4s; }
+    .home-cover .orbit-star-5 { right: 29%; bottom: 13%; font-size: 8px; --travel-x:19px; --travel-y:-7px; animation: heroOrbitStarDrift 24s ease-in-out -14s infinite alternate-reverse; }
 
-    .home-cover .hero-center .jp-text {
+    .home-cover .hero-center .jp-text.intro {
         order: 2;
         margin: 19px 0 0;
         color: rgba(74, 62, 83, .76);
         font-size: 13px;
         line-height: 2.2;
         letter-spacing: 3.6px;
+        opacity: 1;
+        filter: none;
+        transform: none;
+        animation: none;
     }
+
+    .home-cover .hero-center .jp-line {
+        opacity: 0;
+        filter: blur(3px);
+        transform: translateY(8px);
+        letter-spacing: 5px;
+        animation: heroJapaneseReveal 1.15s cubic-bezier(.22,.8,.25,1) forwards;
+    }
+
+    .home-cover .hero-center .jp-line-1 { animation-delay: 1.58s; }
+    .home-cover .hero-center .jp-line-2 { animation-delay: 1.9s; }
 
     .home-cover .hero-center .subtitle {
         display: none;
@@ -201,6 +311,8 @@
         gap: 13px;
         margin-top: 24px;
         color: rgba(158, 122, 151, .56);
+        opacity: 0;
+        animation: heroQuietReveal 1s ease 2.28s forwards;
     }
 
     .home-cover .hero-desktop-divider span {
@@ -221,26 +333,118 @@
         font-size: 8px;
         line-height: 1.9;
         letter-spacing: 3.6px;
+        opacity: 0;
+        animation: heroQuietReveal 1s ease 2.45s forwards;
     }
 
-    @keyframes heroOrbitTurn {
-        to { transform: rotate(360deg); }
+    @keyframes heroOrbitSystemReveal {
+        from { opacity: 0; transform: scale(.975); }
+        to { opacity: 1; transform: scale(1); }
     }
 
-    @keyframes heroOrbitTurnReverse {
-        to { transform: rotate(-360deg); }
+    @keyframes heroOrbitMainDrift {
+        from { transform: translate3d(-3px, 1px, 0) rotate(-1.1deg) scale(.997); }
+        to { transform: translate3d(4px, -2px, 0) rotate(1.2deg) scale(1.006); }
+    }
+
+    @keyframes heroOrbitInclinedDrift {
+        from { transform: translate3d(2px, -3px, 0) rotate(1.7deg) scale(1.004); }
+        to { transform: translate3d(-3px, 3px, 0) rotate(-1.4deg) scale(.994); }
+    }
+
+    @keyframes heroOrbitDistantDrift {
+        from { transform: translate3d(-2px, -1px, 0) rotate(-.7deg) scale(1); }
+        to { transform: translate3d(3px, 2px, 0) rotate(.8deg) scale(1.009); }
+    }
+
+    @keyframes heroTitleReveal {
+        from { opacity: 0; filter: blur(8px); transform: translateY(12px) scale(.985); letter-spacing: .17em; }
+        to { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); letter-spacing: .12em; }
+    }
+
+    @keyframes heroJapaneseReveal {
+        from { opacity: 0; filter: blur(3px); transform: translateY(8px); letter-spacing: 5px; }
+        to { opacity: 1; filter: blur(0); transform: translateY(0); letter-spacing: 3.6px; }
+    }
+
+    @keyframes heroLoginStarReveal {
+        from { opacity: 0; filter: blur(4px); transform: translateX(-50%) translateY(6px) scale(.8); }
+        to { opacity: .72; filter: blur(0); transform: translateX(-50%) translateY(0) scale(1); }
+    }
+
+    @keyframes heroLoginStarPulse {
+        0%, 100% { opacity: .48; transform: translateX(-50%) scale(.92); }
+        50% { opacity: .9; transform: translateX(-50%) scale(1.15); }
+    }
+
+    @keyframes heroStarFall {
+        0% { opacity: 0; transform: translate3d(0, -8vh, 0) scale(.8); }
+        13% { opacity: .22; }
+        46% { opacity: .72; }
+        82% { opacity: .3; }
+        100% { opacity: 0; transform: translate3d(var(--drift), 112vh, 0) scale(1); }
+    }
+
+    @keyframes heroTwinkle {
+        0%, 100% { opacity: .25; transform: scale(.8); }
+        48% { opacity: .8; transform: scale(1.15); }
+        74% { opacity: .35; transform: scale(.9); }
+    }
+
+    @keyframes heroGlowBreathe {
+        from { opacity: .35; transform: scale(.96); }
+        to { opacity: .55; transform: scale(1.04); }
     }
 
     @keyframes orbitStarBreathe {
         0%, 100% { opacity: .35; transform: scale(.88); }
         50% { opacity: .82; transform: scale(1.08); }
     }
+
+    @keyframes heroOrbitStarDrift {
+        from { opacity: .38; transform: translate3d(0, 0, 0) scale(.9); }
+        to { opacity: .76; transform: translate3d(var(--travel-x), var(--travel-y), 0) scale(1.08); }
+    }
+
+    @keyframes heroQuietReveal {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 }
 
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
-    .home-cover .hero-orbit-spin-a,
-    .home-cover .hero-orbit-spin-b,
+    .home-cover .hero-orbit-motion,
+    .home-cover .hero-orbits-back,
+    .home-cover .hero-orbit-system::before,
+    .home-cover .hero-orbit-system .hero-title.intro,
+    .home-cover .hero-orbit-system .star.intro,
+    .home-cover .hero-center .jp-line,
+    .home-cover .hero-desktop-divider,
+    .home-cover .hero-desktop-epigraph,
+    .home-cover .starfall-layer i,
+    .home-cover .hero-twinkle-layer i,
     .home-cover .orbit-star {
         animation: none !important;
     }
+
+    .home-cover .hero-orbit-system .hero-title.intro,
+    .home-cover .hero-orbit-system .star.intro,
+    .home-cover .hero-center .jp-line,
+    .home-cover .hero-desktop-divider,
+    .home-cover .hero-desktop-epigraph {
+        opacity: 1;
+        filter: none;
+        transform: none;
+    }
+
+    .home-cover .hero-orbit-system .star.intro {
+        opacity: .65;
+        filter: none;
+        transform: translateX(-50%);
+    }
+
+    .home-cover .hero-orbit-system::before { opacity: .42; }
+    .home-cover .hero-twinkle-layer i:not(.is-static) { opacity: .35; transform: none; }
+
+    .home-cover .starfall-layer { display: none; }
 }
