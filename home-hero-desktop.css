@@ -96,10 +96,6 @@
         padding-top: 20px;
     }
 
-    .home-cover > .starlight-waterfall {
-        display: none;
-    }
-
     .home-cover .hero-bg .orbit {
         display: none;
     }
@@ -329,9 +325,9 @@
     }
 
     .home-cover .hero-orbit-system .hero-title.intro {
-        opacity: 0;
-        filter: blur(8px);
-        animation: heroTitleReveal 1.45s cubic-bezier(.22,.8,.25,1) .48s forwards;
+        opacity: 1;
+        filter: none;
+        animation: titleIntro 1.5s ease .8s backwards;
     }
 
     .home-cover .hero-orbit-system .star {
@@ -372,22 +368,7 @@
         font-size: 13px;
         line-height: 2.2;
         letter-spacing: 3.6px;
-        opacity: 1;
-        filter: none;
-        transform: none;
-        animation: none;
     }
-
-    .home-cover .hero-center .jp-line {
-        opacity: 0;
-        filter: blur(3px);
-        transform: translateY(8px);
-        letter-spacing: 5px;
-        animation: heroJapaneseReveal 1.15s cubic-bezier(.22,.8,.25,1) forwards;
-    }
-
-    .home-cover .hero-center .jp-line-1 { animation-delay: 1.58s; }
-    .home-cover .hero-center .jp-line-2 { animation-delay: 1.9s; }
 
     .home-cover .hero-center .subtitle {
         display: none;
