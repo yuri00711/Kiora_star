@@ -5,6 +5,22 @@
     const button = document.getElementById("site-mobile-menu-button");
     const page = document.body.dataset.page || "";
 
+    const desktopNav = header?.querySelector(".site-desktop-nav");
+    if (desktopNav && !desktopNav.querySelector('[data-page-link="study"]')) {
+        const studyLink = document.createElement("a");
+        studyLink.href = "study.html";
+        studyLink.dataset.pageLink = "study";
+        studyLink.textContent = "STUDY";
+        desktopNav.append(studyLink);
+    }
+    if (menu && !menu.querySelector('[data-page-link="study"]')) {
+        const studyLink = document.createElement("a");
+        studyLink.href = "study.html";
+        studyLink.dataset.pageLink = "study";
+        studyLink.innerHTML = "<span>06</span>STUDY";
+        menu.append(studyLink);
+    }
+
     document.querySelectorAll("[data-page-link]").forEach((link) => {
         const active = link.dataset.pageLink === page;
         link.classList.toggle("active", active);

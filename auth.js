@@ -25,7 +25,10 @@
         "tier-section:reorder",
         "tier-item:edit",
         "tier-item:reorder",
-        "storage:upload"
+        "storage:upload",
+        "study:write",
+        "study:upload",
+        "study:review"
     ]);
     const ACTION_PERMISSIONS = Object.freeze({
         profile_update: "profile:update",
@@ -51,7 +54,10 @@
         tier_sections_reorder: "tier-section:reorder",
         tier_item_move: "tier-item:edit",
         tier_items_reorder: "tier-item:reorder",
-        upload_site_media: "storage:upload"
+        upload_site_media: "storage:upload",
+        study_upsert: "study:write",
+        study_delete: "study:write",
+        study_upload: "study:upload"
     });
 
     let client = null;
@@ -259,6 +265,51 @@
         });
     }
 
+    async function uploadStudyFile(file, path) {
+        if (!file || !path) return { data: null, error: normalizedError("INVALID_PAYLOAD") };
+        if (authState.role === "owner") {
+            const fullPath = path.startsWith(`${authState.identity.id}/`) ? path : `${authState.identity.id}/${path}`;
+            const result = await client.storage.from("study-private").upload(fullPath, file, {
+                cacheControl: "3600",
+                contentType: file.type || "application/octet-stream",
+                upsert: false
+            });
+            if (result.error) return result;
+            return { data: { path: fullPath }, error: null };
+        }
+        if (!can("study:upload")) return { data: null, error: normalizedError("PERMISSION_DENIED") };
+        return invokeEditorApi("study_upload", {
+            path,
+            content_type: file.type || "application/octet-stream",
+            base64: await fileToBase64(file)
+        });
+    }
+
+    async function studySignedUrl(path, expiresIn = 3600) {
+        if (!path) return { data: null, error: normalizedError("INVALID_PAYLOAD") };
+        if (authState.role === "owner") {
+            const result = await client.storage.from("study-private").createSignedUrl(path, expiresIn);
+            return result.error ? result : { data: { signedUrl: result.data.signedUrl }, error: null };
+        }
+        if (authState.role === "editor") return invokeEditorApi("study_signed_url", { path, expires_in: expiresIn });
+        return { data: null, error: normalizedError("PERMISSION_DENIED") };
+    }
+
+    async function requestStudyReview(answerId) {
+        if (!client || !can("study:review")) return { data: null, error: normalizedError("PERMISSION_DENIED") };
+        const editor = authState.role === "editor" ? storedEditorSession() : null;
+        try {
+            const result = await client.functions.invoke("study-review", {
+                body: { answer_id: String(answerId || "") },
+                headers: editor ? { Authorization: `Bearer ${editor.token}` } : undefined
+            });
+            if (result.error || !result.data?.success) return { data: null, error: normalizedError(await readFunctionError(result.error, result.data), "Review unavailable") };
+            return { data: result.data.data, error: null };
+        } catch (_) {
+            return { data: null, error: normalizedError("FUNCTION_ERROR", "Review unavailable") };
+        }
+    }
+
     window.KioraAuth = Object.freeze({
         can,
         initialize,
@@ -266,7 +317,10 @@
         loginOwner,
         logout,
         readForEditor,
+        requestStudyReview,
         syncOwnerSession,
+        studySignedUrl,
+        uploadStudyFile,
         uploadSiteMedia,
         write,
         get state() { return authState; },

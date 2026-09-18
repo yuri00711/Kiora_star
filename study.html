@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Study · Kiora</title>
+    <meta name="description" content="Kiora Study — a private learning constellation.">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="style.css?v=20260915-5">
+    <link rel="stylesheet" href="standalone.css?v=20260915-1">
+    <link rel="stylesheet" href="site-nav.css?v=20260918-1">
+    <link rel="stylesheet" href="study.css?v=20260918-1">
+</head>
+<body data-page="study" class="standalone-body study-body">
+    <div class="standalone-atmosphere study-atmosphere" aria-hidden="true"><i></i><i></i><i></i><span>✦</span><span>◇</span></div>
+    <header id="site-top-nav" class="site-top-nav">
+        <div class="site-top-nav-inner">
+            <a class="site-top-logo" href="/" aria-label="Kiora home">Kiora</a>
+            <nav class="site-desktop-nav" aria-label="Primary navigation">
+                <a href="/" data-page-link="home">HOME</a><a href="about.html" data-page-link="about">ABOUT</a><a href="archive.html" data-page-link="archive">ARCHIVE</a><a href="games.html" data-page-link="games">GAMES</a><a href="writing.html" data-page-link="writing">WRITING</a><a href="study.html" data-page-link="study">STUDY</a>
+            </nav>
+            <button id="site-mobile-menu-button" class="site-mobile-menu-button" type="button" aria-label="打开页面导航" aria-controls="site-mobile-menu" aria-expanded="false"><span>MENU</span><i aria-hidden="true"></i></button>
+        </div>
+        <nav id="site-mobile-menu" class="site-mobile-menu" aria-label="Mobile navigation" aria-hidden="true">
+            <a href="/" data-page-link="home"><span>01</span>HOME</a><a href="about.html" data-page-link="about"><span>02</span>ABOUT</a><a href="archive.html" data-page-link="archive"><span>03</span>ARCHIVE</a><a href="games.html" data-page-link="games"><span>04</span>GAMES</a><a href="writing.html" data-page-link="writing"><span>05</span>WRITING</a><a href="study.html" data-page-link="study"><span>06</span>STUDY</a>
+        </nav>
+    </header>
+
+    <main class="study-shell">
+        <header class="study-heading">
+            <div><p>KIORA.SPACE / PRIVATE LEARNING ARCHIVE</p><h1>Study</h1><span>Learning Constellation</span></div>
+            <p class="study-philosophy">保存我是怎样逐渐学会的。</p>
+        </header>
+
+        <nav class="study-index" aria-label="Study sections">
+            <button type="button" data-study-view="home" aria-current="page"><span>01</span>INDEX</button>
+            <button type="button" data-study-view="calendar"><span>02</span>CALENDAR</button>
+            <button type="button" data-study-view="practice"><span>03</span>PRACTICE</button>
+            <button type="button" data-study-view="mistakes"><span>04</span>MISTAKES</button>
+            <button type="button" data-study-view="revisions"><span>05</span>REVISIONS</button>
+            <button type="button" data-study-view="notes"><span>06</span>NOTES</button>
+        </nav>
+
+        <p id="study-status" class="study-status" role="status">Reading the constellation…</p>
+
+        <section id="study-view-home" class="study-view" data-view="home">
+            <div class="study-month-preview">
+                <div><p class="study-kicker">CURRENT MONTH / CALENDAR PREVIEW</p><h2 id="study-current-month"></h2></div>
+                <button class="study-text-button" type="button" data-open-view="calendar">VIEW CALENDAR →</button>
+                <div id="study-month-stars" class="study-month-stars" aria-label="本月学习活动"></div>
+            </div>
+            <div id="study-dashboard" class="study-dashboard"></div>
+        </section>
+
+        <section id="study-view-calendar" class="study-view" data-view="calendar" hidden>
+            <div class="study-view-heading"><div><p>TIME INDEX</p><h2>Calendar</h2></div><div class="study-calendar-actions"><button id="study-calendar-prev" type="button" aria-label="上个月">←</button><button id="study-calendar-today" type="button">TODAY</button><button id="study-calendar-next" type="button" aria-label="下个月">→</button></div></div>
+            <h3 id="study-calendar-title" class="study-calendar-title"></h3>
+            <div class="study-calendar-week" aria-hidden="true"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>
+            <div id="study-calendar-grid" class="study-calendar-grid"></div>
+            <section class="study-day-log"><p class="study-kicker" id="study-day-title">SELECT A DAY</p><div id="study-day-activities" class="study-timeline"></div></section>
+        </section>
+
+        <section id="study-view-practice" class="study-view" data-view="practice" hidden>
+            <div class="study-view-heading"><div><p>RAW LEARNING RECORDS</p><h2>Practice</h2></div><button class="study-primary" type="button" data-action="new-practice">＋ NEW PRACTICE</button></div>
+            <div class="study-filter-row" role="group" aria-label="Practice filters"><button type="button" data-practice-filter="all" class="active">ALL</button><button type="button" data-practice-filter="aptitude">APTITUDE</button><button type="button" data-practice-filter="shenlun">SHENLUN</button></div>
+            <div id="study-practice-list" class="study-record-list"></div>
+            <div id="study-practice-detail" class="study-detail" hidden></div>
+        </section>
+
+        <section id="study-view-mistakes" class="study-view" data-view="mistakes" hidden>
+            <div class="study-view-heading"><div><p>APTITUDE ARCHIVE</p><h2>Mistakes</h2></div><button class="study-primary" type="button" data-action="quick-mistake">＋ QUICK MISTAKE</button></div>
+            <div class="study-browse-bar"><div id="study-mistake-subjects" class="study-filter-row"></div><div class="study-filter-row"><button type="button" data-mistake-status="all" class="active">ALL</button><button type="button" data-mistake-status="learning">LEARNING</button><button type="button" data-mistake-status="review">REVIEW</button><button type="button" data-mistake-status="mastered">MASTERED</button></div><div class="study-view-switch"><button type="button" data-mistake-mode="index" class="active">INDEX</button><button type="button" data-mistake-mode="card">CARD</button></div></div>
+            <div id="study-mistake-content"></div>
+        </section>
+
+        <section id="study-view-revisions" class="study-view" data-view="revisions" hidden>
+            <div class="study-view-heading"><div><p>SHENLUN ARCHIVE</p><h2>Revisions</h2></div></div>
+            <div id="study-revision-list" class="study-record-list"></div>
+            <div id="study-revision-detail" class="study-detail" hidden></div>
+        </section>
+
+        <section id="study-view-notes" class="study-view" data-view="notes" hidden>
+            <div class="study-view-heading"><div><p>LEARNING FRAGMENTS</p><h2>Notes</h2></div><button class="study-primary" type="button" data-action="new-note">＋ NEW NOTE</button></div>
+            <div id="study-note-filters" class="study-filter-row"></div>
+            <div id="study-note-list" class="study-note-list"></div>
+        </section>
+    </main>
+
+    <dialog id="study-editor" class="study-dialog"><form id="study-editor-form" method="dialog"><header><div><p id="study-editor-kicker">STUDY EDITOR</p><h2 id="study-editor-title">New record</h2></div><button type="button" class="study-dialog-close" aria-label="关闭">×</button></header><div id="study-editor-fields" class="study-form"></div><footer><p id="study-editor-message" role="status"></p><button type="button" class="study-secondary study-dialog-close">CANCEL</button><button id="study-editor-save" type="submit" class="study-primary">SAVE</button></footer></form></dialog>
+    <dialog id="study-sheet" class="study-dialog study-sheet"><div id="study-sheet-content"></div></dialog>
+
+    <footer class="standalone-footer"><span>Kiora's learning constellation</span><span>PRIVATE ARCHIVE</span></footer>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js?v=20260918-1"></script>
+    <script src="article-common.js?v=20260917-3"></script>
+    <script src="script.js?v=20260915-8"></script>
+    <script src="site-nav.js?v=20260918-1"></script>
+    <script src="study.js?v=20260918-1"></script>
+</body>
+</html>

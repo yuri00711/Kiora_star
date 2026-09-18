@@ -33,6 +33,12 @@ const ACTIONS = new Set([
   "tier_item_move",
   "tier_items_reorder",
   "upload_site_media",
+  "study_list",
+  "study_get",
+  "study_upsert",
+  "study_delete",
+  "study_upload",
+  "study_signed_url",
 ]);
 
 const ACTION_PAYLOAD_FIELDS: Record<string, string[]> = {
@@ -49,6 +55,10 @@ const ACTION_PAYLOAD_FIELDS: Record<string, string[]> = {
   tier_section_update: ["id", "title", "description"], tier_sections_reorder: ["items"],
   tier_item_move: ["id", "board_id", "section_id", "game_id", "sort_order"],
   tier_items_reorder: ["items"], upload_site_media: ["path", "content_type", "base64"],
+  study_list: ["entity", "filters", "from", "to", "limit"],
+  study_get: ["entity", "id"], study_upsert: ["entity", "id", "data"],
+  study_delete: ["entity", "id"], study_upload: ["path", "content_type", "base64"],
+  study_signed_url: ["path", "expires_in"],
 };
 
 const PROFILE_FIELDS = ["nickname", "avatar_url", "tagline", "summary", "about_text", "free_space_title", "free_space_content"];
@@ -83,6 +93,12 @@ function id(value: unknown): number {
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error("INVALID_PAYLOAD");
   return parsed;
+}
+
+function uuid(value: unknown): string {
+  const text = String(value ?? "");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)) throw new Error("INVALID_PAYLOAD");
+  return text;
 }
 
 function ownerUuid(value: string | null): string {
@@ -252,6 +268,39 @@ function normalizeMusic(data: JsonObject): JsonObject {
   };
 }
 
+const STUDY_ENTITIES: Record<string, { table: string; fields: string[]; order: string }> = {
+  practices: { table: "study_practices", order: "practice_date", fields: ["practice_type","title","practice_date","source","subject","note","status","total_questions","auto_advance","is_public"] },
+  files: { table: "study_files", order: "created_at", fields: ["practice_id","file_kind","storage_path","file_name","mime_type","file_size","extracted_text"] },
+  aptitude_answers: { table: "study_aptitude_answers", order: "question_number", fields: ["practice_id","question_number","answer","flagged"] },
+  answer_keys: { table: "study_answer_keys", order: "question_number", fields: ["practice_id","question_number","correct_answer","source_file_id","confirmed"] },
+  mistakes: { table: "study_mistakes", order: "created_at", fields: ["practice_id","question_number","source_type","subject","knowledge_tag","image_path","paper_file_id","paper_page","crop_x","crop_y","crop_width","crop_height","question_snapshot","my_answer","correct_answer","reason","status","is_public"] },
+  mistake_attempts: { table: "study_mistake_attempts", order: "attempted_at", fields: ["mistake_id","answer","is_correct","attempted_at"] },
+  shenlun_questions: { table: "study_shenlun_questions", order: "question_number", fields: ["practice_id","question_number","title","question_type","prompt","material_scope","max_characters","points"] },
+  shenlun_answers: { table: "study_shenlun_answers", order: "attempt_number", fields: ["practice_id","question_id","attempt_number","title","thesis","outline","body","submitted_at"] },
+  shenlun_references: { table: "study_shenlun_references", order: "created_at", fields: ["practice_id","question_id","source_file_id","body","confirmed"] },
+  reviews: { table: "study_reviews", order: "created_at", fields: ["practice_id","question_id","answer_id","content_coverage","material_evidence","task_analysis","expression_review","structure_review","assessment","model","model_version"] },
+  revisions: { table: "study_revisions", order: "created_at", fields: ["practice_id","question_id","answer_id","review_id","title","category","issue_tags","source_snapshot","status"] },
+  notes: { table: "study_notes", order: "note_date", fields: ["title","body","subject","tags","note_date","is_public"] },
+  activities: { table: "study_activities", order: "activity_at", fields: ["activity_type","entity_type","entity_id","title","detail","is_public","activity_at"] },
+};
+
+function studyEntity(value: unknown) {
+  const selected = STUDY_ENTITIES[String(value ?? "")];
+  if (!selected) throw new Error("INVALID_PAYLOAD");
+  return selected;
+}
+
+function normalizeStudyData(entityName: unknown, raw: unknown): JsonObject {
+  const selected = studyEntity(entityName);
+  const data = only(object(raw), selected.fields);
+  const encoded = JSON.stringify(data);
+  if (encoded.length > 750_000) throw new Error("INVALID_PAYLOAD");
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === "string") data[key] = value.trim().slice(0, key === "body" || key === "extracted_text" || key === "question_snapshot" ? 500_000 : 10_000);
+  }
+  return data;
+}
+
 async function execute(action: string, context: ActionContext): Promise<unknown> {
   const { db, ownerId } = context;
   const payload = only(context.payload, ACTION_PAYLOAD_FIELDS[action] || []);
@@ -382,6 +431,64 @@ async function execute(action: string, context: ActionContext): Promise<unknown>
         if (update.error) throw update.error;
       }
       return { updated: updates.length };
+    }
+    case "study_list": {
+      const selected = studyEntity(payload.entity);
+      const limit = Math.min(Math.max(Number(payload.limit) || 200, 1), 500);
+      let query = db.from(selected.table).select("*").eq("owner_id", ownerUuid(ownerId));
+      const filters = payload.filters ? object(payload.filters) : {};
+      const allowedFilters = ["practice_id","mistake_id","question_id","practice_type","subject","status","file_kind","entity_type"];
+      for (const [key, value] of Object.entries(filters)) {
+        if (!allowedFilters.includes(key)) throw new Error("INVALID_PAYLOAD");
+        query = query.eq(key, value);
+      }
+      if (payload.from) query = query.gte(selected.order, requiredText(payload.from, 40));
+      if (payload.to) query = query.lte(selected.order, requiredText(payload.to, 40));
+      result = await query.order(selected.order, { ascending: selected.order === "question_number" || selected.order === "attempt_number" }).limit(limit);
+      break;
+    }
+    case "study_get": {
+      const selected = studyEntity(payload.entity);
+      result = await db.from(selected.table).select("*").eq("owner_id", ownerUuid(ownerId)).eq("id", uuid(payload.id)).maybeSingle();
+      break;
+    }
+    case "study_upsert": {
+      const selected = studyEntity(payload.entity);
+      const data = { ...normalizeStudyData(payload.entity, payload.data), owner_id: ownerUuid(ownerId) };
+      result = payload.id
+        ? await db.from(selected.table).update(data).eq("owner_id", ownerUuid(ownerId)).eq("id", uuid(payload.id)).select("*").single()
+        : await db.from(selected.table).insert(data).select("*").single();
+      break;
+    }
+    case "study_delete": {
+      const selected = studyEntity(payload.entity);
+      result = await db.from(selected.table).delete().eq("owner_id", ownerUuid(ownerId)).eq("id", uuid(payload.id)).select("id").single();
+      break;
+    }
+    case "study_upload": {
+      const value = only(payload, ["path", "content_type", "base64"]);
+      const requestedPath = requiredText(value.path, 700);
+      const contentType = requiredText(value.content_type, 180);
+      const owner = ownerUuid(ownerId);
+      const path = requestedPath.startsWith(`${owner}/`) ? requestedPath : `${owner}/${requestedPath}`;
+      if (path.includes("..")) throw new Error("INVALID_PAYLOAD");
+      if (!["application/pdf","application/vnd.openxmlformats-officedocument.wordprocessingml.document","image/jpeg","image/png","image/webp"].includes(contentType)) throw new Error("INVALID_PAYLOAD");
+      const encoded = requiredText(value.base64, 70_000_000);
+      const binary = atob(encoded);
+      if (binary.length > 50 * 1024 * 1024) throw new Error("INVALID_PAYLOAD");
+      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      const upload = await db.storage.from("study-private").upload(path, bytes, { contentType, cacheControl: "3600", upsert: false });
+      if (upload.error) throw upload.error;
+      return { path };
+    }
+    case "study_signed_url": {
+      const path = requiredText(payload.path, 700);
+      const owner = ownerUuid(ownerId);
+      if (!path.startsWith(`${owner}/`) || path.includes("..")) throw new Error("INVALID_PAYLOAD");
+      const expires = Math.min(Math.max(Number(payload.expires_in) || 3600, 60), 86400);
+      const signed = await db.storage.from("study-private").createSignedUrl(path, expires);
+      if (signed.error) throw signed.error;
+      return { signedUrl: signed.data.signedUrl };
     }
     case "upload_site_media": {
       const value = only(payload, ["path", "content_type", "base64"]);

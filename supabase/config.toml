@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.editor-api]
 verify_jwt = false
+
+[functions.study-review]
+verify_jwt = false
