@@ -153,7 +153,37 @@
         const paper = files.find((file) => ["paper","material"].includes(file.file_kind));
         if (!paper) return `<div class="study-empty">No paper uploaded yet.</div>`;
         const url = await getSignedUrl(paper.storage_path); if (!url) return `<div class="study-empty study-error">Paper unavailable.</div>`;
+        if (paper.mime_type === "application/pdf") return `<div class="study-pdf-document" data-pdf-url="${esc(url)}"><p class="study-pdf-loading" role="status">Loading PDF…</p></div>`;
         return paper.mime_type.startsWith("image/") ? `<img src="${esc(url)}" alt="Practice paper">` : `<iframe src="${esc(url)}#toolbar=1" title="Practice paper"></iframe>`;
+    }
+
+    async function renderPdfDocuments(root) {
+        const documents = $$(".study-pdf-document[data-pdf-url]", root);
+        if (!documents.length) return;
+        try {
+            await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs", "pdfjsLib", true);
+            for (const container of documents) {
+                const pdf = await window.pdfjsLib.getDocument(container.dataset.pdfUrl).promise;
+                container.replaceChildren();
+                for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                    const page = await pdf.getPage(pageNumber);
+                    const base = page.getViewport({ scale: 1 });
+                    const available = Math.max(container.clientWidth || base.width, 320);
+                    const viewport = page.getViewport({ scale: Math.min(2, available / base.width) });
+                    const figure = document.createElement("figure");
+                    const canvas = document.createElement("canvas");
+                    const caption = document.createElement("figcaption");
+                    canvas.width = Math.ceil(viewport.width);
+                    canvas.height = Math.ceil(viewport.height);
+                    caption.textContent = `PAGE ${String(pageNumber).padStart(2, "0")} / ${String(pdf.numPages).padStart(2, "0")}`;
+                    figure.append(canvas, caption);
+                    container.append(figure);
+                    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+                }
+            }
+        } catch (error) {
+            documents.forEach((container) => { container.innerHTML = `<p class="study-empty study-error">PDF could not be loaded. ${esc(error.message || "")}</p>`; });
+        }
     }
 
     async function renderAptitude(practice, data) {
@@ -162,11 +192,25 @@
         const answers = new Map(data.aptitude_answers.map((item)=>[item.question_number,item])); const answer = answers.get(current);
         detail._studyData = data;
         const writable = state.writable;
-        detail.innerHTML = `<div class="study-detail-toolbar"><div><p class="study-kicker">APTITUDE / ${esc(practice.status.toUpperCase())}</p><h3>${esc(practice.title)}</h3></div><div class="study-action-row">${writable ? '<button class="study-secondary" data-action="upload-paper">UPLOAD PAPER</button><button class="study-secondary" data-action="import-key">IMPORT ANSWER KEY</button><button class="study-primary" data-action="finish-practice">RESULT</button>' : ""}<button class="study-secondary" data-action="close-practice">CLOSE</button></div></div><div class="study-paper-workspace"><div class="study-paper-reader">${await paperMarkup(data.files)}</div><aside class="study-answer-panel">${answerPanel(current,total,answer,writable)}</aside></div>${writable ? `<div class="study-mobile-dock"><button data-answer-nav="prev" aria-label="上一题">‹</button><div class="study-answer-options">${["A","B","C","D"].map(option=>`<button data-answer="${option}" class="${answer?.answer===option?"active":""}">${option}</button>`).join("")}</div><button data-answer-nav="next" aria-label="下一题">›</button></div>`:""}`;
+        detail.innerHTML = `<div class="study-detail-toolbar"><div><p class="study-kicker">APTITUDE / ${esc(practice.status.toUpperCase())}</p><h3>${esc(practice.title)}</h3></div><div class="study-action-row">${writable ? '<button class="study-secondary" data-action="upload-paper">UPLOAD PAPER</button><button class="study-secondary" data-action="import-key">IMPORT ANSWER KEY</button><button class="study-primary" data-action="finish-practice">RESULT</button>' : ""}<button class="study-secondary" data-action="close-practice">CLOSE</button></div></div><div class="study-paper-workspace"><div class="study-paper-reader">${await paperMarkup(data.files)}</div><aside class="study-answer-panel">${answerPanel(current,total,answer,writable)}</aside></div>${writable ? `<div class="study-mobile-dock"><button data-answer-nav="prev" aria-label="上一题">‹</button><div class="study-mobile-answer-center"><span class="study-current-question">第 ${current} 题</span><div class="study-answer-options">${["A","B","C","D"].map(option=>`<button data-answer="${option}" class="${answer?.answer===option?"active":""}>${option}</button>`).join("")}</div></div><button data-answer-nav="next" aria-label="下一题">›</button></div>`:""}`;
+        await renderPdfDocuments(detail);
     }
 
     function answerPanel(current,total,answer,writable) {
-        return `<p class="study-kicker">QUESTION</p><p class="study-question-count">${String(current).padStart(3,"0")} / ${String(total).padStart(3,"0")}</p><div class="study-answer-options">${["A","B","C","D"].map(option=>`<button type="button" data-answer="${option}" class="${answer?.answer===option?"active":""}" ${writable?"":"disabled"}>${option}</button>`).join("")}</div><div class="study-answer-nav"><button type="button" data-answer-nav="prev">← PREV</button><button type="button" data-answer-nav="next">NEXT →</button></div><div class="study-mini-actions"><button type="button" data-action="clear-answer">CLEAR ANSWER</button><button type="button" data-action="toggle-flag">${answer?.flagged?"UNFLAG":"FLAG"}</button><button type="button" data-action="open-answer-sheet">ANSWER SHEET</button><label><input type="checkbox" data-auto-advance ${practiceAutoAdvance()?"checked":""}> AUTO ADVANCE</label></div>`;
+        return `<p class="study-kicker">QUESTION</p><p class="study-question-count">${String(current).padStart(3,"0")} / ${String(total).padStart(3,"0")}</p><p class="study-current-question">第 ${current} 题</p><div class="study-answer-options">${["A","B","C","D"].map(option=>`<button type="button" data-answer="${option}" class="${answer?.answer===option?"active":""}" ${writable?"":"disabled"}>${option}</button>`).join("")}</div><div class="study-answer-nav"><button type="button" data-answer-nav="prev">← PREV</button><button type="button" data-answer-nav="next">NEXT →</button></div><div class="study-mini-actions"><button type="button" data-action="clear-answer">CLEAR ANSWER</button><button type="button" data-action="toggle-flag">${answer?.flagged?"UNFLAG":"FLAG"}</button><button type="button" data-action="open-answer-sheet">ANSWER SHEET</button><label><input type="checkbox" data-auto-advance ${practiceAutoAdvance()?"checked":""}> AUTO ADVANCE</label></div>`;
+    }
+    function updateAptitudeControls() {
+        const detail = $("#study-practice-detail");
+        const data = detail._studyData;
+        if (!data || !state.activePractice) return;
+        const total = state.activePractice.total_questions || Math.max(data.answer_keys.length, 1);
+        const current = Math.min(Math.max(Number(detail.dataset.question || 1), 1), total);
+        detail.dataset.question = current;
+        const answer = data.aptitude_answers.find((item) => item.question_number === current);
+        const panel = $(".study-answer-panel", detail);
+        if (panel) panel.innerHTML = answerPanel(current, total, answer, state.writable);
+        const mobile = $(".study-mobile-answer-center", detail);
+        if (mobile) mobile.innerHTML = `<span class="study-current-question">第 ${current} 题</span><div class="study-answer-options">${["A","B","C","D"].map((option) => `<button data-answer="${option}" class="${answer?.answer === option ? "active" : ""}">${option}</button>`).join("")}</div>`;
     }
     function practiceAutoAdvance(){ return state.activePractice?.auto_advance !== false; }
 
@@ -176,7 +220,7 @@
         const result=await upsert("aptitude_answers",payload,existing?.id||null); if(result.error){status(`Answer not saved: ${result.error.message}`,true);return;}
         if(existing) Object.assign(existing,result.data); else data.aptitude_answers.push(result.data);
         if(changes.advance && practiceAutoAdvance() && question<(state.activePractice.total_questions||1)) detail.dataset.question=question+1;
-        await renderAptitude(state.activePractice,data);
+        updateAptitudeControls();
     }
 
     function showAnswerSheet() {
@@ -281,8 +325,8 @@
         const row=event.target.closest(".study-mistake-index tr[data-id]");if(row){state.currentMistake=filteredMistakes().findIndex(x=>x.id===row.dataset.id);state.mistakeMode="card";renderMistakes();return;}
         const cardNav=event.target.closest("[data-card-nav]");if(cardNav){const items=filteredMistakes();state.currentMistake=(state.currentMistake+(cardNav.dataset.cardNav==="next"?1:-1)+items.length)%items.length;renderMistakeCard(items[state.currentMistake],items);return;}
         const answer=event.target.closest("[data-answer]");if(answer){await saveAptitudeAnswer(answer.dataset.answer,{advance:true});return;}
-        const answerNav=event.target.closest("[data-answer-nav]");if(answerNav){const detail=$("#study-practice-detail"),total=state.activePractice.total_questions||1,current=Number(detail.dataset.question);detail.dataset.question=Math.min(Math.max(current+(answerNav.dataset.answerNav==="next"?1:-1),1),total);renderAptitude(state.activePractice,detail._studyData);return;}
-        const sheetQuestion=event.target.closest("[data-sheet-question]");if(sheetQuestion){$("#study-practice-detail").dataset.question=sheetQuestion.dataset.sheetQuestion;$("#study-sheet").close();renderAptitude(state.activePractice,$("#study-practice-detail")._studyData);return;}
+        const answerNav=event.target.closest("[data-answer-nav]");if(answerNav){const detail=$("#study-practice-detail"),total=state.activePractice.total_questions||1,current=Number(detail.dataset.question);detail.dataset.question=Math.min(Math.max(current+(answerNav.dataset.answerNav==="next"?1:-1),1),total);updateAptitudeControls();return;}
+        const sheetQuestion=event.target.closest("[data-sheet-question]");if(sheetQuestion){$("#study-practice-detail").dataset.question=sheetQuestion.dataset.sheetQuestion;$("#study-sheet").close();updateAptitudeControls();return;}
         const question=event.target.closest("[data-shenlun-question]");if(question){$("#study-practice-detail").dataset.questionId=question.dataset.shenlunQuestion;renderShenlun(state.activePractice,$("#study-practice-detail")._studyData);return;}
         const revisit=event.target.closest("[data-revisit-answer]");if(revisit){$$('[data-revisit-answer]').forEach(x=>x.classList.toggle("active",x===revisit));$("[data-action=submit-revisit]").disabled=false;return;}
         const revision=event.target.closest("[data-revision-id]");if(revision){openRevision(revision.dataset.revisionId);return;}
@@ -313,6 +357,7 @@
     const initial=location.hash.slice(1);if($( `#study-view-${initial}`))state.view=initial;
     await loadBase();setView(state.view,false);
 })();
+
 
 
 
