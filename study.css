@@ -54,7 +54,99 @@ button { font-family:inherit; }
 .study-empty { padding:65px 10px; color:var(--study-soft); font-size:11px; line-height:2; text-align:center; }.study-error { color:#8b6268; }
 .study-dialog { width:min(760px,calc(100% - 34px)); max-height:calc(100dvh - 40px); padding:0; overflow:auto; border:1px solid rgba(116,88,118,.25); background:#faf7fa; color:var(--study-ink); box-shadow:0 28px 80px rgba(65,52,69,.18); }.study-dialog::backdrop { background:rgba(70,60,73,.16);backdrop-filter:blur(3px); }.study-dialog form>header,.study-dialog>div>header { display:flex;justify-content:space-between;align-items:start;padding:34px 38px 24px;border-bottom:1px solid var(--study-line); }.study-dialog h2 { margin:12px 0 0;font-size:30px;font-weight:400; }.study-dialog-close { width:44px;height:44px;border:0;background:none;color:var(--study-soft);font-size:25px;cursor:pointer; }.study-form { display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:35px 38px; }.study-field { display:grid;gap:9px; }.study-field.full { grid-column:1/-1; }.study-field label { color:var(--study-soft);font-size:8px;letter-spacing:2px; }.study-field input,.study-field select,.study-field textarea { width:100%;min-height:45px;padding:10px 2px;border:0;border-bottom:1px solid var(--study-line);border-radius:0;background:transparent;color:inherit;font:inherit;font-size:13px; }.study-field textarea { min-height:130px;line-height:1.8;resize:vertical; }.study-field input:focus,.study-field select:focus,.study-field textarea:focus { outline:2px solid rgba(151,112,148,.22);outline-offset:3px; }.study-dialog form>footer { display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:20px 38px 32px; }.study-dialog form>footer p { flex:1;margin:0;color:var(--study-soft);font-size:9px; }.study-sheet { width:min(1050px,calc(100% - 34px)); }.study-sheet-content { padding:38px; }
 .study-shenlun-layout { display:grid;grid-template-columns:1fr 1fr;gap:25px; }.study-material,.study-answer-editor { min-height:520px;padding:30px;border:1px solid var(--study-line);background:rgba(255,255,255,.35); }.study-answer-editor textarea { width:100%;min-height:350px;padding:20px;border:0;background:rgba(255,255,255,.42);font:inherit;line-height:2;resize:vertical; }.study-character-count { text-align:right;color:var(--study-soft);font-size:9px; }.study-character-count.over { color:#9a626d; }.study-review-section { margin-top:22px;padding:24px;border-top:1px solid var(--study-line); }.study-review-section h4 { font-size:10px;letter-spacing:2px; }.study-review-section li { margin:12px 0;color:var(--study-soft);font-size:11px;line-height:1.8; }
-.study-crop-controls { display:flex;align-items:center;gap:12px;margin-bottom:20px }.study-crop-controls input{width:70px;min-height:40px;border:1px solid var(--study-line);background:transparent;text-align:center}.study-crop-stage{position:relative;max-height:65vh;overflow:auto;border:1px solid var(--study-line);background:white;touch-action:none;cursor:crosshair}.study-crop-stage canvas,.study-crop-stage img{display:block;width:100%;height:auto}.study-crop-selection{position:absolute;border:1px solid rgba(139,93,134,.9);background:rgba(220,190,218,.18);box-shadow:0 0 0 9999px rgba(64,51,66,.12);pointer-events:none}
+.study-crop-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.study-crop-controls input {
+    width: 70px;
+    min-height: 40px;
+    border: 1px solid var(--study-line);
+    background: transparent;
+    text-align: center;
+}
+
+/*
+ * 外层负责滚动。
+ * PDF 和选择框本身不再各自滚动。
+ */
+#study-crop-scroll {
+    position: relative;
+    width: 100%;
+    max-height: 65vh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-x pan-y;
+    border: 1px solid var(--study-line);
+    background: white;
+}
+
+/*
+ * stage 只是 PDF + selection 的共同坐标层。
+ * 它自己绝对不能滚动。
+ */
+.study-crop-stage {
+    position: relative;
+    width: max-content;
+    min-width: 100%;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    background: white;
+    touch-action: pan-x pan-y;
+}
+
+/*
+ * PDF / 图片保持自己的实际比例。
+ */
+.study-crop-stage canvas,
+.study-crop-stage img {
+    display: block;
+    max-width: none;
+    height: auto;
+}
+
+/*
+ * 选择框与 PDF 共用同一个 stage。
+ */
+.study-crop-selection {
+    position: absolute;
+    z-index: 10;
+    box-sizing: border-box;
+    border: 2px solid rgba(139, 93, 134, .95);
+    background: rgba(220, 190, 218, .18);
+    pointer-events: none;
+}
+
+/*
+ * 进入框选模式时才禁止浏览手势。
+ */
+.study-crop-stage.is-selecting {
+    touch-action: none;
+    cursor: crosshair;
+}
+
+@media (max-width: 900px) {
+    #study-crop-scroll {
+        max-height: 62dvh;
+        overflow: auto;
+        touch-action: pan-x pan-y;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .study-crop-stage {
+        touch-action: pan-x pan-y;
+    }
+
+    .study-crop-stage.is-selecting {
+        touch-action: none;
+    }
+}
 .study-mobile-dock { display:none; }
 @media (max-width:900px) {
  .study-shell{width:calc(100% - 40px);padding:48px 0 90px}.study-heading{display:block;padding-bottom:38px}.study-heading h1{font-size:58px}.study-philosophy{margin:30px 0 0;text-align:left}.study-index{grid-template-columns:repeat(3,1fr);margin-bottom:55px}.study-index button{min-height:58px;padding:0 8px}.study-index button span{display:none}.study-dashboard{grid-template-columns:1fr 1fr}.study-dashboard-card{min-height:190px;padding:26px}.study-month-preview{padding:34px 25px}.study-month-stars{gap:1px}.study-calendar-day{min-height:67px;padding:8px}.study-calendar-day .day-stars{margin-top:13px}.study-timeline-item{grid-template-columns:65px 1fr}.study-timeline-item strong{grid-column:2}.study-record{grid-template-columns:50px 1fr;gap:15px}.study-record-meta{grid-column:2;text-align:left}.study-paper-workspace{display:block}.study-paper-reader{min-height:calc(100dvh - 250px);max-height:calc(100dvh - 185px);padding-bottom:calc(82px + env(safe-area-inset-bottom))}.study-paper-reader iframe,.study-paper-reader>img{height:calc(100dvh - 250px)}.study-answer-panel{display:none}.study-mobile-dock{position:fixed;z-index:8500;left:0;right:0;bottom:0;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:7px 12px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--study-line);background:rgba(250,247,250,.94);backdrop-filter:blur(13px)}.study-mobile-dock>button{min-height:48px;border:0;background:none}.study-mobile-answer-center{display:grid;gap:3px}.study-mobile-answer-center .study-current-question{margin:0;font-size:9px}.study-mobile-dock .study-answer-options{grid-template-columns:repeat(4,48px);justify-content:center}.study-note-list{grid-template-columns:1fr}.study-shenlun-layout{display:block}.study-material,.study-answer-editor{min-height:0;margin-bottom:16px}.study-form{grid-template-columns:1fr;padding:28px 22px}.study-field.full{grid-column:auto}.study-dialog form>header{padding:28px 22px 20px}.study-dialog form>footer{padding:18px 22px 26px;flex-wrap:wrap}.study-result-summary{grid-template-columns:1fr}.study-mistake-index th:nth-child(3),.study-mistake-index td:nth-child(3){display:none}
