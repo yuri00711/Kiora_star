@@ -574,7 +574,7 @@ async function openCropEditor(item) {
     openSheet(`
         <header>
             <div>
-                <p class="study-kicker">NORMALIZED CROP</p>
+                <p class="study-kicker">QUESTION CROP</p>
                 <h2>Select Question Area</h2>
             </div>
 
@@ -597,6 +597,15 @@ async function openCropEditor(item) {
                         min="1"
                         value="${item.paper_page || 1}"
                     >
+                </label>
+
+                <label>
+                    PART
+                    <select id="study-crop-part">
+                        <option value="top">TOP</option>
+                        <option value="bottom">BOTTOM</option>
+                        <option value="full">FULL PAGE</option>
+                    </select>
                 </label>
 
                 <button
@@ -627,30 +636,31 @@ async function openCropEditor(item) {
             </div>
 
             <p id="study-crop-hint">
-                Scroll to the question first, then press SELECT AREA.
+                Scroll to the question, then press SELECT AREA.
+                Drag near the top or bottom edge to auto-scroll while selecting.
             </p>
 
             <div
                 id="study-crop-scroll"
                 style="
-                    position: relative;
-                    width: 100%;
-                    max-height: min(70vh, 760px);
-                    overflow: auto;
-                    overscroll-behavior: contain;
-                    -webkit-overflow-scrolling: touch;
-                    touch-action: pan-x pan-y;
+                    position:relative;
+                    width:100%;
+                    max-height:65vh;
+                    overflow:auto;
+                    overscroll-behavior:contain;
+                    -webkit-overflow-scrolling:touch;
+                    touch-action:pan-y;
+                    border:1px solid var(--study-line);
+                    background:white;
                 "
             >
                 <div
                     id="study-crop-stage"
                     class="study-crop-stage"
                     style="
-                        position: relative;
-                        width: max-content;
-                        min-width: 100%;
-                        overflow: visible;
-                        touch-action: pan-x pan-y;
+                        position:relative;
+                        width:100%;
+                        overflow:visible;
                     "
                 ></div>
             </div>
@@ -660,13 +670,61 @@ async function openCropEditor(item) {
 
     const scroll = $("#study-crop-scroll");
     const stage = $("#study-crop-stage");
+    const pageInput = $("#study-crop-page");
+    const partInput = $("#study-crop-part");
+    const loadButton = $("#study-crop-load");
     const selectButton = $("#study-crop-select");
     const saveButton = $("#study-crop-save");
     const hint = $("#study-crop-hint");
 
     let selectionController = null;
 
-    const load = async () => {
+    /*
+     * 当前显示区域在原始 PDF 页中的范围。
+     *
+     * TOP:
+     * 0% - 55%
+     *
+     * BOTTOM:
+     * 45% - 100%
+     *
+     * FULL:
+     * 0% - 100%
+     */
+    let visibleRange = {
+        start: 0,
+        size: 0.55
+    };
+
+    function getVisibleRange() {
+        const part = partInput.value;
+
+        if (part === "bottom") {
+            return {
+                start: 0.45,
+                size: 0.55
+            };
+        }
+
+        if (part === "full") {
+            return {
+                start: 0,
+                size: 1
+            };
+        }
+
+        return {
+            start: 0,
+            size: 0.55
+        };
+    }
+
+    async function load() {
+        if (selectionController) {
+            selectionController.destroy();
+            selectionController = null;
+        }
+
         stage.innerHTML = "";
         stage._selection = null;
 
@@ -675,14 +733,18 @@ async function openCropEditor(item) {
         selectButton.textContent = "SELECT AREA";
         selectButton.classList.remove("active");
 
-        hint.textContent =
-            "Scroll to the question first, then press SELECT AREA.";
+        visibleRange = getVisibleRange();
 
-        scroll.style.touchAction = "pan-x pan-y";
-        stage.style.touchAction = "pan-x pan-y";
+        hint.textContent =
+            "Scroll to the question, then press SELECT AREA. Drag near the top or bottom edge to auto-scroll while selecting.";
+
+        scroll.scrollTop = 0;
 
         let source;
 
+        /*
+         * PDF
+         */
         if (file.mime_type === "application/pdf") {
             await loadScript(
                 "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs",
@@ -690,232 +752,373 @@ async function openCropEditor(item) {
                 true
             );
 
-            const pdf = await window.pdfjsLib
-                .getDocument(url)
-                .promise;
+            const pdf =
+                await window.pdfjsLib
+                    .getDocument(url)
+                    .promise;
 
             const requestedPage =
-                Number($("#study-crop-page").value) || 1;
+                Number(pageInput.value) || 1;
 
-            const pageNumber = Math.min(
-                Math.max(requestedPage, 1),
-                pdf.numPages
-            );
-
-            const page = await pdf.getPage(pageNumber);
-
-            /*
-             * 不再固定使用 scale: 1.6。
-             *
-             * 先按照滚动区域的实际宽度计算一个适合屏幕的比例。
-             * 手机和电脑都会完整显示 PDF 宽度，
-             * 纵向通过外层 scroll 容器滚动。
-             */
-            const baseViewport =
-                page.getViewport({ scale: 1 });
-
-            const availableWidth =
-                Math.max(
-                    scroll.clientWidth || 320,
-                    280
+            const pageNumber =
+                Math.min(
+                    Math.max(requestedPage, 1),
+                    pdf.numPages
                 );
 
-            const scale = Math.min(
-                2,
-                availableWidth / baseViewport.width
-            );
+            pageInput.value = pageNumber;
 
-            const viewport =
-                page.getViewport({ scale });
-
-            source = document.createElement("canvas");
-
-            source.width =
-                Math.ceil(viewport.width);
-
-            source.height =
-                Math.ceil(viewport.height);
+            const page =
+                await pdf.getPage(pageNumber);
 
             /*
-             * canvas 自己就是实际坐标基准。
-             * 不让 stage 用滚动高度参与归一化计算。
+             * 先用较高清晰度渲染完整原页。
              */
-            source.style.display = "block";
-            source.style.width = `${source.width}px`;
-            source.style.height = `${source.height}px`;
-            source.style.maxWidth = "none";
+            const fullViewport =
+                page.getViewport({
+                    scale: 2
+                });
+
+            const fullCanvas =
+                document.createElement("canvas");
+
+            fullCanvas.width =
+                Math.ceil(fullViewport.width);
+
+            fullCanvas.height =
+                Math.ceil(fullViewport.height);
 
             await page.render({
                 canvasContext:
-                    source.getContext("2d"),
-                viewport
+                    fullCanvas.getContext("2d"),
+                viewport: fullViewport
             }).promise;
 
-            $("#study-crop-page").value =
-                pageNumber;
-        } else {
+            /*
+             * 根据 TOP / BOTTOM / FULL
+             * 从完整 PDF 页切出当前查看区域。
+             */
+            const sourceY =
+                Math.round(
+                    fullCanvas.height *
+                    visibleRange.start
+                );
+
+            const sourceHeight =
+                Math.round(
+                    fullCanvas.height *
+                    visibleRange.size
+                );
+
+            const safeHeight =
+                Math.min(
+                    sourceHeight,
+                    fullCanvas.height - sourceY
+                );
+
             source =
+                document.createElement("canvas");
+
+            source.width =
+                fullCanvas.width;
+
+            source.height =
+                safeHeight;
+
+            source
+                .getContext("2d")
+                .drawImage(
+                    fullCanvas,
+
+                    0,
+                    sourceY,
+                    fullCanvas.width,
+                    safeHeight,
+
+                    0,
+                    0,
+                    source.width,
+                    source.height
+                );
+
+        /*
+         * 普通图片
+         *
+         * 图片暂时按完整图片处理。
+         */
+        } else {
+            const image =
                 document.createElement("img");
 
-            source.src = url;
+            image.src = url;
 
-            await source.decode();
+            await image.decode();
 
             /*
-             * 图片也使用实际显示尺寸作为坐标基准。
+             * 为了让图片和 PDF 使用完全相同的
+             * canvas 坐标体系，也转成 canvas。
              */
-            const availableWidth =
-                Math.max(
-                    scroll.clientWidth || 320,
-                    280
+            const fullCanvas =
+                document.createElement("canvas");
+
+            fullCanvas.width =
+                image.naturalWidth;
+
+            fullCanvas.height =
+                image.naturalHeight;
+
+            fullCanvas
+                .getContext("2d")
+                .drawImage(
+                    image,
+                    0,
+                    0
                 );
 
-            const naturalWidth =
-                source.naturalWidth || availableWidth;
+            /*
+             * 图片也支持 TOP/BOTTOM/FULL。
+             */
+            const sourceY =
+                Math.round(
+                    fullCanvas.height *
+                    visibleRange.start
+                );
 
-            const naturalHeight =
-                source.naturalHeight || availableWidth;
+            const sourceHeight =
+                Math.round(
+                    fullCanvas.height *
+                    visibleRange.size
+                );
 
-            const scale =
+            const safeHeight =
                 Math.min(
-                    1,
-                    availableWidth / naturalWidth
+                    sourceHeight,
+                    fullCanvas.height - sourceY
                 );
 
-            const displayWidth =
-                Math.round(naturalWidth * scale);
+            source =
+                document.createElement("canvas");
 
-            const displayHeight =
-                Math.round(naturalHeight * scale);
+            source.width =
+                fullCanvas.width;
 
-            source.style.display = "block";
-            source.style.width =
-                `${displayWidth}px`;
-            source.style.height =
-                `${displayHeight}px`;
-            source.style.maxWidth = "none";
+            source.height =
+                safeHeight;
+
+            source
+                .getContext("2d")
+                .drawImage(
+                    fullCanvas,
+
+                    0,
+                    sourceY,
+                    fullCanvas.width,
+                    safeHeight,
+
+                    0,
+                    0,
+                    source.width,
+                    source.height
+                );
         }
 
         /*
-         * source 和 selection 都放进 stage。
+         * 关键：
          *
-         * 外层 study-crop-scroll 才负责滚动。
+         * canvas 的内部像素尺寸可以很大，
+         * 但显示宽度永远适应容器。
          *
-         * 因此：
-         *
-         * PDF 滚多少
-         * selection 就跟着滚多少。
+         * 坐标最终按照 canvas 的显示矩形计算。
          */
+        source.style.display = "block";
+        source.style.width = "100%";
+        source.style.height = "auto";
+        source.style.maxWidth = "100%";
+
         stage.append(source);
 
+        stage.style.width = "100%";
+        stage.style.height = "auto";
+
         /*
-         * stage 的尺寸直接跟 PDF / 图片一致。
+         * 等浏览器完成 canvas 布局。
          */
-        const sourceRect =
-            source.getBoundingClientRect();
+        await new Promise(resolve =>
+            requestAnimationFrame(resolve)
+        );
 
-        stage.style.width =
-            `${sourceRect.width}px`;
-
+        /*
+         * stage 高度必须真实等于 canvas 显示高度。
+         */
         stage.style.height =
-            `${sourceRect.height}px`;
-
-        stage.style.minWidth = "0";
+            `${source.getBoundingClientRect().height}px`;
 
         selectionController =
-            installCropSelection(
+            installCropSelection({
                 stage,
                 source,
                 scroll,
-                {
-                    onSelectionChange(selection) {
-                        saveButton.disabled =
-                            !selection ||
-                            selection.crop_width < 0.005 ||
-                            selection.crop_height < 0.005;
-                    },
 
-                    onModeChange(selecting) {
-                        if (selecting) {
-                            selectButton.textContent =
-                                "CANCEL SELECT";
+                onSelectionChange(selection) {
+                    saveButton.disabled =
+                        !selection ||
+                        selection.crop_width < 0.003 ||
+                        selection.crop_height < 0.003;
+                },
 
-                            selectButton.classList.add(
-                                "active"
-                            );
+                onModeChange(selecting) {
+                    if (selecting) {
+                        stage.classList.add(
+                            "is-selecting"
+                        );
 
-                            hint.textContent =
-                                "Drag across the question area.";
+                        selectButton.textContent =
+                            "CANCEL SELECT";
 
-                            /*
-                             * 框选模式：
-                             * stage 接收拖动。
-                             */
-                            stage.style.touchAction =
-                                "none";
-                        } else {
-                            selectButton.textContent =
-                                stage._selection
-                                    ? "RESELECT"
-                                    : "SELECT AREA";
+                        selectButton.classList.add(
+                            "active"
+                        );
 
-                            selectButton.classList.remove(
-                                "active"
-                            );
+                        hint.textContent =
+                            "Selecting. Move near the top or bottom edge to auto-scroll.";
 
-                            hint.textContent =
-                                stage._selection
-                                    ? "Area selected. Scroll to check it, or press RESELECT."
-                                    : "Scroll to the question first, then press SELECT AREA.";
+                    } else {
+                        stage.classList.remove(
+                            "is-selecting"
+                        );
 
-                            /*
-                             * 浏览模式：
-                             * 手机手指可以继续正常滚 PDF。
-                             */
-                            stage.style.touchAction =
-                                "pan-x pan-y";
-                        }
+                        selectButton.textContent =
+                            stage._selection
+                                ? "RESELECT"
+                                : "SELECT AREA";
+
+                        selectButton.classList.remove(
+                            "active"
+                        );
+
+                        hint.textContent =
+                            stage._selection
+                                ? "Area selected. Press SAVE AREA, or RESELECT."
+                                : "Scroll to the question, then press SELECT AREA.";
                     }
                 }
-            );
-    };
+            });
+    }
 
-    $("#study-crop-load").onclick =
+    loadButton.onclick =
         async () => {
             await load();
         };
 
-    selectButton.onclick = () => {
-        if (!selectionController) return;
+    partInput.onchange =
+        async () => {
+            await load();
+        };
 
-        if (selectionController.isSelecting()) {
-            selectionController.stop();
-        } else {
-            selectionController.start();
-        }
-    };
+    selectButton.onclick =
+        () => {
+            if (!selectionController) {
+                return;
+            }
+
+            if (
+                selectionController.isSelecting()
+            ) {
+                selectionController.cancel();
+            } else {
+                selectionController.start();
+            }
+        };
 
     saveButton.onclick =
         async () => {
-            const selection =
+            const localSelection =
                 stage._selection;
 
-            if (!selection) return;
+            if (!localSelection) {
+                return;
+            }
+
+            /*
+             * --------------------------------
+             * 最重要的一步
+             * --------------------------------
+             *
+             * stage._selection 是当前
+             * TOP/BOTTOM/FULL 画面中的局部坐标。
+             *
+             * 保存前换算回原始 PDF 页的 0~1。
+             */
+
+            const originalSelection = {
+                crop_x:
+                    localSelection.crop_x,
+
+                crop_y:
+                    visibleRange.start +
+                    (
+                        localSelection.crop_y *
+                        visibleRange.size
+                    ),
+
+                crop_width:
+                    localSelection.crop_width,
+
+                crop_height:
+                    localSelection.crop_height *
+                    visibleRange.size
+            };
+
+            /*
+             * 最终再限制一次范围，
+             * 防止浮点误差超过 1。
+             */
+            originalSelection.crop_x =
+                Math.min(
+                    Math.max(
+                        originalSelection.crop_x,
+                        0
+                    ),
+                    1
+                );
+
+            originalSelection.crop_y =
+                Math.min(
+                    Math.max(
+                        originalSelection.crop_y,
+                        0
+                    ),
+                    1
+                );
+
+            originalSelection.crop_width =
+                Math.min(
+                    originalSelection.crop_width,
+                    1 - originalSelection.crop_x
+                );
+
+            originalSelection.crop_height =
+                Math.min(
+                    originalSelection.crop_height,
+                    1 - originalSelection.crop_y
+                );
 
             const result =
                 await upsert(
                     "mistakes",
+
                     mistakeData(
                         item,
                         {
                             paper_page:
                                 Number(
-                                    $("#study-crop-page").value
+                                    pageInput.value
                                 ) || 1,
 
-                            ...selection
+                            ...originalSelection
                         }
                     ),
+
                     item.id
                 );
 
@@ -924,6 +1127,26 @@ async function openCropEditor(item) {
                     result.error.message,
                     true
                 );
+            }
+
+            /*
+             * 删除这道题旧的图片缓存。
+             *
+             * 防止重新框选后继续看到旧图。
+             */
+            for (
+                const key
+                of Array.from(
+                    state.signedUrls.keys()
+                )
+            ) {
+                if (
+                    key.startsWith(
+                        `paper:${item.paper_file_id}:${pageInput.value}`
+                    )
+                ) {
+                    state.signedUrls.delete(key);
+                }
             }
 
             Object.assign(
@@ -940,375 +1163,573 @@ async function openCropEditor(item) {
 }
 
 
-function installCropSelection(
+function installCropSelection({
     stage,
     source,
     scroll,
-    callbacks = {}
-) {
+    onSelectionChange,
+    onModeChange
+}) {
     let selecting = false;
     let dragging = false;
-
-    let pointerId = null;
 
     let start = null;
     let box = null;
 
+    let pointerId = null;
+
+    let lastClientX = 0;
+    let lastClientY = 0;
+
+    let autoScrollFrame = null;
+
+    /*
+     * 自动滚动参数。
+     */
+    const EDGE_SIZE = 72;
+    const MAX_SCROLL_SPEED = 18;
+
     const clamp =
-        (value) =>
+        (value, min = 0, max = 1) =>
             Math.min(
-                Math.max(value, 0),
-                1
+                Math.max(value, min),
+                max
             );
 
     /*
-     * 重点：
+     * --------------------------------
+     * 坐标计算
+     * --------------------------------
      *
-     * 坐标只根据 PDF canvas / image 本身计算。
+     * 永远以 source canvas 的
+     * getBoundingClientRect() 为准。
      *
-     * 不再使用：
+     * 当 scroll 滚动以后：
      *
-     * stage.scrollTop
-     * stage.scrollHeight
-     * stage.scrollLeft
-     * stage.scrollWidth
+     * rect.top 会自动变化。
      *
-     * 因为滚动现在属于外层 scroll。
+     * 所以这里完全不需要手动加：
+     *
+     * scrollTop
+     * scrollLeft
+     *
+     * 这就是避免坐标越来越乱的核心。
      */
-    const point = (event) => {
+    function pointFromClient(
+        clientX,
+        clientY
+    ) {
         const rect =
             source.getBoundingClientRect();
 
-        const x =
-            event.clientX -
-            rect.left;
-
-        const y =
-            event.clientY -
-            rect.top;
-
         return {
             x: clamp(
-                x / rect.width
+                (
+                    clientX -
+                    rect.left
+                ) /
+                rect.width
             ),
 
             y: clamp(
-                y / rect.height
+                (
+                    clientY -
+                    rect.top
+                ) /
+                rect.height
             )
         };
-    };
+    }
 
-    const updateBox =
-        (event) => {
-            if (
-                !start ||
-                !box
-            ) {
-                return;
+    function ensureBox() {
+        stage
+            .querySelector(
+                ".study-crop-selection"
+            )
+            ?.remove();
+
+        box =
+            document.createElement("i");
+
+        box.className =
+            "study-crop-selection";
+
+        Object.assign(
+            box.style,
+            {
+                position:
+                    "absolute",
+
+                zIndex:
+                    "20",
+
+                boxSizing:
+                    "border-box",
+
+                border:
+                    "2px solid rgba(139,93,134,.95)",
+
+                background:
+                    "rgba(220,190,218,.18)",
+
+                pointerEvents:
+                    "none"
             }
+        );
 
-            const end =
-                point(event);
+        stage.append(box);
+    }
 
-            const x =
-                Math.min(
-                    start.x,
-                    end.x
-                );
+    /*
+     * 根据当前鼠标/手指位置
+     * 更新选择框。
+     */
+    function updateSelection(
+        clientX,
+        clientY
+    ) {
+        if (
+            !dragging ||
+            !start ||
+            !box
+        ) {
+            return;
+        }
 
-            const y =
-                Math.min(
-                    start.y,
-                    end.y
-                );
-
-            const width =
-                Math.abs(
-                    end.x -
-                    start.x
-                );
-
-            const height =
-                Math.abs(
-                    end.y -
-                    start.y
-                );
-
-            /*
-             * selection 的百分比也是相对于
-             * PDF 本身，而不是滚动窗口。
-             */
-            Object.assign(
-                box.style,
-                {
-                    position: "absolute",
-
-                    left:
-                        `${x * 100}%`,
-
-                    top:
-                        `${y * 100}%`,
-
-                    width:
-                        `${width * 100}%`,
-
-                    height:
-                        `${height * 100}%`,
-
-                    boxSizing:
-                        "border-box",
-
-                    pointerEvents:
-                        "none"
-                }
+        const end =
+            pointFromClient(
+                clientX,
+                clientY
             );
 
-            stage._selection = {
-                crop_x: x,
-                crop_y: y,
-                crop_width: width,
-                crop_height: height
-            };
-
-            callbacks.onSelectionChange?.(
-                stage._selection
+        const x =
+            Math.min(
+                start.x,
+                end.x
             );
+
+        const y =
+            Math.min(
+                start.y,
+                end.y
+            );
+
+        const width =
+            Math.abs(
+                end.x -
+                start.x
+            );
+
+        const height =
+            Math.abs(
+                end.y -
+                start.y
+            );
+
+        Object.assign(
+            box.style,
+            {
+                left:
+                    `${x * 100}%`,
+
+                top:
+                    `${y * 100}%`,
+
+                width:
+                    `${width * 100}%`,
+
+                height:
+                    `${height * 100}%`
+            }
+        );
+
+        stage._selection = {
+            crop_x: x,
+            crop_y: y,
+            crop_width: width,
+            crop_height: height
         };
 
-    const stopDragging =
-        (event) => {
-            if (!dragging) {
-                return;
-            }
+        onSelectionChange?.(
+            stage._selection
+        );
+    }
+
+    /*
+     * --------------------------------
+     * 自动滚动
+     * --------------------------------
+     *
+     * 拖动到滚动窗口顶部/底部时，
+     * JS 自动改变 scrollTop。
+     *
+     * 然后再次根据新的 canvas rect
+     * 更新选择框。
+     */
+    function autoScrollLoop() {
+        if (
+            !dragging ||
+            !selecting
+        ) {
+            autoScrollFrame = null;
+            return;
+        }
+
+        const scrollRect =
+            scroll.getBoundingClientRect();
+
+        let speed = 0;
+
+        /*
+         * 靠近顶部。
+         */
+        if (
+            lastClientY <
+            scrollRect.top + EDGE_SIZE
+        ) {
+            const distance =
+                clamp(
+                    (
+                        scrollRect.top +
+                        EDGE_SIZE -
+                        lastClientY
+                    ) /
+                    EDGE_SIZE,
+                    0,
+                    1
+                );
+
+            speed =
+                -MAX_SCROLL_SPEED *
+                distance;
+        }
+
+        /*
+         * 靠近底部。
+         */
+        else if (
+            lastClientY >
+            scrollRect.bottom - EDGE_SIZE
+        ) {
+            const distance =
+                clamp(
+                    (
+                        lastClientY -
+                        (
+                            scrollRect.bottom -
+                            EDGE_SIZE
+                        )
+                    ) /
+                    EDGE_SIZE,
+                    0,
+                    1
+                );
+
+            speed =
+                MAX_SCROLL_SPEED *
+                distance;
+        }
+
+        if (speed !== 0) {
+            const before =
+                scroll.scrollTop;
+
+            scroll.scrollTop += speed;
 
             /*
-             * 松手瞬间再算一次，
-             * 防止最后几像素丢失。
+             * 只有真的发生滚动时，
+             * 才重新计算选择终点。
              */
-            updateBox(event);
-
-            dragging = false;
-            start = null;
-
             if (
-                pointerId !== null &&
-                stage.hasPointerCapture?.(
+                scroll.scrollTop !== before
+            ) {
+                updateSelection(
+                    lastClientX,
+                    lastClientY
+                );
+            }
+        }
+
+        autoScrollFrame =
+            requestAnimationFrame(
+                autoScrollLoop
+            );
+    }
+
+    function startAutoScroll() {
+        if (autoScrollFrame) {
+            return;
+        }
+
+        autoScrollFrame =
+            requestAnimationFrame(
+                autoScrollLoop
+            );
+    }
+
+    function stopAutoScroll() {
+        if (autoScrollFrame) {
+            cancelAnimationFrame(
+                autoScrollFrame
+            );
+
+            autoScrollFrame = null;
+        }
+    }
+
+    /*
+     * 完成框选。
+     */
+    function finishSelection(event) {
+        if (!dragging) {
+            return;
+        }
+
+        lastClientX =
+            event.clientX;
+
+        lastClientY =
+            event.clientY;
+
+        updateSelection(
+            lastClientX,
+            lastClientY
+        );
+
+        dragging = false;
+
+        stopAutoScroll();
+
+        if (
+            pointerId !== null &&
+            stage.hasPointerCapture?.(
+                pointerId
+            )
+        ) {
+            try {
+                stage.releasePointerCapture(
                     pointerId
-                )
-            ) {
-                try {
-                    stage.releasePointerCapture(
-                        pointerId
-                    );
-                } catch (_) {
-                    // ignore
-                }
-            }
+                );
+            } catch (_) {}
+        }
 
-            pointerId = null;
+        pointerId = null;
+        start = null;
 
-            /*
-             * 框完自动退出 SELECT 模式。
-             * 这样手机马上又可以滚 PDF。
-             */
-            selecting = false;
-            
-            selecting = false;
+        selecting = false;
 
-            stage.classList.remove("is-selecting");
+        stage.classList.remove(
+            "is-selecting"
+        );
 
-            callbacks.onModeChange?.(
-                false
+        onModeChange?.(
+            false
+        );
+    }
+
+    /*
+     * --------------------------------
+     * Pointer Events
+     * --------------------------------
+     */
+
+    function pointerDown(event) {
+        if (!selecting) {
+            return;
+        }
+
+        if (
+            event.pointerType === "mouse" &&
+            event.button !== 0
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+
+        lastClientX =
+            event.clientX;
+
+        lastClientY =
+            event.clientY;
+
+        start =
+            pointFromClient(
+                event.clientX,
+                event.clientY
             );
 
-            callbacks.onModeChange?.(
-                false
+        dragging = true;
+
+        pointerId =
+            event.pointerId;
+
+        stage._selection = null;
+
+        onSelectionChange?.(
+            null
+        );
+
+        ensureBox();
+
+        /*
+         * 一开始给选择框一个 0 大小的位置，
+         * 保证马上可见。
+         */
+        Object.assign(
+            box.style,
+            {
+                left:
+                    `${start.x * 100}%`,
+
+                top:
+                    `${start.y * 100}%`,
+
+                width:
+                    "0%",
+
+                height:
+                    "0%"
+            }
+        );
+
+        try {
+            stage.setPointerCapture?.(
+                event.pointerId
             );
-        };
+        } catch (_) {}
 
-    stage.onpointerdown =
-        (event) => {
-            if (!selecting) {
-                return;
-            }
+        startAutoScroll();
+    }
 
-            /*
-             * 鼠标只响应左键。
-             * 触摸设备 pointerType=touch
-             * 不受 button 限制。
-             */
-            if (
-                event.pointerType === "mouse" &&
-                event.button !== 0
-            ) {
-                return;
-            }
+    function pointerMove(event) {
+        if (
+            !selecting ||
+            !dragging
+        ) {
+            return;
+        }
 
-            event.preventDefault();
+        event.preventDefault();
 
-            dragging = true;
-            pointerId =
-                event.pointerId;
+        lastClientX =
+            event.clientX;
 
-            start =
-                point(event);
+        lastClientY =
+            event.clientY;
 
-            stage
-                .querySelector(
-                    ".study-crop-selection"
-                )
-                ?.remove();
+        updateSelection(
+            lastClientX,
+            lastClientY
+        );
+    }
 
-            box =
-                document.createElement("i");
+    function pointerUp(event) {
+        if (
+            !selecting ||
+            !dragging
+        ) {
+            return;
+        }
 
-            box.className =
-                "study-crop-selection";
+        event.preventDefault();
 
-            /*
-             * 给一个明确可见的框。
-             *
-             * 即使原 CSS 有问题，
-             * 这里也保证用户拖动时看得到。
-             */
-            Object.assign(
-                box.style,
-                {
-                    position:
-                        "absolute",
+        finishSelection(event);
+    }
 
-                    left:
-                        `${start.x * 100}%`,
+    function pointerCancel() {
+        dragging = false;
+        start = null;
+        pointerId = null;
 
-                    top:
-                        `${start.y * 100}%`,
+        stopAutoScroll();
 
-                    width:
-                        "0",
+        selecting = false;
 
-                    height:
-                        "0",
+        stage.classList.remove(
+            "is-selecting"
+        );
 
-                    border:
-                        "2px solid currentColor",
+        onModeChange?.(
+            false
+        );
+    }
 
-                    background:
-                        "rgba(255,255,255,0.12)",
+    stage.addEventListener(
+        "pointerdown",
+        pointerDown
+    );
 
-                    boxSizing:
-                        "border-box",
+    stage.addEventListener(
+        "pointermove",
+        pointerMove
+    );
 
-                    pointerEvents:
-                        "none",
+    stage.addEventListener(
+        "pointerup",
+        pointerUp
+    );
 
-                    zIndex:
-                        "10"
-                }
-            );
-
-            stage.append(box);
-
-            if (
-                stage.setPointerCapture
-            ) {
-                try {
-                    stage.setPointerCapture(
-                        event.pointerId
-                    );
-                } catch (_) {
-                    // ignore
-                }
-            }
-        };
-
-    stage.onpointermove =
-        (event) => {
-            if (
-                !selecting ||
-                !dragging
-            ) {
-                return;
-            }
-
-            event.preventDefault();
-
-            updateBox(event);
-        };
-
-    stage.onpointerup =
-        (event) => {
-            if (
-                !selecting ||
-                !dragging
-            ) {
-                return;
-            }
-
-            event.preventDefault();
-
-            stopDragging(event);
-        };
-
-    stage.onpointercancel =
-        (event) => {
-            if (!dragging) {
-                return;
-            }
-
-            dragging = false;
-            start = null;
-
-            if (
-                pointerId !== null &&
-                stage.hasPointerCapture?.(
-                    pointerId
-                )
-            ) {
-                try {
-                    stage.releasePointerCapture(
-                        pointerId
-                    );
-                } catch (_) {
-                    // ignore
-                }
-            }
-
-            pointerId = null;
-
-            selecting = false;
-
-            stage.classList.remove("is-selecting");
-
-            callbacks.onModeChange?.(
-                false
-            );
-        };
+    stage.addEventListener(
+        "pointercancel",
+        pointerCancel
+    );
 
     return {
         start() {
             selecting = true;
 
-            stage.classList.add("is-selecting");
+            stage.classList.add(
+                "is-selecting"
+            );
 
-            callbacks.onModeChange?.(
+            onModeChange?.(
                 true
             );
         },
 
-        stop() {
+        cancel() {
             selecting = false;
             dragging = false;
             start = null;
 
-            stage.classList.remove("is-selecting");
+            stopAutoScroll();
 
-            callbacks.onModeChange?.(
+            stage.classList.remove(
+                "is-selecting"
+            );
+
+            onModeChange?.(
                 false
             );
         },
 
         isSelecting() {
             return selecting;
+        },
+
+        destroy() {
+            stopAutoScroll();
+
+            stage.removeEventListener(
+                "pointerdown",
+                pointerDown
+            );
+
+            stage.removeEventListener(
+                "pointermove",
+                pointerMove
+            );
+
+            stage.removeEventListener(
+                "pointerup",
+                pointerUp
+            );
+
+            stage.removeEventListener(
+                "pointercancel",
+                pointerCancel
+            );
         }
     };
 }
