@@ -257,34 +257,243 @@
     async function saveShenlun(question,existing,silent=false){const body=$("#shenlun-answer-body")?.value||"";const data={practice_id:state.activePractice.id,question_id:question.id,attempt_number:existing?.attempt_number||1,title:$("#shenlun-answer-title")?.value||null,thesis:$("#shenlun-answer-thesis")?.value||null,outline:($("#shenlun-answer-outline")?.value||"").split("\n").map(x=>x.trim()).filter(Boolean),body};const result=await upsert("shenlun_answers",data,existing?.id||null);if(result.error){if(!silent)status("Draft save failed.",true);return null;}localStorage.removeItem(`kiora:study-draft:${question.id}`);$("#study-practice-detail")._answer=result.data;if(!silent)status("Draft saved.");return result.data;}
 
     function filteredMistakes(){return state.mistakes.filter(item=>(state.mistakeSubject==="all"||item.subject===state.mistakeSubject)&&(state.mistakeStatus==="all"||item.status===state.mistakeStatus)).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));}
-    async function mistakeMediaUrl(item){if(item.image_path)return getSignedUrl(item.image_path);if(!item.paper_file_id||!item.paper_page)return "";const cacheKey=`paper:${item.paper_file_id}:${item.paper_page}`;if(state.signedUrls.has(cacheKey))return state.signedUrls.get(cacheKey);const record=await getEntity("files",item.paper_file_id),file=record.data;if(!file)return "";const url=await getSignedUrl(file.storage_path);if(!url)return "";if(file.mime_type.startsWith("image/")){state.signedUrls.set(cacheKey,url);return url;}if(file.mime_type!=="application/pdf")return "";await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs","pdfjsLib",true);const pdf=await window.pdfjsLib.getDocument(url).promise,page=await pdf.getPage(Math.min(Math.max(Number(item.paper_page)||1,1),pdf.numPages)),viewport=page.getViewport({scale:1.5}),canvas=document.createElement("canvas");canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext("2d"),viewport}).promise;const image=canvas.toDataURL("image/jpeg",.86);state.signedUrls.set(cacheKey,image);return image;}
+async function mistakeMediaUrl(item) {
+    if (item.image_path) {
+        return getSignedUrl(item.image_path);
+    }
+
+    if (!item.paper_file_id || !item.paper_page) {
+        return "";
+    }
+
+    /*
+     * crop 也加入缓存 key。
+     * 否则重新框选以后可能仍然看到旧图片。
+     */
+    const cropKey = [
+        item.crop_x,
+        item.crop_y,
+        item.crop_width,
+        item.crop_height
+    ].join(":");
+
+    const cacheKey =
+        `paper:${item.paper_file_id}:${item.paper_page}:${cropKey}`;
+
+    if (state.signedUrls.has(cacheKey)) {
+        return state.signedUrls.get(cacheKey);
+    }
+
+    const record =
+        await getEntity("files", item.paper_file_id);
+
+    const file = record.data;
+
+    if (!file) {
+        return "";
+    }
+
+    const url =
+        await getSignedUrl(file.storage_path);
+
+    if (!url) {
+        return "";
+    }
+
+    /*
+     * 普通图片暂时保持原逻辑。
+     */
+    if (file.mime_type.startsWith("image/")) {
+        state.signedUrls.set(cacheKey, url);
+        return url;
+    }
+
+    if (file.mime_type !== "application/pdf") {
+        return "";
+    }
+
+    await loadScript(
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs",
+        "pdfjsLib",
+        true
+    );
+
+    const pdf =
+        await window.pdfjsLib
+            .getDocument(url)
+            .promise;
+
+    const pageNumber =
+        Math.min(
+            Math.max(
+                Number(item.paper_page) || 1,
+                1
+            ),
+            pdf.numPages
+        );
+
+    const page =
+        await pdf.getPage(pageNumber);
+
+    /*
+     * 先渲染完整 PDF 页面。
+     */
+    const viewport =
+        page.getViewport({
+            scale: 2
+        });
+
+    const fullCanvas =
+        document.createElement("canvas");
+
+    fullCanvas.width =
+        Math.ceil(viewport.width);
+
+    fullCanvas.height =
+        Math.ceil(viewport.height);
+
+    await page.render({
+        canvasContext:
+            fullCanvas.getContext("2d"),
+        viewport
+    }).promise;
+
+    /*
+     * 没有框选数据：
+     * 继续返回整页。
+     */
+    const hasCrop =
+        [
+            item.crop_x,
+            item.crop_y,
+            item.crop_width,
+            item.crop_height
+        ].every(value =>
+            value !== null &&
+            value !== undefined &&
+            Number.isFinite(Number(value))
+        );
+
+    if (!hasCrop) {
+        const image =
+            fullCanvas.toDataURL(
+                "image/jpeg",
+                0.9
+            );
+
+        state.signedUrls.set(
+            cacheKey,
+            image
+        );
+
+        return image;
+    }
+
+    /*
+     * 归一化坐标 → canvas 实际像素。
+     */
+    const x =
+        Math.max(
+            0,
+            Math.round(
+                Number(item.crop_x) *
+                fullCanvas.width
+            )
+        );
+
+    const y =
+        Math.max(
+            0,
+            Math.round(
+                Number(item.crop_y) *
+                fullCanvas.height
+            )
+        );
+
+    const width =
+        Math.max(
+            1,
+            Math.round(
+                Number(item.crop_width) *
+                fullCanvas.width
+            )
+        );
+
+    const height =
+        Math.max(
+            1,
+            Math.round(
+                Number(item.crop_height) *
+                fullCanvas.height
+            )
+        );
+
+    /*
+     * 防止裁剪范围超出页面。
+     */
+    const safeWidth =
+        Math.min(
+            width,
+            fullCanvas.width - x
+        );
+
+    const safeHeight =
+        Math.min(
+            height,
+            fullCanvas.height - y
+        );
+
+    /*
+     * 创建真正只有选中区域的新 canvas。
+     */
+    const cropCanvas =
+        document.createElement("canvas");
+
+    cropCanvas.width =
+        safeWidth;
+
+    cropCanvas.height =
+        safeHeight;
+
+    const context =
+        cropCanvas.getContext("2d");
+
+    context.drawImage(
+        fullCanvas,
+
+        // 原图区域
+        x,
+        y,
+        safeWidth,
+        safeHeight,
+
+        // 新 canvas
+        0,
+        0,
+        safeWidth,
+        safeHeight
+    );
+
+    const image =
+        cropCanvas.toDataURL(
+            "image/jpeg",
+            0.92
+        );
+
+    state.signedUrls.set(
+        cacheKey,
+        image
+    );
+
+    return image;
+}
     function renderMistakes(){const subjects=[...new Set(state.mistakes.map(item=>item.subject))];$("#study-mistake-subjects").innerHTML=["all",...subjects].map(subject=>`<button data-mistake-subject="${esc(subject)}" class="${state.mistakeSubject===subject?"active":""}">${esc(subject==="all"?"ALL SUBJECTS":subject)}</button>`).join("");const items=filteredMistakes(),container=$("#study-mistake-content");if(!items.length){container.innerHTML=empty("No mistakes archived yet.",state.writable?'<button class="study-text-button" data-action="quick-mistake">＋ QUICK MISTAKE</button>':"");return;}state.currentMistake=Math.min(state.currentMistake,items.length-1);if(state.mistakeMode==="index")container.innerHTML=`<table class="study-mistake-index"><thead><tr><th>NO.</th><th>KNOWLEDGE</th><th>DATE</th><th>STATUS</th></tr></thead><tbody>${items.map((item,index)=>`<tr data-id="${item.id}"><td>${String(index+1).padStart(3,"0")}</td><td>${esc(item.knowledge_tag||item.subject)}</td><td>${displayDate(item.created_at)}</td><td>${esc(item.status.toUpperCase())}</td></tr>`).join("")}</tbody></table>`;else renderMistakeCard(items[state.currentMistake],items);}
 
     async function renderMistakeCard(item,items=filteredMistakes(),revisit=false){const container=$("#study-mistake-content"),image=await mistakeMediaUrl(item);container.innerHTML=`<article class="study-mistake-card" data-mistake-card="${item.id}"><p class="study-kicker">MISTAKE ${String(state.currentMistake+1).padStart(3,"0")} / ${esc(item.status.toUpperCase())}</p><h3>${esc(item.subject)} · ${item.question_number ? `第 ${esc(item.question_number)} 题` : "题号未记录"}</h3><div class="study-question-media" style="${item.crop_width&&item.crop_height?`aspect-ratio:${Number(item.crop_width)}/${Number(item.crop_height)};min-height:0`:""}">${image?`<img src="${esc(image)}" alt="Original question" style="${cropStyle(item)}">`:item.question_snapshot?`<p>${esc(item.question_snapshot)}</p>`:"Original question reference"}</div>${revisit?`<div class="study-answer-options">${["A","B","C","D"].map(option=>`<button data-revisit-answer="${option}">${option}</button>`).join("")}</div><button class="study-primary" data-action="submit-revisit" disabled>SUBMIT</button>`:`<div class="study-answer-reveal"><div><span>MY ANSWER</span><strong>${esc(item.my_answer||"—")}</strong></div><div><span>CORRECT</span><strong>${esc(item.correct_answer)}</strong></div></div><p><span class="study-kicker">REASON</span><br>${esc(item.reason||"—")}</p>${state.writable?`<div class="study-action-row"><button class="study-primary" data-action="start-revisit">REVISIT</button>${item.paper_file_id?'<button class="study-secondary" data-action="crop-mistake">SELECT QUESTION AREA</button>':""}<button class="study-secondary" data-action="master-mistake">MASTERED</button><button class="study-secondary" data-action="delete-mistake">DELETE</button></div>`:""}`}<footer class="study-detail-toolbar"><button class="study-text-button" data-card-nav="prev">← PREVIOUS</button><span>${state.currentMistake+1} / ${items.length}</span><button class="study-text-button" data-card-nav="next">NEXT →</button></footer></article>`;}
+    
     function cropStyle(item) {
-        if (
-            ![item.crop_x, item.crop_y, item.crop_width, item.crop_height]
-                .every(value => value != null)
-        ) {
-            return "";
-        }
-
-        const x = Number(item.crop_x);
-        const y = Number(item.crop_y);
-        const width = Number(item.crop_width);
-
-        const scale = 1 / width;
-
-        return `
-            position: absolute;
-            max-width: none;
-            width: ${scale * 100}%;
-            height: auto;
-            left: ${-x * scale * 100}%;
-            top: ${-y * scale * 100}%;
-            transform: none;
-        `;
-    }
+    return "";
+}
 
     function renderRevisions(){const container=$("#study-revision-list");container.innerHTML=state.revisions.length?state.revisions.map((item,index)=>`<button class="study-record" data-revision-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.issue_tags||[]).join(" · ")||item.category||"")}</p></span><p class="study-record-meta">${displayDate(item.created_at)}<br>${esc(item.status.toUpperCase())}</p></button>`).join(""):empty("No revisions archived yet.");}
     async function openRevision(id){const item=state.revisions.find(x=>x.id===id);if(!item)return;const [attempts,reviews]=item.question_id?await Promise.all([list("shenlun_answers",{filters:{question_id:item.question_id}}),list("reviews",{filters:{question_id:item.question_id}})]):[{data:[]},{data:[]}];const sorted=(attempts.data||[]).sort((a,b)=>a.attempt_number-b.attempt_number);$("#study-revision-detail").hidden=false;$("#study-revision-detail").innerHTML=`<div class="study-detail-toolbar"><div><p class="study-kicker">REVISION / ${esc(item.status.toUpperCase())}</p><h3>${esc(item.title)}</h3></div></div><p>${esc((item.issue_tags||[]).join(" · "))}</p>${sorted.length>1?comparisonMarkup(sorted,reviews.data||[]):""}${state.writable?'<button class="study-primary" data-action="rewrite-revision" data-id="'+item.id+'">REWRITE</button>':""}`;}
