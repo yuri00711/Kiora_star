@@ -257,243 +257,208 @@
     async function saveShenlun(question,existing,silent=false){const body=$("#shenlun-answer-body")?.value||"";const data={practice_id:state.activePractice.id,question_id:question.id,attempt_number:existing?.attempt_number||1,title:$("#shenlun-answer-title")?.value||null,thesis:$("#shenlun-answer-thesis")?.value||null,outline:($("#shenlun-answer-outline")?.value||"").split("\n").map(x=>x.trim()).filter(Boolean),body};const result=await upsert("shenlun_answers",data,existing?.id||null);if(result.error){if(!silent)status("Draft save failed.",true);return null;}localStorage.removeItem(`kiora:study-draft:${question.id}`);$("#study-practice-detail")._answer=result.data;if(!silent)status("Draft saved.");return result.data;}
 
     function filteredMistakes(){return state.mistakes.filter(item=>(state.mistakeSubject==="all"||item.subject===state.mistakeSubject)&&(state.mistakeStatus==="all"||item.status===state.mistakeStatus)).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));}
-async function mistakeMediaUrl(item) {
-    if (item.image_path) {
-        return getSignedUrl(item.image_path);
-    }
+    async function mistakeMediaUrl(item) {
+        if (item.image_path) {
+            return getSignedUrl(item.image_path);
+        }
 
-    if (!item.paper_file_id || !item.paper_page) {
-        return "";
-    }
+        if (!item.paper_file_id || !item.paper_page) {
+            return "";
+        }
 
-    /*
-     * crop 也加入缓存 key。
-     * 否则重新框选以后可能仍然看到旧图片。
-     */
-    const cropKey = [
-        item.crop_x,
-        item.crop_y,
-        item.crop_width,
-        item.crop_height
-    ].join(":");
-
-    const cacheKey =
-        `paper:${item.paper_file_id}:${item.paper_page}:${cropKey}`;
-
-    if (state.signedUrls.has(cacheKey)) {
-        return state.signedUrls.get(cacheKey);
-    }
-
-    const record =
-        await getEntity("files", item.paper_file_id);
-
-    const file = record.data;
-
-    if (!file) {
-        return "";
-    }
-
-    const url =
-        await getSignedUrl(file.storage_path);
-
-    if (!url) {
-        return "";
-    }
-
-    /*
-     * 普通图片暂时保持原逻辑。
-     */
-    if (file.mime_type.startsWith("image/")) {
-        state.signedUrls.set(cacheKey, url);
-        return url;
-    }
-
-    if (file.mime_type !== "application/pdf") {
-        return "";
-    }
-
-    await loadScript(
-        "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs",
-        "pdfjsLib",
-        true
-    );
-
-    const pdf =
-        await window.pdfjsLib
-            .getDocument(url)
-            .promise;
-
-    const pageNumber =
-        Math.min(
-            Math.max(
-                Number(item.paper_page) || 1,
-                1
-            ),
-            pdf.numPages
-        );
-
-    const page =
-        await pdf.getPage(pageNumber);
-
-    /*
-     * 先渲染完整 PDF 页面。
-     */
-    const viewport =
-        page.getViewport({
-            scale: 2
-        });
-
-    const fullCanvas =
-        document.createElement("canvas");
-
-    fullCanvas.width =
-        Math.ceil(viewport.width);
-
-    fullCanvas.height =
-        Math.ceil(viewport.height);
-
-    await page.render({
-        canvasContext:
-            fullCanvas.getContext("2d"),
-        viewport
-    }).promise;
-
-    /*
-     * 没有框选数据：
-     * 继续返回整页。
-     */
-    const hasCrop =
-        [
+        const hasCrop = [
             item.crop_x,
             item.crop_y,
             item.crop_width,
             item.crop_height
-        ].every(value =>
+        ].every((value) =>
             value !== null &&
             value !== undefined &&
             Number.isFinite(Number(value))
         );
 
-    if (!hasCrop) {
-        const image =
-            fullCanvas.toDataURL(
-                "image/jpeg",
-                0.9
+        const cropKey = hasCrop
+            ? [item.crop_x, item.crop_y, item.crop_width, item.crop_height]
+                .map((value) => Number(value).toFixed(8))
+                .join(":")
+            : "full";
+
+        const cacheKey = `crop:${item.paper_file_id}:${item.paper_page}:${cropKey}`;
+        if (state.signedUrls.has(cacheKey)) {
+            return state.signedUrls.get(cacheKey);
+        }
+
+        const record = await getEntity("files", item.paper_file_id);
+        const file = record.data;
+        if (!file) return "";
+
+        const url = await getSignedUrl(file.storage_path);
+        if (!url) return "";
+
+        let sourceCanvas;
+
+        if (file.mime_type === "application/pdf") {
+            await loadScript(
+                "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs",
+                "pdfjsLib",
+                true
             );
 
-        state.signedUrls.set(
-            cacheKey,
-            image
+            const pdf = await window.pdfjsLib.getDocument(url).promise;
+            const pageNumber = Math.min(
+                Math.max(Number(item.paper_page) || 1, 1),
+                pdf.numPages
+            );
+            const page = await pdf.getPage(pageNumber);
+            const viewport = page.getViewport({ scale: 2 });
+
+            sourceCanvas = document.createElement("canvas");
+            sourceCanvas.width = Math.ceil(viewport.width);
+            sourceCanvas.height = Math.ceil(viewport.height);
+
+            await page.render({
+                canvasContext: sourceCanvas.getContext("2d"),
+                viewport
+            }).promise;
+        } else if (file.mime_type.startsWith("image/")) {
+            if (!hasCrop) {
+                state.signedUrls.set(cacheKey, url);
+                return url;
+            }
+
+            const image = document.createElement("img");
+            image.crossOrigin = "anonymous";
+            image.src = url;
+            await image.decode();
+
+            sourceCanvas = document.createElement("canvas");
+            sourceCanvas.width = image.naturalWidth;
+            sourceCanvas.height = image.naturalHeight;
+            sourceCanvas.getContext("2d").drawImage(image, 0, 0);
+        } else {
+            return "";
+        }
+
+        if (!hasCrop) {
+            const image = sourceCanvas.toDataURL("image/jpeg", 0.92);
+            state.signedUrls.set(cacheKey, image);
+            return image;
+        }
+
+        const clamp = (value, min = 0, max = 1) =>
+            Math.min(Math.max(value, min), max);
+
+        const x1 = clamp(Number(item.crop_x));
+        const y1 = clamp(Number(item.crop_y));
+        const x2 = clamp(x1 + Number(item.crop_width));
+        const y2 = clamp(y1 + Number(item.crop_height));
+
+        const sx = Math.max(0, Math.floor(x1 * sourceCanvas.width));
+        const sy = Math.max(0, Math.floor(y1 * sourceCanvas.height));
+        const ex = Math.min(sourceCanvas.width, Math.ceil(x2 * sourceCanvas.width));
+        const ey = Math.min(sourceCanvas.height, Math.ceil(y2 * sourceCanvas.height));
+
+        const sw = Math.max(1, ex - sx);
+        const sh = Math.max(1, ey - sy);
+
+        const cropCanvas = document.createElement("canvas");
+        cropCanvas.width = sw;
+        cropCanvas.height = sh;
+
+        cropCanvas.getContext("2d").drawImage(
+            sourceCanvas,
+            sx,
+            sy,
+            sw,
+            sh,
+            0,
+            0,
+            sw,
+            sh
         );
 
-        return image;
+        const resultImage = cropCanvas.toDataURL("image/jpeg", 0.94);
+        state.signedUrls.set(cacheKey, resultImage);
+        return resultImage;
     }
-
-    /*
-     * 归一化坐标 → canvas 实际像素。
-     */
-    const x =
-        Math.max(
-            0,
-            Math.round(
-                Number(item.crop_x) *
-                fullCanvas.width
-            )
-        );
-
-    const y =
-        Math.max(
-            0,
-            Math.round(
-                Number(item.crop_y) *
-                fullCanvas.height
-            )
-        );
-
-    const width =
-        Math.max(
-            1,
-            Math.round(
-                Number(item.crop_width) *
-                fullCanvas.width
-            )
-        );
-
-    const height =
-        Math.max(
-            1,
-            Math.round(
-                Number(item.crop_height) *
-                fullCanvas.height
-            )
-        );
-
-    /*
-     * 防止裁剪范围超出页面。
-     */
-    const safeWidth =
-        Math.min(
-            width,
-            fullCanvas.width - x
-        );
-
-    const safeHeight =
-        Math.min(
-            height,
-            fullCanvas.height - y
-        );
-
-    /*
-     * 创建真正只有选中区域的新 canvas。
-     */
-    const cropCanvas =
-        document.createElement("canvas");
-
-    cropCanvas.width =
-        safeWidth;
-
-    cropCanvas.height =
-        safeHeight;
-
-    const context =
-        cropCanvas.getContext("2d");
-
-    context.drawImage(
-        fullCanvas,
-
-        // 原图区域
-        x,
-        y,
-        safeWidth,
-        safeHeight,
-
-        // 新 canvas
-        0,
-        0,
-        safeWidth,
-        safeHeight
-    );
-
-    const image =
-        cropCanvas.toDataURL(
-            "image/jpeg",
-            0.92
-        );
-
-    state.signedUrls.set(
-        cacheKey,
-        image
-    );
-
-    return image;
-}
     function renderMistakes(){const subjects=[...new Set(state.mistakes.map(item=>item.subject))];$("#study-mistake-subjects").innerHTML=["all",...subjects].map(subject=>`<button data-mistake-subject="${esc(subject)}" class="${state.mistakeSubject===subject?"active":""}">${esc(subject==="all"?"ALL SUBJECTS":subject)}</button>`).join("");const items=filteredMistakes(),container=$("#study-mistake-content");if(!items.length){container.innerHTML=empty("No mistakes archived yet.",state.writable?'<button class="study-text-button" data-action="quick-mistake">＋ QUICK MISTAKE</button>':"");return;}state.currentMistake=Math.min(state.currentMistake,items.length-1);if(state.mistakeMode==="index")container.innerHTML=`<table class="study-mistake-index"><thead><tr><th>NO.</th><th>KNOWLEDGE</th><th>DATE</th><th>STATUS</th></tr></thead><tbody>${items.map((item,index)=>`<tr data-id="${item.id}"><td>${String(index+1).padStart(3,"0")}</td><td>${esc(item.knowledge_tag||item.subject)}</td><td>${displayDate(item.created_at)}</td><td>${esc(item.status.toUpperCase())}</td></tr>`).join("")}</tbody></table>`;else renderMistakeCard(items[state.currentMistake],items);}
 
-    async function renderMistakeCard(item,items=filteredMistakes(),revisit=false){const container=$("#study-mistake-content"),image=await mistakeMediaUrl(item);container.innerHTML=`<article class="study-mistake-card" data-mistake-card="${item.id}"><p class="study-kicker">MISTAKE ${String(state.currentMistake+1).padStart(3,"0")} / ${esc(item.status.toUpperCase())}</p><h3>${esc(item.subject)} · ${item.question_number ? `第 ${esc(item.question_number)} 题` : "题号未记录"}</h3><div class="study-question-media" style="${item.crop_width&&item.crop_height?`aspect-ratio:${Number(item.crop_width)}/${Number(item.crop_height)};min-height:0`:""}">${image?`<img src="${esc(image)}" alt="Original question" style="${cropStyle(item)}">`:item.question_snapshot?`<p>${esc(item.question_snapshot)}</p>`:"Original question reference"}</div>${revisit?`<div class="study-answer-options">${["A","B","C","D"].map(option=>`<button data-revisit-answer="${option}">${option}</button>`).join("")}</div><button class="study-primary" data-action="submit-revisit" disabled>SUBMIT</button>`:`<div class="study-answer-reveal"><div><span>MY ANSWER</span><strong>${esc(item.my_answer||"—")}</strong></div><div><span>CORRECT</span><strong>${esc(item.correct_answer)}</strong></div></div><p><span class="study-kicker">REASON</span><br>${esc(item.reason||"—")}</p>${state.writable?`<div class="study-action-row"><button class="study-primary" data-action="start-revisit">REVISIT</button>${item.paper_file_id?'<button class="study-secondary" data-action="crop-mistake">SELECT QUESTION AREA</button>':""}<button class="study-secondary" data-action="master-mistake">MASTERED</button><button class="study-secondary" data-action="delete-mistake">DELETE</button></div>`:""}`}<footer class="study-detail-toolbar"><button class="study-text-button" data-card-nav="prev">← PREVIOUS</button><span>${state.currentMistake+1} / ${items.length}</span><button class="study-text-button" data-card-nav="next">NEXT →</button></footer></article>`;}
-    
-    function cropStyle(item) {
-    return "";
-}
+    async function renderMistakeCard(item, items = filteredMistakes(), revisit = false) {
+        const container = $("#study-mistake-content");
+        const image = await mistakeMediaUrl(item);
+
+        container.innerHTML = `
+            <article class="study-mistake-card" data-mistake-card="${item.id}">
+                <p class="study-kicker">
+                    MISTAKE ${String(state.currentMistake + 1).padStart(3, "0")} /
+                    ${esc(item.status.toUpperCase())}
+                </p>
+
+                <h3>
+                    ${esc(item.subject)} ·
+                    ${item.question_number ? `第 ${esc(item.question_number)} 题` : "题号未记录"}
+                </h3>
+
+                <div class="study-question-media ${image ? "has-image" : ""}" style="${image ? "min-height:0" : ""}">
+                    ${image
+                        ? `<img src="${esc(image)}" alt="Original question">`
+                        : item.question_snapshot
+                            ? `<p>${esc(item.question_snapshot)}</p>`
+                            : "Original question reference"
+                    }
+                </div>
+
+                ${revisit
+                    ? `
+                        <div class="study-answer-options">
+                            ${["A", "B", "C", "D"].map((option) =>
+                                `<button data-revisit-answer="${option}">${option}</button>`
+                            ).join("")}
+                        </div>
+                        <button class="study-primary" data-action="submit-revisit" disabled>SUBMIT</button>
+                    `
+                    : `
+                        <div class="study-answer-reveal">
+                            <div>
+                                <span>MY ANSWER</span>
+                                <strong>${esc(item.my_answer || "—")}</strong>
+                            </div>
+                            <div>
+                                <span>CORRECT</span>
+                                <strong>${esc(item.correct_answer)}</strong>
+                            </div>
+                        </div>
+
+                        <p>
+                            <span class="study-kicker">REASON</span><br>
+                            ${esc(item.reason || "—")}
+                        </p>
+
+                        ${state.writable
+                            ? `
+                                <div class="study-action-row">
+                                    <button class="study-primary" data-action="start-revisit">REVISIT</button>
+                                    ${item.paper_file_id
+                                        ? `<button class="study-secondary" data-action="crop-mistake">SELECT QUESTION AREA</button>`
+                                        : ""
+                                    }
+                                    <button class="study-secondary" data-action="master-mistake">MASTERED</button>
+                                    <button class="study-secondary" data-action="delete-mistake">DELETE</button>
+                                </div>
+                            `
+                            : ""
+                        }
+                    `
+                }
+
+                <footer class="study-detail-toolbar">
+                    <button class="study-text-button" data-card-nav="prev">← PREVIOUS</button>
+                    <span>${state.currentMistake + 1} / ${items.length}</span>
+                    <button class="study-text-button" data-card-nav="next">NEXT →</button>
+                </footer>
+            </article>
+        `;
+    }
 
     function renderRevisions(){const container=$("#study-revision-list");container.innerHTML=state.revisions.length?state.revisions.map((item,index)=>`<button class="study-record" data-revision-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.issue_tags||[]).join(" · ")||item.category||"")}</p></span><p class="study-record-meta">${displayDate(item.created_at)}<br>${esc(item.status.toUpperCase())}</p></button>`).join(""):empty("No revisions archived yet.");}
     async function openRevision(id){const item=state.revisions.find(x=>x.id===id);if(!item)return;const [attempts,reviews]=item.question_id?await Promise.all([list("shenlun_answers",{filters:{question_id:item.question_id}}),list("reviews",{filters:{question_id:item.question_id}})]):[{data:[]},{data:[]}];const sorted=(attempts.data||[]).sort((a,b)=>a.attempt_number-b.attempt_number);$("#study-revision-detail").hidden=false;$("#study-revision-detail").innerHTML=`<div class="study-detail-toolbar"><div><p class="study-kicker">REVISION / ${esc(item.status.toUpperCase())}</p><h3>${esc(item.title)}</h3></div></div><p>${esc((item.issue_tags||[]).join(" · "))}</p>${sorted.length>1?comparisonMarkup(sorted,reviews.data||[]):""}${state.writable?'<button class="study-primary" data-action="rewrite-revision" data-id="'+item.id+'">REWRITE</button>':""}`;}
@@ -527,6 +492,7 @@ async function mistakeMediaUrl(item) {
     function loadScript(src,global,module=false){if(window[global])return Promise.resolve();if(module)return import(src).then(value=>{window[global]=value;if(global==="pdfjsLib"&&value.GlobalWorkerOptions)value.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";});return new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error("Parser could not be loaded."));document.head.append(script);});}
 
     async function addShenlunQuestion(){const count=$("#study-practice-detail")._studyData.shenlun_questions.length;openEditor({title:"New Shenlun Question",kicker:"QUESTION SETUP",fields:[{name:"question_number",label:"QUESTION NUMBER",type:"number",value:count+1,required:true},{name:"title",label:"TITLE",required:true},{name:"question_type",label:"TYPE",type:"select",options:[["summary","SUMMARY"],["analysis","ANALYSIS"],["proposal","PROPOSAL"],["official_document","OFFICIAL DOCUMENT"],["essay","ESSAY"],["other","OTHER"]]},{name:"max_characters",label:"MAX CHARACTERS",type:"number"},{name:"points",label:"POINTS",type:"number"},{name:"material_scope",label:"MATERIAL SCOPE"},{name:"prompt",label:"PROMPT / REQUIREMENTS",type:"textarea",required:true,full:true}],onSave:async data=>{data.practice_id=state.activePractice.id;data.question_number=Number(data.question_number);data.max_characters=data.max_characters?Number(data.max_characters):null;data.points=data.points?Number(data.points):null;const result=await upsert("shenlun_questions",data);if(result.error)throw result.error;return true;}});}
+
     async function importReference(){const input=document.createElement("input");input.type="file";input.accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";input.onchange=async()=>{const file=input.files[0],question=$("#study-practice-detail")._studyData.shenlun_questions.find(item=>item.id===$("#study-practice-detail").dataset.questionId);if(!file||!question)return;status("Extracting reference…");try{const text=await extractText(file,true);openEditor({title:"Reference Import",kicker:"REVIEW BEFORE CONFIRM",fields:[{name:"body",label:`${String(question.question_number).padStart(2,"0")} ${question.title}`,type:"textarea",value:text,required:true,full:true}],onSave:async data=>{const existing=$("#study-practice-detail")._reference;const result=await upsert("shenlun_references",{practice_id:state.activePractice.id,question_id:question.id,body:data.body,confirmed:true},existing?.id);if(result.error)throw result.error;return true;}});}catch(error){status(error.message,true);}};input.click();}
     async function runReview(){const detail=$("#study-practice-detail"),question=detail._studyData.shenlun_questions.find(item=>item.id===detail.dataset.questionId);let answer=await saveShenlun(question,detail._answer,true);if(!answer)return;status("Kiora is reviewing the answer…");const result=await auth.requestStudyReview(answer.id);if(result.error){status(`Review unavailable: ${result.error.code||result.error.message}. Retry when the server is configured.`,true);return;}status("Review saved.");openPractice(state.activePractice.id);}
     async function addRevision(){const detail=$("#study-practice-detail"),question=detail._studyData.shenlun_questions.find(item=>item.id===detail.dataset.questionId),answer=detail._answer,reviews=await list("reviews",{filters:{question_id:question.id}}),review=(reviews.data||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];if(!review)return;const result=await upsert("revisions",{practice_id:state.activePractice.id,question_id:question.id,answer_id:answer.id,review_id:review.id,title:`${state.activePractice.title} · ${question.title}`,category:question.question_type,issue_tags:[review.assessment?.main_issue].filter(Boolean),source_snapshot:{material_scope:question.material_scope,prompt:question.prompt},status:"pending"});if(result.error)return status(result.error.message,true);state.revisions.unshift(result.data);status("Added to Revision Archive.");}
@@ -534,429 +500,301 @@ async function mistakeMediaUrl(item) {
     async function archiveSelected(form){const detail=$("#study-practice-detail"),data=detail._studyData,selected=Array.from(form.elements.wrong).filter(input=>input.checked).map(input=>Number(input.value));for(const number of selected){const mine=data.aptitude_answers.find(x=>x.question_number===number)?.answer||null,correct=data.answer_keys.find(x=>x.question_number===number)?.correct_answer;if(!correct)continue;const result=await upsert("mistakes",{practice_id:state.activePractice.id,question_number:number,source_type:"practice",subject:state.activePractice.subject||"APTITUDE",paper_file_id:data.files.find(x=>x.file_kind==="paper")?.id||null,my_answer:mine,correct_answer:correct,reason:null,status:"learning",is_public:false});if(!result.error)state.mistakes.unshift(result.data);}$("#study-sheet").close();status(`${selected.length} records added to Mistake Book.`);renderHome();}
 
     function mistakeData(item, overrides = {}) {
-    return {
-        practice_id: item.practice_id,
-        question_number: item.question_number,
-        source_type: item.source_type,
-        subject: item.subject,
-        knowledge_tag: item.knowledge_tag,
-        image_path: item.image_path,
-        paper_file_id: item.paper_file_id,
-        paper_page: item.paper_page,
-        crop_x: item.crop_x,
-        crop_y: item.crop_y,
-        crop_width: item.crop_width,
-        crop_height: item.crop_height,
-        question_snapshot: item.question_snapshot,
-        my_answer: item.my_answer,
-        correct_answer: item.correct_answer,
-        reason: item.reason,
-        status: item.status,
-        is_public: item.is_public,
-        ...overrides
-    };
-}
-
-async function openCropEditor(item) {
-    const fileResult = await getEntity("files", item.paper_file_id);
-    const file = fileResult.data;
-
-    if (!file) {
-        return status("Source paper is unavailable.", true);
-    }
-
-    const url = await getSignedUrl(file.storage_path);
-
-    if (!url) {
-        return status("Source paper could not be opened.", true);
-    }
-
-    openSheet(`
-        <header>
-            <div>
-                <p class="study-kicker">QUESTION CROP</p>
-                <h2>Select Question Area</h2>
-            </div>
-
-            <button
-                class="study-dialog-close"
-                data-close-sheet
-                type="button"
-            >×</button>
-        </header>
-
-        <div class="study-sheet-content">
-
-            <div class="study-crop-controls">
-
-                <label>
-                    PAGE
-                    <input
-                        id="study-crop-page"
-                        type="number"
-                        min="1"
-                        value="${item.paper_page || 1}"
-                    >
-                </label>
-
-                <label>
-                    PART
-                    <select id="study-crop-part">
-                        <option value="top">TOP</option>
-                        <option value="bottom">BOTTOM</option>
-                        <option value="full">FULL PAGE</option>
-                    </select>
-                </label>
-
-                <button
-                    class="study-secondary"
-                    id="study-crop-load"
-                    type="button"
-                >
-                    LOAD PAGE
-                </button>
-
-                <button
-                    class="study-secondary"
-                    id="study-crop-select"
-                    type="button"
-                >
-                    SELECT AREA
-                </button>
-
-                <button
-                    class="study-primary"
-                    id="study-crop-save"
-                    type="button"
-                    disabled
-                >
-                    SAVE AREA
-                </button>
-
-            </div>
-
-            <p id="study-crop-hint">
-                Scroll to the question, then press SELECT AREA.
-                Drag near the top or bottom edge to auto-scroll while selecting.
-            </p>
-
-            <div
-                id="study-crop-scroll"
-                style="
-                    position:relative;
-                    width:100%;
-                    max-height:65vh;
-                    overflow:auto;
-                    overscroll-behavior:contain;
-                    -webkit-overflow-scrolling:touch;
-                    touch-action:pan-y;
-                    border:1px solid var(--study-line);
-                    background:white;
-                "
-            >
-                <div
-                    id="study-crop-stage"
-                    class="study-crop-stage"
-                    style="
-                        position:relative;
-                        width:100%;
-                        overflow:visible;
-                    "
-                ></div>
-            </div>
-
-        </div>
-    `);
-
-    const scroll = $("#study-crop-scroll");
-    const stage = $("#study-crop-stage");
-    const pageInput = $("#study-crop-page");
-    const partInput = $("#study-crop-part");
-    const loadButton = $("#study-crop-load");
-    const selectButton = $("#study-crop-select");
-    const saveButton = $("#study-crop-save");
-    const hint = $("#study-crop-hint");
-
-    let selectionController = null;
-
-    /*
-     * 当前显示区域在原始 PDF 页中的范围。
-     *
-     * TOP:
-     * 0% - 55%
-     *
-     * BOTTOM:
-     * 45% - 100%
-     *
-     * FULL:
-     * 0% - 100%
-     */
-    let visibleRange = {
-        start: 0,
-        size: 0.55
-    };
-
-    function getVisibleRange() {
-        const part = partInput.value;
-
-        if (part === "bottom") {
-            return {
-                start: 0.45,
-                size: 0.55
-            };
-        }
-
-        if (part === "full") {
-            return {
-                start: 0,
-                size: 1
-            };
-        }
-
         return {
-            start: 0,
-            size: 0.55
+            practice_id: item.practice_id,
+            question_number: item.question_number,
+            source_type: item.source_type,
+            subject: item.subject,
+            knowledge_tag: item.knowledge_tag,
+            image_path: item.image_path,
+            paper_file_id: item.paper_file_id,
+            paper_page: item.paper_page,
+            crop_x: item.crop_x,
+            crop_y: item.crop_y,
+            crop_width: item.crop_width,
+            crop_height: item.crop_height,
+            question_snapshot: item.question_snapshot,
+            my_answer: item.my_answer,
+            correct_answer: item.correct_answer,
+            reason: item.reason,
+            status: item.status,
+            is_public: item.is_public,
+            ...overrides
         };
     }
 
-    async function load() {
-        if (selectionController) {
-            selectionController.destroy();
-            selectionController = null;
-        }
+    function ensureStudyCropStyles() {
+        if ($("#study-crop-runtime-styles")) return;
 
-        stage.innerHTML = "";
-        stage._selection = null;
+        const style = document.createElement("style");
+        style.id = "study-crop-runtime-styles";
+        style.textContent = `
+            .study-crop-controls {
+                display: flex !important;
+                align-items: center !important;
+                flex-wrap: wrap !important;
+                gap: 12px !important;
+                margin-bottom: 20px !important;
+            }
 
-        saveButton.disabled = true;
+            .study-crop-controls label {
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                color: var(--study-soft) !important;
+                font-size: 8px !important;
+                letter-spacing: 1.5px !important;
+            }
 
-        selectButton.textContent = "SELECT AREA";
-        selectButton.classList.remove("active");
+            .study-crop-controls input {
+                width: 70px !important;
+                min-height: 40px !important;
+                border: 1px solid var(--study-line) !important;
+                background: transparent !important;
+                color: inherit !important;
+                text-align: center !important;
+            }
 
-        visibleRange = getVisibleRange();
+            .study-crop-jumps {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
 
-        hint.textContent =
-            "Scroll to the question, then press SELECT AREA. Drag near the top or bottom edge to auto-scroll while selecting.";
+            .study-crop-scroll {
+                position: relative !important;
+                width: 100% !important;
+                max-height: 65vh !important;
+                overflow: auto !important;
+                border: 1px solid var(--study-line) !important;
+                background: #fff !important;
+                overscroll-behavior: contain !important;
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-x pan-y !important;
+            }
 
-        scroll.scrollTop = 0;
+            .study-crop-stage {
+                position: relative !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                border: 0 !important;
+                background: #fff !important;
+                touch-action: pan-x pan-y !important;
+                cursor: default !important;
+            }
 
-        let source;
+            .study-crop-stage.is-selecting {
+                touch-action: none !important;
+                cursor: crosshair !important;
+                user-select: none !important;
+            }
 
-        /*
-         * PDF
-         */
-        if (file.mime_type === "application/pdf") {
-            await loadScript(
-                "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs",
-                "pdfjsLib",
-                true
-            );
+            .study-crop-canvas {
+                display: block !important;
+                width: 100% !important;
+                height: auto !important;
+                max-width: 100% !important;
+            }
 
-            const pdf =
-                await window.pdfjsLib
-                    .getDocument(url)
-                    .promise;
+            .study-crop-selection {
+                position: absolute !important;
+                z-index: 20 !important;
+                box-sizing: border-box !important;
+                border: 2px solid rgba(139, 93, 134, .95) !important;
+                background: rgba(220, 190, 218, .18) !important;
+                box-shadow: 0 0 0 9999px rgba(64, 51, 66, .10) !important;
+                pointer-events: none !important;
+            }
 
-            const requestedPage =
-                Number(pageInput.value) || 1;
+            .study-question-media.has-image {
+                min-height: 0 !important;
+            }
 
-            const pageNumber =
-                Math.min(
-                    Math.max(requestedPage, 1),
+            .study-question-media.has-image img {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                transform: none !important;
+                left: auto !important;
+                top: auto !important;
+                object-fit: contain !important;
+            }
+
+            @media (max-width: 900px) {
+                .study-crop-scroll {
+                    max-height: 62vh !important;
+                    touch-action: pan-y !important;
+                }
+
+                .study-crop-controls {
+                    align-items: stretch !important;
+                }
+
+                .study-crop-controls button {
+                    min-height: 44px !important;
+                }
+            }
+        `;
+
+        document.head.append(style);
+    }
+
+    async function openCropEditor(item) {
+        ensureStudyCropStyles();
+
+        const fileResult = await getEntity("files", item.paper_file_id);
+        const file = fileResult.data;
+        if (!file) return status("Source paper is unavailable.", true);
+
+        const url = await getSignedUrl(file.storage_path);
+        if (!url) return status("Source paper could not be opened.", true);
+
+        openSheet(`
+            <header>
+                <div>
+                    <p class="study-kicker">QUESTION CROP</p>
+                    <h2>Select Question Area</h2>
+                </div>
+                <button class="study-dialog-close" data-close-sheet type="button">×</button>
+            </header>
+
+            <div class="study-sheet-content">
+                <div class="study-crop-controls">
+                    <label>
+                        PAGE
+                        <input
+                            id="study-crop-page"
+                            type="number"
+                            min="1"
+                            value="${item.paper_page || 1}"
+                        >
+                    </label>
+
+                    <button class="study-secondary" id="study-crop-load" type="button">
+                        LOAD PAGE
+                    </button>
+
+                    <div class="study-crop-jumps">
+                        <button class="study-secondary" data-crop-jump="top" type="button">TOP</button>
+                        <button class="study-secondary" data-crop-jump="middle" type="button">MIDDLE</button>
+                        <button class="study-secondary" data-crop-jump="bottom" type="button">BOTTOM</button>
+                    </div>
+
+                    <button class="study-secondary" id="study-crop-select" type="button">
+                        SELECT AREA
+                    </button>
+
+                    <button class="study-primary" id="study-crop-save" type="button" disabled>
+                        SAVE AREA
+                    </button>
+                </div>
+
+                <p id="study-crop-hint">
+                    Scroll to the question, press SELECT AREA, then drag. You can keep scrolling while selecting.
+                </p>
+
+                <div id="study-crop-scroll" class="study-crop-scroll">
+                    <div id="study-crop-stage" class="study-crop-stage"></div>
+                </div>
+            </div>
+        `);
+
+        const sheet = $("#study-sheet");
+        const scroll = $("#study-crop-scroll");
+        const stage = $("#study-crop-stage");
+        const pageInput = $("#study-crop-page");
+        const selectButton = $("#study-crop-select");
+        const saveButton = $("#study-crop-save");
+        const hint = $("#study-crop-hint");
+
+        let controller = null;
+        let pdf = null;
+
+        const clearCropCache = () => {
+            const prefix = `crop:${item.paper_file_id}:`;
+            for (const key of Array.from(state.signedUrls.keys())) {
+                if (key.startsWith(prefix)) {
+                    state.signedUrls.delete(key);
+                }
+            }
+        };
+
+        const renderPage = async () => {
+            controller?.destroy();
+            controller = null;
+
+            stage.replaceChildren();
+            stage._selection = null;
+            saveButton.disabled = true;
+            selectButton.textContent = "SELECT AREA";
+            selectButton.classList.remove("active");
+            stage.classList.remove("is-selecting");
+
+            hint.textContent =
+                "Scroll to the question, press SELECT AREA, then drag. While dragging, use the mouse wheel or move near the top/bottom edge to keep scrolling.";
+
+            scroll.scrollTop = 0;
+            scroll.scrollLeft = 0;
+
+            let canvas;
+
+            if (file.mime_type === "application/pdf") {
+                await loadScript(
+                    "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs",
+                    "pdfjsLib",
+                    true
+                );
+
+                if (!pdf) {
+                    pdf = await window.pdfjsLib.getDocument(url).promise;
+                }
+
+                const pageNumber = Math.min(
+                    Math.max(Number(pageInput.value) || 1, 1),
                     pdf.numPages
                 );
+                pageInput.value = pageNumber;
 
-            pageInput.value = pageNumber;
+                const page = await pdf.getPage(pageNumber);
+                const viewport = page.getViewport({ scale: 2 });
 
-            const page =
-                await pdf.getPage(pageNumber);
+                canvas = document.createElement("canvas");
+                canvas.width = Math.ceil(viewport.width);
+                canvas.height = Math.ceil(viewport.height);
 
-            /*
-             * 先用较高清晰度渲染完整原页。
-             */
-            const fullViewport =
-                page.getViewport({
-                    scale: 2
-                });
+                await page.render({
+                    canvasContext: canvas.getContext("2d"),
+                    viewport
+                }).promise;
+            } else if (file.mime_type.startsWith("image/")) {
+                const image = document.createElement("img");
+                image.crossOrigin = "anonymous";
+                image.src = url;
+                await image.decode();
 
-            const fullCanvas =
-                document.createElement("canvas");
+                canvas = document.createElement("canvas");
+                canvas.width = image.naturalWidth;
+                canvas.height = image.naturalHeight;
+                canvas.getContext("2d").drawImage(image, 0, 0);
+            } else {
+                stage.innerHTML = `
+                    <p class="study-empty study-error">This source cannot be cropped.</p>
+                `;
+                return;
+            }
 
-            fullCanvas.width =
-                Math.ceil(fullViewport.width);
+            canvas.className = "study-crop-canvas";
+            stage.append(canvas);
 
-            fullCanvas.height =
-                Math.ceil(fullViewport.height);
+            await new Promise((resolve) => requestAnimationFrame(resolve));
 
-            await page.render({
-                canvasContext:
-                    fullCanvas.getContext("2d"),
-                viewport: fullViewport
-            }).promise;
-
-            /*
-             * 根据 TOP / BOTTOM / FULL
-             * 从完整 PDF 页切出当前查看区域。
-             */
-            const sourceY =
-                Math.round(
-                    fullCanvas.height *
-                    visibleRange.start
-                );
-
-            const sourceHeight =
-                Math.round(
-                    fullCanvas.height *
-                    visibleRange.size
-                );
-
-            const safeHeight =
-                Math.min(
-                    sourceHeight,
-                    fullCanvas.height - sourceY
-                );
-
-            source =
-                document.createElement("canvas");
-
-            source.width =
-                fullCanvas.width;
-
-            source.height =
-                safeHeight;
-
-            source
-                .getContext("2d")
-                .drawImage(
-                    fullCanvas,
-
-                    0,
-                    sourceY,
-                    fullCanvas.width,
-                    safeHeight,
-
-                    0,
-                    0,
-                    source.width,
-                    source.height
-                );
-
-        /*
-         * 普通图片
-         *
-         * 图片暂时按完整图片处理。
-         */
-        } else {
-            const image =
-                document.createElement("img");
-
-            image.src = url;
-
-            await image.decode();
-
-            /*
-             * 为了让图片和 PDF 使用完全相同的
-             * canvas 坐标体系，也转成 canvas。
-             */
-            const fullCanvas =
-                document.createElement("canvas");
-
-            fullCanvas.width =
-                image.naturalWidth;
-
-            fullCanvas.height =
-                image.naturalHeight;
-
-            fullCanvas
-                .getContext("2d")
-                .drawImage(
-                    image,
-                    0,
-                    0
-                );
-
-            /*
-             * 图片也支持 TOP/BOTTOM/FULL。
-             */
-            const sourceY =
-                Math.round(
-                    fullCanvas.height *
-                    visibleRange.start
-                );
-
-            const sourceHeight =
-                Math.round(
-                    fullCanvas.height *
-                    visibleRange.size
-                );
-
-            const safeHeight =
-                Math.min(
-                    sourceHeight,
-                    fullCanvas.height - sourceY
-                );
-
-            source =
-                document.createElement("canvas");
-
-            source.width =
-                fullCanvas.width;
-
-            source.height =
-                safeHeight;
-
-            source
-                .getContext("2d")
-                .drawImage(
-                    fullCanvas,
-
-                    0,
-                    sourceY,
-                    fullCanvas.width,
-                    safeHeight,
-
-                    0,
-                    0,
-                    source.width,
-                    source.height
-                );
-        }
-
-        /*
-         * 关键：
-         *
-         * canvas 的内部像素尺寸可以很大，
-         * 但显示宽度永远适应容器。
-         *
-         * 坐标最终按照 canvas 的显示矩形计算。
-         */
-        source.style.display = "block";
-        source.style.width = "100%";
-        source.style.height = "auto";
-        source.style.maxWidth = "100%";
-
-        stage.append(source);
-
-        stage.style.width = "100%";
-        stage.style.height = "auto";
-
-        /*
-         * 等浏览器完成 canvas 布局。
-         */
-        await new Promise(resolve =>
-            requestAnimationFrame(resolve)
-        );
-
-        /*
-         * stage 高度必须真实等于 canvas 显示高度。
-         */
-        stage.style.height =
-            `${source.getBoundingClientRect().height}px`;
-
-        selectionController =
-            installCropSelection({
+            controller = installCropSelection({
                 stage,
-                source,
+                source: canvas,
                 scroll,
 
                 onSelectionChange(selection) {
@@ -967,772 +805,355 @@ async function openCropEditor(item) {
                 },
 
                 onModeChange(selecting) {
-                    if (selecting) {
-                        stage.classList.add(
-                            "is-selecting"
-                        );
+                    stage.classList.toggle("is-selecting", selecting);
+                    selectButton.classList.toggle("active", selecting);
 
-                        selectButton.textContent =
-                            "CANCEL SELECT";
+                    selectButton.textContent = selecting
+                        ? "CANCEL SELECT"
+                        : stage._selection
+                            ? "RESELECT"
+                            : "SELECT AREA";
 
-                        selectButton.classList.add(
-                            "active"
-                        );
-
-                        hint.textContent =
-                            "Selecting. Move near the top or bottom edge to auto-scroll.";
-
-                    } else {
-                        stage.classList.remove(
-                            "is-selecting"
-                        );
-
-                        selectButton.textContent =
-                            stage._selection
-                                ? "RESELECT"
-                                : "SELECT AREA";
-
-                        selectButton.classList.remove(
-                            "active"
-                        );
-
-                        hint.textContent =
-                            stage._selection
-                                ? "Area selected. Press SAVE AREA, or RESELECT."
-                                : "Scroll to the question, then press SELECT AREA.";
-                    }
+                    hint.textContent = selecting
+                        ? "Selecting… keep holding. Use the mouse wheel, or drag near the top/bottom edge to continue scrolling."
+                        : stage._selection
+                            ? "Area selected. Check it, then SAVE AREA or RESELECT."
+                            : "Scroll to the question, then press SELECT AREA.";
                 }
             });
-    }
-
-    loadButton.onclick =
-        async () => {
-            await load();
         };
 
-    partInput.onchange =
-        async () => {
-            await load();
-        };
+        $("#study-crop-load").onclick = renderPage;
 
-    selectButton.onclick =
-        () => {
-            if (!selectionController) {
-                return;
-            }
+        $$("[data-crop-jump]", sheet).forEach((button) => {
+            button.onclick = () => {
+                const max = Math.max(0, scroll.scrollHeight - scroll.clientHeight);
+                const target = button.dataset.cropJump === "middle"
+                    ? max / 2
+                    : button.dataset.cropJump === "bottom"
+                        ? max
+                        : 0;
 
-            if (
-                selectionController.isSelecting()
-            ) {
-                selectionController.cancel();
-            } else {
-                selectionController.start();
-            }
-        };
-
-    saveButton.onclick =
-        async () => {
-            const localSelection =
-                stage._selection;
-
-            if (!localSelection) {
-                return;
-            }
-
-            /*
-             * --------------------------------
-             * 最重要的一步
-             * --------------------------------
-             *
-             * stage._selection 是当前
-             * TOP/BOTTOM/FULL 画面中的局部坐标。
-             *
-             * 保存前换算回原始 PDF 页的 0~1。
-             */
-
-            const originalSelection = {
-                crop_x:
-                    localSelection.crop_x,
-
-                crop_y:
-                    visibleRange.start +
-                    (
-                        localSelection.crop_y *
-                        visibleRange.size
-                    ),
-
-                crop_width:
-                    localSelection.crop_width,
-
-                crop_height:
-                    localSelection.crop_height *
-                    visibleRange.size
+                scroll.scrollTo({
+                    top: target,
+                    behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+                });
             };
+        });
 
-            /*
-             * 最终再限制一次范围，
-             * 防止浮点误差超过 1。
-             */
-            originalSelection.crop_x =
-                Math.min(
-                    Math.max(
-                        originalSelection.crop_x,
-                        0
-                    ),
-                    1
-                );
+        selectButton.onclick = () => {
+            if (!controller) return;
 
-            originalSelection.crop_y =
-                Math.min(
-                    Math.max(
-                        originalSelection.crop_y,
-                        0
-                    ),
-                    1
-                );
-
-            originalSelection.crop_width =
-                Math.min(
-                    originalSelection.crop_width,
-                    1 - originalSelection.crop_x
-                );
-
-            originalSelection.crop_height =
-                Math.min(
-                    originalSelection.crop_height,
-                    1 - originalSelection.crop_y
-                );
-
-            const result =
-                await upsert(
-                    "mistakes",
-
-                    mistakeData(
-                        item,
-                        {
-                            paper_page:
-                                Number(
-                                    pageInput.value
-                                ) || 1,
-
-                            ...originalSelection
-                        }
-                    ),
-
-                    item.id
-                );
-
-            if (result.error) {
-                return status(
-                    result.error.message,
-                    true
-                );
+            if (controller.isSelecting()) {
+                controller.cancel();
+            } else {
+                controller.start();
             }
+        };
 
-            /*
-             * 删除这道题旧的图片缓存。
-             *
-             * 防止重新框选后继续看到旧图。
-             */
-            for (
-                const key
-                of Array.from(
-                    state.signedUrls.keys()
-                )
-            ) {
-                if (
-                    key.startsWith(
-                        `paper:${item.paper_file_id}:${pageInput.value}`
-                    )
-                ) {
-                    state.signedUrls.delete(key);
-                }
-            }
+        saveButton.onclick = async () => {
+            const selection = stage._selection;
+            if (!selection) return;
 
-            Object.assign(
-                item,
-                result.data
+            const result = await upsert(
+                "mistakes",
+                mistakeData(item, {
+                    paper_page: Number(pageInput.value) || 1,
+                    crop_x: selection.crop_x,
+                    crop_y: selection.crop_y,
+                    crop_width: selection.crop_width,
+                    crop_height: selection.crop_height
+                }),
+                item.id
             );
 
-            $("#study-sheet").close();
+            if (result.error) {
+                return status(result.error.message, true);
+            }
 
+            clearCropCache();
+            Object.assign(item, result.data);
+
+            controller?.destroy();
+            controller = null;
+            $("#study-sheet").close();
             renderMistakes();
         };
 
-    await load();
-}
+        sheet.addEventListener(
+            "close",
+            () => {
+                controller?.destroy();
+                controller = null;
+            },
+            { once: true }
+        );
 
+        await renderPage();
+    }
 
-function installCropSelection({
-    stage,
-    source,
-    scroll,
-    onSelectionChange,
-    onModeChange
-}) {
-    let selecting = false;
-    let dragging = false;
+    function installCropSelection({
+        stage,
+        source,
+        scroll,
+        onSelectionChange,
+        onModeChange
+    }) {
+        let selecting = false;
+        let dragging = false;
+        let pointerId = null;
 
-    let start = null;
-    let box = null;
+        let startContentX = 0;
+        let startContentY = 0;
+        let box = null;
 
-    let pointerId = null;
+        let lastClientX = 0;
+        let lastClientY = 0;
+        let autoScrollFrame = 0;
 
-    let lastClientX = 0;
-    let lastClientY = 0;
+        const EDGE_SIZE = 72;
+        const MAX_SCROLL_SPEED = 24;
 
-    let autoScrollFrame = null;
+        const clamp = (value, min, max) =>
+            Math.min(Math.max(value, min), max);
 
-    /*
-     * 自动滚动参数。
-     */
-    const EDGE_SIZE = 72;
-    const MAX_SCROLL_SPEED = 18;
+        const contentPoint = (clientX, clientY) => {
+            const rect = source.getBoundingClientRect();
 
-    const clamp =
-        (value, min = 0, max = 1) =>
-            Math.min(
-                Math.max(value, min),
-                max
-            );
+            return {
+                x: clamp(clientX - rect.left, 0, rect.width),
+                y: clamp(clientY - rect.top, 0, rect.height),
+                width: rect.width,
+                height: rect.height
+            };
+        };
 
-    /*
-     * --------------------------------
-     * 坐标计算
-     * --------------------------------
-     *
-     * 永远以 source canvas 的
-     * getBoundingClientRect() 为准。
-     *
-     * 当 scroll 滚动以后：
-     *
-     * rect.top 会自动变化。
-     *
-     * 所以这里完全不需要手动加：
-     *
-     * scrollTop
-     * scrollLeft
-     *
-     * 这就是避免坐标越来越乱的核心。
-     */
-    function pointFromClient(
-        clientX,
-        clientY
-    ) {
-        const rect =
-            source.getBoundingClientRect();
+        const removeBox = () => {
+            stage.querySelector(".study-crop-selection")?.remove();
+            box = null;
+        };
+
+        const makeBox = () => {
+            removeBox();
+            box = document.createElement("i");
+            box.className = "study-crop-selection";
+            stage.append(box);
+        };
+
+        const updateSelection = () => {
+            if (!dragging || !box) return;
+
+            const end = contentPoint(lastClientX, lastClientY);
+            const rect = source.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+
+            const left = Math.min(startContentX, end.x);
+            const top = Math.min(startContentY, end.y);
+            const width = Math.abs(end.x - startContentX);
+            const height = Math.abs(end.y - startContentY);
+
+            const cropX = clamp(left / rect.width, 0, 1);
+            const cropY = clamp(top / rect.height, 0, 1);
+            const cropWidth = clamp(width / rect.width, 0, 1 - cropX);
+            const cropHeight = clamp(height / rect.height, 0, 1 - cropY);
+
+            Object.assign(box.style, {
+                left: `${cropX * 100}%`,
+                top: `${cropY * 100}%`,
+                width: `${cropWidth * 100}%`,
+                height: `${cropHeight * 100}%`
+            });
+
+            stage._selection = {
+                crop_x: cropX,
+                crop_y: cropY,
+                crop_width: cropWidth,
+                crop_height: cropHeight
+            };
+
+            onSelectionChange?.(stage._selection);
+        };
+
+        const stopAutoScroll = () => {
+            if (autoScrollFrame) {
+                cancelAnimationFrame(autoScrollFrame);
+                autoScrollFrame = 0;
+            }
+        };
+
+        const autoScrollLoop = () => {
+            if (!selecting || !dragging) {
+                autoScrollFrame = 0;
+                return;
+            }
+
+            const rect = scroll.getBoundingClientRect();
+            let speed = 0;
+
+            if (lastClientY < rect.top + EDGE_SIZE) {
+                const strength = clamp(
+                    (rect.top + EDGE_SIZE - lastClientY) / EDGE_SIZE,
+                    0,
+                    1
+                );
+                speed = -MAX_SCROLL_SPEED * strength;
+            } else if (lastClientY > rect.bottom - EDGE_SIZE) {
+                const strength = clamp(
+                    (lastClientY - (rect.bottom - EDGE_SIZE)) / EDGE_SIZE,
+                    0,
+                    1
+                );
+                speed = MAX_SCROLL_SPEED * strength;
+            }
+
+            if (speed !== 0) {
+                const before = scroll.scrollTop;
+                scroll.scrollTop += speed;
+
+                if (scroll.scrollTop !== before) {
+                    updateSelection();
+                }
+            }
+
+            autoScrollFrame = requestAnimationFrame(autoScrollLoop);
+        };
+
+        const startAutoScroll = () => {
+            if (!autoScrollFrame) {
+                autoScrollFrame = requestAnimationFrame(autoScrollLoop);
+            }
+        };
+
+        const releasePointer = () => {
+            if (
+                pointerId !== null &&
+                stage.hasPointerCapture?.(pointerId)
+            ) {
+                try {
+                    stage.releasePointerCapture(pointerId);
+                } catch (_) {}
+            }
+            pointerId = null;
+        };
+
+        const finishSelection = () => {
+            if (!dragging) return;
+
+            updateSelection();
+            dragging = false;
+            stopAutoScroll();
+            releasePointer();
+            selecting = false;
+            onModeChange?.(false);
+        };
+
+        const pointerDown = (event) => {
+            if (!selecting) return;
+            if (event.pointerType === "mouse" && event.button !== 0) return;
+
+            event.preventDefault();
+
+            lastClientX = event.clientX;
+            lastClientY = event.clientY;
+
+            const point = contentPoint(lastClientX, lastClientY);
+            startContentX = point.x;
+            startContentY = point.y;
+
+            dragging = true;
+            pointerId = event.pointerId;
+            stage._selection = null;
+            onSelectionChange?.(null);
+
+            makeBox();
+            Object.assign(box.style, {
+                left: `${(point.x / point.width) * 100}%`,
+                top: `${(point.y / point.height) * 100}%`,
+                width: "0%",
+                height: "0%"
+            });
+
+            try {
+                stage.setPointerCapture?.(event.pointerId);
+            } catch (_) {}
+
+            startAutoScroll();
+        };
+
+        const pointerMove = (event) => {
+            if (!selecting || !dragging) return;
+
+            event.preventDefault();
+            lastClientX = event.clientX;
+            lastClientY = event.clientY;
+            updateSelection();
+        };
+
+        const pointerUp = (event) => {
+            if (!selecting || !dragging) return;
+
+            event.preventDefault();
+            lastClientX = event.clientX;
+            lastClientY = event.clientY;
+            finishSelection();
+        };
+
+        const pointerCancel = () => {
+            dragging = false;
+            stopAutoScroll();
+            releasePointer();
+            selecting = false;
+            onModeChange?.(false);
+        };
+
+        const scrollWhileSelecting = () => {
+            if (dragging) {
+                updateSelection();
+            }
+        };
+
+        stage.addEventListener("pointerdown", pointerDown);
+        stage.addEventListener("pointermove", pointerMove);
+        stage.addEventListener("pointerup", pointerUp);
+        stage.addEventListener("pointercancel", pointerCancel);
+        scroll.addEventListener("scroll", scrollWhileSelecting, { passive: true });
 
         return {
-            x: clamp(
-                (
-                    clientX -
-                    rect.left
-                ) /
-                rect.width
-            ),
+            start() {
+                selecting = true;
+                dragging = false;
+                stage._selection = null;
+                onSelectionChange?.(null);
+                removeBox();
+                onModeChange?.(true);
+            },
 
-            y: clamp(
-                (
-                    clientY -
-                    rect.top
-                ) /
-                rect.height
-            )
+            cancel() {
+                selecting = false;
+                dragging = false;
+                stopAutoScroll();
+                releasePointer();
+                removeBox();
+                stage._selection = null;
+                onSelectionChange?.(null);
+                onModeChange?.(false);
+            },
+
+            isSelecting() {
+                return selecting;
+            },
+
+            destroy() {
+                stopAutoScroll();
+                releasePointer();
+                stage.removeEventListener("pointerdown", pointerDown);
+                stage.removeEventListener("pointermove", pointerMove);
+                stage.removeEventListener("pointerup", pointerUp);
+                stage.removeEventListener("pointercancel", pointerCancel);
+                scroll.removeEventListener("scroll", scrollWhileSelecting);
+            }
         };
     }
-
-    function ensureBox() {
-        stage
-            .querySelector(
-                ".study-crop-selection"
-            )
-            ?.remove();
-
-        box =
-            document.createElement("i");
-
-        box.className =
-            "study-crop-selection";
-
-        Object.assign(
-            box.style,
-            {
-                position:
-                    "absolute",
-
-                zIndex:
-                    "20",
-
-                boxSizing:
-                    "border-box",
-
-                border:
-                    "2px solid rgba(139,93,134,.95)",
-
-                background:
-                    "rgba(220,190,218,.18)",
-
-                pointerEvents:
-                    "none"
-            }
-        );
-
-        stage.append(box);
-    }
-
-    /*
-     * 根据当前鼠标/手指位置
-     * 更新选择框。
-     */
-    function updateSelection(
-        clientX,
-        clientY
-    ) {
-        if (
-            !dragging ||
-            !start ||
-            !box
-        ) {
-            return;
-        }
-
-        const end =
-            pointFromClient(
-                clientX,
-                clientY
-            );
-
-        const x =
-            Math.min(
-                start.x,
-                end.x
-            );
-
-        const y =
-            Math.min(
-                start.y,
-                end.y
-            );
-
-        const width =
-            Math.abs(
-                end.x -
-                start.x
-            );
-
-        const height =
-            Math.abs(
-                end.y -
-                start.y
-            );
-
-        Object.assign(
-            box.style,
-            {
-                left:
-                    `${x * 100}%`,
-
-                top:
-                    `${y * 100}%`,
-
-                width:
-                    `${width * 100}%`,
-
-                height:
-                    `${height * 100}%`
-            }
-        );
-
-        stage._selection = {
-            crop_x: x,
-            crop_y: y,
-            crop_width: width,
-            crop_height: height
-        };
-
-        onSelectionChange?.(
-            stage._selection
-        );
-    }
-
-    /*
-     * --------------------------------
-     * 自动滚动
-     * --------------------------------
-     *
-     * 拖动到滚动窗口顶部/底部时，
-     * JS 自动改变 scrollTop。
-     *
-     * 然后再次根据新的 canvas rect
-     * 更新选择框。
-     */
-    function autoScrollLoop() {
-        if (
-            !dragging ||
-            !selecting
-        ) {
-            autoScrollFrame = null;
-            return;
-        }
-
-        const scrollRect =
-            scroll.getBoundingClientRect();
-
-        let speed = 0;
-
-        /*
-         * 靠近顶部。
-         */
-        if (
-            lastClientY <
-            scrollRect.top + EDGE_SIZE
-        ) {
-            const distance =
-                clamp(
-                    (
-                        scrollRect.top +
-                        EDGE_SIZE -
-                        lastClientY
-                    ) /
-                    EDGE_SIZE,
-                    0,
-                    1
-                );
-
-            speed =
-                -MAX_SCROLL_SPEED *
-                distance;
-        }
-
-        /*
-         * 靠近底部。
-         */
-        else if (
-            lastClientY >
-            scrollRect.bottom - EDGE_SIZE
-        ) {
-            const distance =
-                clamp(
-                    (
-                        lastClientY -
-                        (
-                            scrollRect.bottom -
-                            EDGE_SIZE
-                        )
-                    ) /
-                    EDGE_SIZE,
-                    0,
-                    1
-                );
-
-            speed =
-                MAX_SCROLL_SPEED *
-                distance;
-        }
-
-        if (speed !== 0) {
-            const before =
-                scroll.scrollTop;
-
-            scroll.scrollTop += speed;
-
-            /*
-             * 只有真的发生滚动时，
-             * 才重新计算选择终点。
-             */
-            if (
-                scroll.scrollTop !== before
-            ) {
-                updateSelection(
-                    lastClientX,
-                    lastClientY
-                );
-            }
-        }
-
-        autoScrollFrame =
-            requestAnimationFrame(
-                autoScrollLoop
-            );
-    }
-
-    function startAutoScroll() {
-        if (autoScrollFrame) {
-            return;
-        }
-
-        autoScrollFrame =
-            requestAnimationFrame(
-                autoScrollLoop
-            );
-    }
-
-    function stopAutoScroll() {
-        if (autoScrollFrame) {
-            cancelAnimationFrame(
-                autoScrollFrame
-            );
-
-            autoScrollFrame = null;
-        }
-    }
-
-    /*
-     * 完成框选。
-     */
-    function finishSelection(event) {
-        if (!dragging) {
-            return;
-        }
-
-        lastClientX =
-            event.clientX;
-
-        lastClientY =
-            event.clientY;
-
-        updateSelection(
-            lastClientX,
-            lastClientY
-        );
-
-        dragging = false;
-
-        stopAutoScroll();
-
-        if (
-            pointerId !== null &&
-            stage.hasPointerCapture?.(
-                pointerId
-            )
-        ) {
-            try {
-                stage.releasePointerCapture(
-                    pointerId
-                );
-            } catch (_) {}
-        }
-
-        pointerId = null;
-        start = null;
-
-        selecting = false;
-
-        stage.classList.remove(
-            "is-selecting"
-        );
-
-        onModeChange?.(
-            false
-        );
-    }
-
-    /*
-     * --------------------------------
-     * Pointer Events
-     * --------------------------------
-     */
-
-    function pointerDown(event) {
-        if (!selecting) {
-            return;
-        }
-
-        if (
-            event.pointerType === "mouse" &&
-            event.button !== 0
-        ) {
-            return;
-        }
-
-        event.preventDefault();
-
-        lastClientX =
-            event.clientX;
-
-        lastClientY =
-            event.clientY;
-
-        start =
-            pointFromClient(
-                event.clientX,
-                event.clientY
-            );
-
-        dragging = true;
-
-        pointerId =
-            event.pointerId;
-
-        stage._selection = null;
-
-        onSelectionChange?.(
-            null
-        );
-
-        ensureBox();
-
-        /*
-         * 一开始给选择框一个 0 大小的位置，
-         * 保证马上可见。
-         */
-        Object.assign(
-            box.style,
-            {
-                left:
-                    `${start.x * 100}%`,
-
-                top:
-                    `${start.y * 100}%`,
-
-                width:
-                    "0%",
-
-                height:
-                    "0%"
-            }
-        );
-
-        try {
-            stage.setPointerCapture?.(
-                event.pointerId
-            );
-        } catch (_) {}
-
-        startAutoScroll();
-    }
-
-    function pointerMove(event) {
-        if (
-            !selecting ||
-            !dragging
-        ) {
-            return;
-        }
-
-        event.preventDefault();
-
-        lastClientX =
-            event.clientX;
-
-        lastClientY =
-            event.clientY;
-
-        updateSelection(
-            lastClientX,
-            lastClientY
-        );
-    }
-
-    function pointerUp(event) {
-        if (
-            !selecting ||
-            !dragging
-        ) {
-            return;
-        }
-
-        event.preventDefault();
-
-        finishSelection(event);
-    }
-
-    function pointerCancel() {
-        dragging = false;
-        start = null;
-        pointerId = null;
-
-        stopAutoScroll();
-
-        selecting = false;
-
-        stage.classList.remove(
-            "is-selecting"
-        );
-
-        onModeChange?.(
-            false
-        );
-    }
-
-    stage.addEventListener(
-        "pointerdown",
-        pointerDown
-    );
-
-    stage.addEventListener(
-        "pointermove",
-        pointerMove
-    );
-
-    stage.addEventListener(
-        "pointerup",
-        pointerUp
-    );
-
-    stage.addEventListener(
-        "pointercancel",
-        pointerCancel
-    );
-
-    return {
-        start() {
-            selecting = true;
-
-            stage.classList.add(
-                "is-selecting"
-            );
-
-            onModeChange?.(
-                true
-            );
-        },
-
-        cancel() {
-            selecting = false;
-            dragging = false;
-            start = null;
-
-            stopAutoScroll();
-
-            stage.classList.remove(
-                "is-selecting"
-            );
-
-            onModeChange?.(
-                false
-            );
-        },
-
-        isSelecting() {
-            return selecting;
-        },
-
-        destroy() {
-            stopAutoScroll();
-
-            stage.removeEventListener(
-                "pointerdown",
-                pointerDown
-            );
-
-            stage.removeEventListener(
-                "pointermove",
-                pointerMove
-            );
-
-            stage.removeEventListener(
-                "pointerup",
-                pointerUp
-            );
-
-            stage.removeEventListener(
-                "pointercancel",
-                pointerCancel
-            );
-        }
-    };
-}
 
     async function submitRevisit(){const item=filteredMistakes()[state.currentMistake],answer=$("[data-revisit-answer].active")?.dataset.revisitAnswer;if(!answer)return;const isCorrect=answer.toUpperCase()===item.correct_answer.toUpperCase();const result=await upsert("mistake_attempts",{mistake_id:item.id,answer,is_correct:isCorrect,attempted_at:new Date().toISOString()});if(result.error)return status(result.error.message,true);await upsert("mistakes",mistakeData(item,{status:isCorrect?"review":"learning"}),item.id);item.status=isCorrect?"review":"learning";const attempts=await list("mistake_attempts",{filters:{mistake_id:item.id}});openSheet(`<header><div><p class="study-kicker">REVISIT RESULT</p><h2>${isCorrect?"✓ CORRECT":"× NEEDS REVIEW"}</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-answer-reveal"><div><span>CURRENT</span><strong>${esc(answer)} ${isCorrect?"✓":"×"}</strong></div><div><span>LAST TIME</span><strong>${esc(item.my_answer||"—")}</strong></div></div><p class="study-kicker">ATTEMPTS</p>${(attempts.data||[]).map(attempt=>`<p>${displayDate(attempt.attempted_at)}　${esc(attempt.answer)} ${attempt.is_correct?"✓":"×"}</p>`).join("")}</div>`);}
 
@@ -1786,8 +1207,3 @@ function installCropSelection({
     const initial=location.hash.slice(1);if($( `#study-view-${initial}`))state.view=initial;
     await loadBase();setView(state.view,false);
 })();
-
-
-
-
-
