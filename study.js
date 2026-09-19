@@ -262,28 +262,29 @@
 
     async function renderMistakeCard(item,items=filteredMistakes(),revisit=false){const container=$("#study-mistake-content"),image=await mistakeMediaUrl(item);container.innerHTML=`<article class="study-mistake-card" data-mistake-card="${item.id}"><p class="study-kicker">MISTAKE ${String(state.currentMistake+1).padStart(3,"0")} / ${esc(item.status.toUpperCase())}</p><h3>${esc(item.subject)} · ${item.question_number ? `第 ${esc(item.question_number)} 题` : "题号未记录"}</h3><div class="study-question-media" style="${item.crop_width&&item.crop_height?`aspect-ratio:${Number(item.crop_width)}/${Number(item.crop_height)};min-height:0`:""}">${image?`<img src="${esc(image)}" alt="Original question" style="${cropStyle(item)}">`:item.question_snapshot?`<p>${esc(item.question_snapshot)}</p>`:"Original question reference"}</div>${revisit?`<div class="study-answer-options">${["A","B","C","D"].map(option=>`<button data-revisit-answer="${option}">${option}</button>`).join("")}</div><button class="study-primary" data-action="submit-revisit" disabled>SUBMIT</button>`:`<div class="study-answer-reveal"><div><span>MY ANSWER</span><strong>${esc(item.my_answer||"—")}</strong></div><div><span>CORRECT</span><strong>${esc(item.correct_answer)}</strong></div></div><p><span class="study-kicker">REASON</span><br>${esc(item.reason||"—")}</p>${state.writable?`<div class="study-action-row"><button class="study-primary" data-action="start-revisit">REVISIT</button>${item.paper_file_id?'<button class="study-secondary" data-action="crop-mistake">SELECT QUESTION AREA</button>':""}<button class="study-secondary" data-action="master-mistake">MASTERED</button><button class="study-secondary" data-action="delete-mistake">DELETE</button></div>`:""}`}<footer class="study-detail-toolbar"><button class="study-text-button" data-card-nav="prev">← PREVIOUS</button><span>${state.currentMistake+1} / ${items.length}</span><button class="study-text-button" data-card-nav="next">NEXT →</button></footer></article>`;}
     function cropStyle(item) {
-    if (
-        ![item.crop_x, item.crop_y, item.crop_width, item.crop_height]
-            .every(value => value != null)
-    ) {
-        return "";
+        if (
+            ![item.crop_x, item.crop_y, item.crop_width, item.crop_height]
+                .every(value => value != null)
+        ) {
+            return "";
+        }
+
+        const x = Number(item.crop_x);
+        const y = Number(item.crop_y);
+        const width = Number(item.crop_width);
+
+        const scale = 1 / width;
+
+        return `
+            position: absolute;
+            max-width: none;
+            width: ${scale * 100}%;
+            height: auto;
+            left: ${-x * scale * 100}%;
+            top: ${-y * scale * 100}%;
+            transform: none;
+        `;
     }
-
-    const x = Number(item.crop_x);
-    const y = Number(item.crop_y);
-    const width = Number(item.crop_width);
-    const height = Number(item.crop_height);
-
-    return `
-        position: absolute;
-        max-width: none;
-        width: ${100 / width}%;
-        height: auto;
-        left: ${-(x / width) * 100}%;
-        top: ${-(y / height) * 100}%;
-        transform: none;
-    `;
-}
 
     function renderRevisions(){const container=$("#study-revision-list");container.innerHTML=state.revisions.length?state.revisions.map((item,index)=>`<button class="study-record" data-revision-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.issue_tags||[]).join(" · ")||item.category||"")}</p></span><p class="study-record-meta">${displayDate(item.created_at)}<br>${esc(item.status.toUpperCase())}</p></button>`).join(""):empty("No revisions archived yet.");}
     async function openRevision(id){const item=state.revisions.find(x=>x.id===id);if(!item)return;const [attempts,reviews]=item.question_id?await Promise.all([list("shenlun_answers",{filters:{question_id:item.question_id}}),list("reviews",{filters:{question_id:item.question_id}})]):[{data:[]},{data:[]}];const sorted=(attempts.data||[]).sort((a,b)=>a.attempt_number-b.attempt_number);$("#study-revision-detail").hidden=false;$("#study-revision-detail").innerHTML=`<div class="study-detail-toolbar"><div><p class="study-kicker">REVISION / ${esc(item.status.toUpperCase())}</p><h3>${esc(item.title)}</h3></div></div><p>${esc((item.issue_tags||[]).join(" · "))}</p>${sorted.length>1?comparisonMarkup(sorted,reviews.data||[]):""}${state.writable?'<button class="study-primary" data-action="rewrite-revision" data-id="'+item.id+'">REWRITE</button>':""}`;}
