@@ -241,13 +241,397 @@
         openSheet(`<header><div><p class="study-kicker">APTITUDE RESULT</p><h2>${esc(state.activePractice.title)}</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-result-summary"><div><strong>${correct}</strong>CORRECT</div><div><strong>${wrong}</strong>WRONG</div><div><strong>${unanswered}</strong>UNANSWERED</div></div><form id="archive-wrong-form"><p class="study-kicker">SELECT TO ARCHIVE</p><div class="study-result-list">${rows.filter(row=>!row.ok).map(row=>`<label><input type="checkbox" name="wrong" value="${row.number}" ${row.mine?"":"disabled"}><span>${String(row.number).padStart(3,"0")}</span><span>${esc(row.mine||"—")} → ${esc(row.correct)}</span></label>`).join("")}</div>${state.writable?'<button class="study-primary" type="submit">ADD SELECTED TO MISTAKE BOOK</button>':""}</form></div>`);
     }
 
-    async function renderShenlun(practice,data) {
-        const detail=$("#study-practice-detail"); detail._studyData=data; const questions=data.shenlun_questions.sort((a,b)=>a.question_number-b.question_number); const active=questions.find(item=>item.id===detail.dataset.questionId)||questions[0]; if(active) detail.dataset.questionId=active.id;
-        let answer=null,reference=null,reviews=[]; if(active){ const results=await Promise.all([list("shenlun_answers",{filters:{question_id:active.id}}),list("shenlun_references",{filters:{question_id:active.id}}),list("reviews",{filters:{question_id:active.id}})]); answer=(results[0].data||[]).sort((a,b)=>b.attempt_number-a.attempt_number)[0]||null;reference=(results[1].data||[])[0]||null;reviews=results[2].data||[]; }
-        detail._answer=answer;detail._reference=reference;
-        detail.innerHTML=`<div class="study-detail-toolbar"><div><p class="study-kicker">SHENLUN / ${esc(practice.status.toUpperCase())}</p><h3>${esc(practice.title)}</h3></div><div class="study-action-row">${state.writable?'<button class="study-secondary" data-action="upload-paper">UPLOAD MATERIAL</button><button class="study-secondary" data-action="add-shenlun-question">＋ QUESTION</button>':""}<button class="study-secondary" data-action="close-practice">CLOSE</button></div></div><div class="study-filter-row">${questions.map(q=>`<button data-shenlun-question="${q.id}" class="${active?.id===q.id?"active":""}">${String(q.question_number).padStart(2,"0")} ${esc(q.title)}</button>`).join("")}</div>${active?`<div class="study-shenlun-layout"><section class="study-material"><p class="study-kicker">MATERIAL / QUESTION</p><h4>${esc(active.title)}</h4><p>${esc(active.prompt)}</p><div class="study-paper-reader">${await paperMarkup(data.files)}</div></section><section class="study-answer-editor"><p class="study-kicker">YOUR ANSWER</p>${active.question_type==="essay"?`<input id="shenlun-answer-title" value="${esc(answer?.title||"")}" placeholder="TITLE"><input id="shenlun-answer-thesis" value="${esc(answer?.thesis||"")}" placeholder="THESIS / 中心论点"><textarea id="shenlun-answer-outline" placeholder="OUTLINE — one point per line">${esc((answer?.outline||[]).join("\n"))}</textarea>`:""}<textarea id="shenlun-answer-body" ${state.writable?"":"readonly"} placeholder="Write here…">${esc(answer?.body||"")}</textarea><p id="shenlun-count" class="study-character-count">${(answer?.body||"").length} / ${active.max_characters||"∞"}</p>${state.writable?`<div class="study-action-row"><button class="study-secondary" data-action="save-shenlun-answer">SAVE DRAFT</button><button class="study-secondary" data-action="import-reference">IMPORT REFERENCE</button><button class="study-primary" data-action="review-shenlun">SUBMIT FOR KIORA REVIEW</button></div>`:""}</section></div><div id="study-review-output">${reviews.length?reviewMarkup(reviews.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0]):""}</div>`:empty("Add the first question to begin.")}`;
-        installShenlunAutosave(active,answer);
+   async function shenlunRegionMarkup(question, kind) {
+    const regions = Array.isArray(question?.[kind]) ? question[kind] : [];
+
+    if (!question?.source_file_id || !regions.length) {
+        return `
+            <div class="study-shenlun-region-empty">
+                No ${kind === "question_regions" ? "question" : "reference answer"} area selected.
+            </div>
+        `;
     }
+
+    const urls = await Promise.all(
+        regions.map((region) =>
+            mistakeMediaUrl({
+                paper_file_id: question.source_file_id,
+                paper_page: region.page,
+                crop_x: region.crop_x,
+                crop_y: region.crop_y,
+                crop_width: region.crop_width,
+                crop_height: region.crop_height
+            })
+        )
+    );
+
+    return `
+        <div class="study-shenlun-region-stack">
+            ${urls
+                .map((url, index) =>
+                    url
+                        ? `
+                            <figure>
+                                <img
+                                    src="${esc(url)}"
+                                    alt="${
+                                        kind === "question_regions"
+                                            ? "Question"
+                                            : "Reference answer"
+                                    } selection ${index + 1}"
+                                >
+                                <figcaption>
+                                    PAGE ${String(regions[index].page || 1).padStart(2, "0")}
+                                    · AREA ${String(index + 1).padStart(2, "0")}
+                                </figcaption>
+                            </figure>
+                        `
+                        : ""
+                )
+                .join("")}
+        </div>
+    `;
+}
+
+
+async function renderShenlun(practice, data) {
+    const detail = $("#study-practice-detail");
+
+    detail._studyData = data;
+
+    const questions = data.shenlun_questions.sort(
+        (a, b) => a.question_number - b.question_number
+    );
+
+    const active =
+        questions.find(
+            (item) => item.id === detail.dataset.questionId
+        ) || questions[0];
+
+    if (active) {
+        detail.dataset.questionId = active.id;
+    }
+
+    let answer = null;
+    let reference = null;
+    let reviews = [];
+
+    if (active) {
+        const results = await Promise.all([
+            list("shenlun_answers", {
+                filters: {
+                    question_id: active.id
+                }
+            }),
+
+            list("shenlun_references", {
+                filters: {
+                    question_id: active.id
+                }
+            }),
+
+            list("reviews", {
+                filters: {
+                    question_id: active.id
+                }
+            })
+        ]);
+
+        answer =
+            (results[0].data || [])
+                .sort(
+                    (a, b) =>
+                        b.attempt_number - a.attempt_number
+                )[0] || null;
+
+        reference =
+            (results[1].data || [])[0] || null;
+
+        reviews =
+            results[2].data || [];
+    }
+
+    detail._answer = answer;
+    detail._reference = reference;
+
+    const questionMarkup = active
+        ? await shenlunRegionMarkup(
+              active,
+              "question_regions"
+          )
+        : "";
+
+    const answerRegionMarkup = active
+        ? await shenlunRegionMarkup(
+              active,
+              "answer_regions"
+          )
+        : "";
+
+    /*
+     * 只有用户已经写过答案，或者已经存在 Review，
+     * 才展示参考答案。
+     *
+     * 这样刚进入题目时不会直接看到答案。
+     */
+    const hasWorked = Boolean(
+        answer?.body?.trim() ||
+        reviews.length
+    );
+
+    detail.innerHTML = `
+        <div class="study-detail-toolbar">
+
+            <div>
+                <p class="study-kicker">
+                    SHENLUN /
+                    ${esc(practice.status.toUpperCase())}
+                </p>
+
+                <h3>
+                    ${esc(practice.title)}
+                </h3>
+            </div>
+
+            <div class="study-action-row">
+
+                ${
+                    state.writable
+                        ? `
+                            <button
+                                class="study-secondary"
+                                data-action="upload-paper"
+                            >
+                                UPLOAD MATERIAL
+                            </button>
+
+                            <button
+                                class="study-secondary"
+                                data-action="add-shenlun-question"
+                            >
+                                ＋ QUESTION
+                            </button>
+                        `
+                        : ""
+                }
+
+                <button
+                    class="study-secondary"
+                    data-action="close-practice"
+                >
+                    CLOSE
+                </button>
+
+            </div>
+        </div>
+
+
+        <div class="study-filter-row">
+
+            ${questions
+                .map(
+                    (q) => `
+                        <button
+                            data-shenlun-question="${q.id}"
+                            class="${
+                                active?.id === q.id
+                                    ? "active"
+                                    : ""
+                            }"
+                        >
+                            ${String(q.question_number).padStart(2, "0")}
+                            ${esc(q.title)}
+                        </button>
+                    `
+                )
+                .join("")}
+
+        </div>
+
+
+        ${
+            active
+                ? `
+                    <div class="study-shenlun-layout">
+
+                        <section class="study-material">
+
+                            <p class="study-kicker">
+                                QUESTION /
+                                ${esc(
+                                    active.question_type.toUpperCase()
+                                )}
+                            </p>
+
+                            <h4>
+                                ${esc(active.title)}
+                            </h4>
+
+                            ${questionMarkup}
+
+                        </section>
+
+
+                        <section class="study-answer-editor">
+
+                            <p class="study-kicker">
+                                YOUR ANSWER
+                            </p>
+
+                            ${
+                                active.question_type === "essay"
+                                    ? `
+                                        <input
+                                            id="shenlun-answer-title"
+                                            value="${esc(
+                                                answer?.title || ""
+                                            )}"
+                                            placeholder="TITLE"
+                                        >
+
+                                        <input
+                                            id="shenlun-answer-thesis"
+                                            value="${esc(
+                                                answer?.thesis || ""
+                                            )}"
+                                            placeholder="THESIS / 中心论点"
+                                        >
+
+                                        <textarea
+                                            id="shenlun-answer-outline"
+                                            placeholder="OUTLINE — one point per line"
+                                        >${esc(
+                                            (
+                                                answer?.outline || []
+                                            ).join("\n")
+                                        )}</textarea>
+                                    `
+                                    : ""
+                            }
+
+                            <textarea
+                                id="shenlun-answer-body"
+                                ${
+                                    state.writable
+                                        ? ""
+                                        : "readonly"
+                                }
+                                placeholder="Write here…"
+                            >${esc(answer?.body || "")}</textarea>
+
+
+                            <p
+                                id="shenlun-count"
+                                class="study-character-count"
+                            >
+                                ${(answer?.body || "").length}
+                                /
+                                ${
+                                    active.max_characters ||
+                                    "∞"
+                                }
+                            </p>
+
+
+                            ${
+                                state.writable
+                                    ? `
+                                        <div class="study-action-row">
+
+                                            <button
+                                                class="study-secondary"
+                                                data-action="save-shenlun-answer"
+                                            >
+                                                SAVE DRAFT
+                                            </button>
+
+                                            <button
+                                                class="study-secondary"
+                                                data-action="import-reference"
+                                            >
+                                                IMPORT REFERENCE TEXT
+                                            </button>
+
+                                            <button
+                                                class="study-primary"
+                                                data-action="review-shenlun"
+                                            >
+                                                SUBMIT FOR KIORA REVIEW
+                                            </button>
+
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+                        </section>
+
+                    </div>
+
+
+                    ${
+                        hasWorked
+                            ? `
+                                <section
+                                    class="study-shenlun-reference"
+                                >
+
+                                    <div
+                                        class="study-shenlun-reference-heading"
+                                    >
+
+                                        <div>
+                                            <p class="study-kicker">
+                                                REFERENCE ANSWER
+                                            </p>
+
+                                            <h4>
+                                                Selected answer area
+                                            </h4>
+                                        </div>
+
+                                    </div>
+
+                                    ${answerRegionMarkup}
+
+                                </section>
+                            `
+                            : ""
+                    }
+
+
+                    <div id="study-review-output">
+
+                        ${
+                            reviews.length
+                                ? reviewMarkup(
+                                      reviews.sort(
+                                          (a, b) =>
+                                              String(
+                                                  b.created_at
+                                              ).localeCompare(
+                                                  String(
+                                                      a.created_at
+                                                  )
+                                              )
+                                      )[0]
+                                  )
+                                : ""
+                        }
+
+                    </div>
+                `
+                : empty(
+                      "Add the first question to begin."
+                  )
+        }
+    `;
+
+    installShenlunAutosave(
+        active,
+        answer
+    );
+}
 
     function reviewMarkup(review){ const sections=[["CONTENT COVERAGE",review.content_coverage],["MATERIAL EVIDENCE",review.material_evidence],["TASK ANALYSIS",review.task_analysis],["EXPRESSION",review.expression_review],["STRUCTURE",review.structure_review]];return `<div class="study-detail"><p class="study-kicker">KIORA REVIEW / ${esc(review.assessment?.level||"")}</p>${sections.map(([title,value])=>`<section class="study-review-section"><h4>${title}</h4><p>${esc(value?.summary||"")}</p><ul>${(value?.findings||[]).map(item=>`<li><strong>${esc(item.status?.toUpperCase())}</strong> ${esc(item.point)}<br>${esc(item.evidence)}<br>${esc(item.suggestion)}</li>`).join("")}</ul></section>`).join("")}<section class="study-review-section"><h4>PRIORITY</h4><p>${esc(review.assessment?.main_issue||"")}</p><ol>${(review.assessment?.priorities||[]).map(item=>`<li>${esc(item)}</li>`).join("")}</ol>${state.writable?'<button class="study-primary" data-action="add-revision">ADD TO REVISION</button>':""}</section></div>`; }
 
@@ -491,7 +875,1151 @@
     async function extractText(file,allowOcr=false){if(file.type.includes("wordprocessingml")){await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js","mammoth");return (await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value;}if(file.type==="application/pdf"){await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs","pdfjsLib",true);const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text="";for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(" ")+"\n";}if(text.trim().length>20)return text;if(!allowOcr)return text;await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),viewport=page.getViewport({scale:1.6}),canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:context,viewport}).promise;const result=await window.Tesseract.recognize(canvas,"chi_sim+eng",{logger:message=>status(`OCR page ${i}/${pdf.numPages} · ${Math.round((message.progress||0)*100)}%`)});text+=result.data.text+"\n";}return text;}if(file.type.startsWith("image/")&&allowOcr){await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");const result=await window.Tesseract.recognize(file,"chi_sim+eng",{logger:message=>status(`OCR ${Math.round((message.progress||0)*100)}%`)});return result.data.text;}throw new Error("This file contains no extractable text.");}
     function loadScript(src,global,module=false){if(window[global])return Promise.resolve();if(module)return import(src).then(value=>{window[global]=value;if(global==="pdfjsLib"&&value.GlobalWorkerOptions)value.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";});return new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error("Parser could not be loaded."));document.head.append(script);});}
 
-    async function addShenlunQuestion(){const count=$("#study-practice-detail")._studyData.shenlun_questions.length;openEditor({title:"New Shenlun Question",kicker:"QUESTION SETUP",fields:[{name:"question_number",label:"QUESTION NUMBER",type:"number",value:count+1,required:true},{name:"title",label:"TITLE",required:true},{name:"question_type",label:"TYPE",type:"select",options:[["summary","SUMMARY"],["analysis","ANALYSIS"],["proposal","PROPOSAL"],["official_document","OFFICIAL DOCUMENT"],["essay","ESSAY"],["other","OTHER"]]},{name:"max_characters",label:"MAX CHARACTERS",type:"number"},{name:"points",label:"POINTS",type:"number"},{name:"material_scope",label:"MATERIAL SCOPE"},{name:"prompt",label:"PROMPT / REQUIREMENTS",type:"textarea",required:true,full:true}],onSave:async data=>{data.practice_id=state.activePractice.id;data.question_number=Number(data.question_number);data.max_characters=data.max_characters?Number(data.max_characters):null;data.points=data.points?Number(data.points):null;const result=await upsert("shenlun_questions",data);if(result.error)throw result.error;return true;}});}
+    function shenlunTypeOptions(selected = "summary") {
+    const options = [
+        [
+            "summary",
+            "概括题 / SUMMARY"
+        ],
+
+        [
+            "analysis",
+            "分析题 / ANALYSIS"
+        ],
+
+        [
+            "proposal",
+            "对策题 / PROPOSAL"
+        ],
+
+        [
+            "official_document",
+            "应用文 / OFFICIAL DOCUMENT"
+        ],
+
+        [
+            "essay",
+            "大作文 / ESSAY"
+        ],
+
+        [
+            "other",
+            "其他 / OTHER"
+        ]
+    ];
+
+    return options
+        .map(
+            ([value, label]) => `
+                <option
+                    value="${value}"
+                    ${
+                        value === selected
+                            ? "selected"
+                            : ""
+                    }
+                >
+                    ${label}
+                </option>
+            `
+        )
+        .join("");
+}
+
+
+async function openShenlunRegionSelector({
+    file,
+    regions = [],
+    label = "QUESTION",
+    onDone
+}) {
+    /*
+     * 直接复用行测错题集现有框选样式和
+     * installCropSelection。
+     *
+     * 不重新创造坐标系统。
+     */
+    ensureStudyCropStyles();
+
+    if (!file) {
+        return status(
+            "Please upload the Shenlun PDF first.",
+            true
+        );
+    }
+
+    const url =
+        await getSignedUrl(
+            file.storage_path
+        );
+
+    if (!url) {
+        return status(
+            "Source paper could not be opened.",
+            true
+        );
+    }
+
+    /*
+     * working 是本次正在编辑的全部框。
+     *
+     * 一个 QUESTION / ANSWER
+     * 可以保存多个区域。
+     */
+    const working = (
+        Array.isArray(regions)
+            ? regions
+            : []
+    ).map((item) => ({
+        ...item
+    }));
+
+
+    openSheet(`
+        <header>
+
+            <div>
+                <p class="study-kicker">
+                    SHENLUN / ${esc(label)}
+                </p>
+
+                <h2>
+                    Select ${
+                        esc(
+                            label === "ANSWER"
+                                ? "Answer"
+                                : "Question"
+                        )
+                    } Area
+                </h2>
+            </div>
+
+            <button
+                class="study-dialog-close"
+                data-close-sheet
+                type="button"
+            >
+                ×
+            </button>
+
+        </header>
+
+
+        <div class="study-sheet-content">
+
+            <div class="study-crop-controls">
+
+                <label>
+                    PAGE
+
+                    <input
+                        id="study-crop-page"
+                        type="number"
+                        min="1"
+                        value="${
+                            working.at(-1)?.page ||
+                            1
+                        }"
+                    >
+                </label>
+
+
+                <button
+                    class="study-secondary"
+                    id="study-crop-load"
+                    type="button"
+                >
+                    LOAD PAGE
+                </button>
+
+
+                <div class="study-crop-jumps">
+
+                    <button
+                        class="study-secondary"
+                        data-crop-jump="top"
+                        type="button"
+                    >
+                        TOP
+                    </button>
+
+                    <button
+                        class="study-secondary"
+                        data-crop-jump="middle"
+                        type="button"
+                    >
+                        MIDDLE
+                    </button>
+
+                    <button
+                        class="study-secondary"
+                        data-crop-jump="bottom"
+                        type="button"
+                    >
+                        BOTTOM
+                    </button>
+
+                </div>
+
+
+                <button
+                    class="study-secondary"
+                    id="study-crop-select"
+                    type="button"
+                >
+                    SELECT AREA
+                </button>
+
+
+                <button
+                    class="study-primary"
+                    id="study-crop-add"
+                    type="button"
+                    disabled
+                >
+                    ADD AREA
+                </button>
+
+            </div>
+
+
+            <p id="study-crop-hint">
+                Choose a page,
+                press SELECT AREA,
+                then drag.
+                Add as many areas as you need.
+            </p>
+
+
+            <div
+                id="study-shenlun-region-list"
+                class="study-shenlun-region-list"
+            ></div>
+
+
+            <div
+                id="study-crop-scroll"
+                class="study-crop-scroll"
+            >
+
+                <div
+                    id="study-crop-stage"
+                    class="study-crop-stage"
+                ></div>
+
+            </div>
+
+
+            <div
+                class="study-shenlun-selector-footer"
+            >
+
+                <button
+                    class="study-secondary"
+                    id="study-crop-clear"
+                    type="button"
+                >
+                    CLEAR ALL
+                </button>
+
+                <button
+                    class="study-primary"
+                    id="study-crop-done"
+                    type="button"
+                >
+                    DONE
+                </button>
+
+            </div>
+
+        </div>
+    `);
+
+
+    const sheet =
+        $("#study-sheet");
+
+    const scroll =
+        $("#study-crop-scroll");
+
+    const stage =
+        $("#study-crop-stage");
+
+    const pageInput =
+        $("#study-crop-page");
+
+    const selectButton =
+        $("#study-crop-select");
+
+    const addButton =
+        $("#study-crop-add");
+
+    const hint =
+        $("#study-crop-hint");
+
+    const listNode =
+        $("#study-shenlun-region-list");
+
+
+    let controller = null;
+    let pdf = null;
+
+
+    /*
+     * 显示当前已经加入的框选区域。
+     */
+    const renderRegionList = () => {
+        listNode.innerHTML =
+            working.length
+                ? working
+                      .map(
+                          (
+                              region,
+                              index
+                          ) => `
+                              <div
+                                  class="study-shenlun-region-chip"
+                              >
+
+                                  <span>
+                                      ${String(
+                                          index + 1
+                                      ).padStart(
+                                          2,
+                                          "0"
+                                      )}
+                                      ·
+                                      PAGE
+                                      ${String(
+                                          region.page ||
+                                              1
+                                      ).padStart(
+                                          2,
+                                          "0"
+                                      )}
+                                  </span>
+
+                                  <button
+                                      type="button"
+                                      data-remove-region="${index}"
+                                  >
+                                      REMOVE
+                                  </button>
+
+                              </div>
+                          `
+                      )
+                      .join("")
+                : `
+                    <p>
+                        No areas selected yet.
+                    </p>
+                `;
+
+
+        $$(
+            "[data-remove-region]",
+            listNode
+        ).forEach((button) => {
+
+            button.onclick = () => {
+                working.splice(
+                    Number(
+                        button.dataset
+                            .removeRegion
+                    ),
+                    1
+                );
+
+                renderRegionList();
+            };
+
+        });
+    };
+
+
+    /*
+     * 加载指定 PDF 页面。
+     */
+    const renderPage =
+        async () => {
+
+            controller?.destroy();
+            controller = null;
+
+            stage.replaceChildren();
+            stage._selection = null;
+
+            addButton.disabled = true;
+
+            selectButton.textContent =
+                "SELECT AREA";
+
+            selectButton.classList.remove(
+                "active"
+            );
+
+            stage.classList.remove(
+                "is-selecting"
+            );
+
+            scroll.scrollTop = 0;
+            scroll.scrollLeft = 0;
+
+
+            let canvas;
+
+
+            if (
+                file.mime_type ===
+                "application/pdf"
+            ) {
+                await loadScript(
+                    "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs",
+                    "pdfjsLib",
+                    true
+                );
+
+
+                if (!pdf) {
+                    pdf =
+                        await window.pdfjsLib
+                            .getDocument(url)
+                            .promise;
+                }
+
+
+                const pageNumber =
+                    Math.min(
+                        Math.max(
+                            Number(
+                                pageInput.value
+                            ) || 1,
+                            1
+                        ),
+                        pdf.numPages
+                    );
+
+
+                pageInput.value =
+                    pageNumber;
+
+
+                const page =
+                    await pdf.getPage(
+                        pageNumber
+                    );
+
+
+                const viewport =
+                    page.getViewport({
+                        scale: 2
+                    });
+
+
+                canvas =
+                    document.createElement(
+                        "canvas"
+                    );
+
+
+                canvas.width =
+                    Math.ceil(
+                        viewport.width
+                    );
+
+                canvas.height =
+                    Math.ceil(
+                        viewport.height
+                    );
+
+
+                await page.render({
+                    canvasContext:
+                        canvas.getContext(
+                            "2d"
+                        ),
+
+                    viewport
+                }).promise;
+
+            } else if (
+                file.mime_type.startsWith(
+                    "image/"
+                )
+            ) {
+                const image =
+                    document.createElement(
+                        "img"
+                    );
+
+                image.crossOrigin =
+                    "anonymous";
+
+                image.src = url;
+
+                await image.decode();
+
+
+                canvas =
+                    document.createElement(
+                        "canvas"
+                    );
+
+                canvas.width =
+                    image.naturalWidth;
+
+                canvas.height =
+                    image.naturalHeight;
+
+
+                canvas
+                    .getContext("2d")
+                    .drawImage(
+                        image,
+                        0,
+                        0
+                    );
+
+            } else {
+                stage.innerHTML = `
+                    <p
+                        class="study-empty study-error"
+                    >
+                        This source cannot be cropped.
+                    </p>
+                `;
+
+                return;
+            }
+
+
+            canvas.className =
+                "study-crop-canvas";
+
+            stage.append(canvas);
+
+
+            await new Promise(
+                (resolve) =>
+                    requestAnimationFrame(
+                        resolve
+                    )
+            );
+
+
+            /*
+             * 这里直接调用你已经做好的
+             * 行测框选器。
+             */
+            controller =
+                installCropSelection({
+
+                    stage,
+
+                    source: canvas,
+
+                    scroll,
+
+
+                    onSelectionChange(
+                        selection
+                    ) {
+                        addButton.disabled =
+                            !selection ||
+                            selection.crop_width <
+                                0.003 ||
+                            selection.crop_height <
+                                0.003;
+                    },
+
+
+                    onModeChange(
+                        selecting
+                    ) {
+                        stage.classList.toggle(
+                            "is-selecting",
+                            selecting
+                        );
+
+                        selectButton.classList.toggle(
+                            "active",
+                            selecting
+                        );
+
+
+                        selectButton.textContent =
+                            selecting
+                                ? "CANCEL SELECT"
+                                : stage._selection
+                                    ? "RESELECT"
+                                    : "SELECT AREA";
+
+
+                        hint.textContent =
+                            selecting
+                                ? "Selecting… keep holding. You can use the mouse wheel or drag near the top/bottom edge to continue scrolling."
+                                : stage._selection
+                                    ? "Area selected. Press ADD AREA, or RESELECT."
+                                    : "Choose a page, then press SELECT AREA.";
+                    }
+                });
+        };
+
+
+    /*
+     * LOAD PAGE
+     */
+    $("#study-crop-load").onclick =
+        renderPage;
+
+
+    /*
+     * TOP / MIDDLE / BOTTOM
+     */
+    $$(
+        "[data-crop-jump]",
+        sheet
+    ).forEach((button) => {
+
+        button.onclick = () => {
+
+            const max =
+                Math.max(
+                    0,
+                    scroll.scrollHeight -
+                        scroll.clientHeight
+                );
+
+
+            const target =
+                button.dataset.cropJump ===
+                "middle"
+                    ? max / 2
+                    : button.dataset
+                          .cropJump ===
+                      "bottom"
+                        ? max
+                        : 0;
+
+
+            scroll.scrollTo({
+                top: target,
+
+                behavior:
+                    matchMedia(
+                        "(prefers-reduced-motion: reduce)"
+                    ).matches
+                        ? "auto"
+                        : "smooth"
+            });
+        };
+
+    });
+
+
+    /*
+     * 开始 / 取消框选
+     */
+    selectButton.onclick = () => {
+
+        if (!controller) {
+            return;
+        }
+
+
+        if (
+            controller.isSelecting()
+        ) {
+            controller.cancel();
+        } else {
+            controller.start();
+        }
+
+    };
+
+
+    /*
+     * 将当前框加入区域列表。
+     *
+     * 加完以后仍然可以继续：
+     * - 当前页再框一次
+     * - 切换下一页继续框
+     */
+    addButton.onclick = () => {
+
+        const selection =
+            stage._selection;
+
+
+        if (!selection) {
+            return;
+        }
+
+
+        working.push({
+
+            page:
+                Number(
+                    pageInput.value
+                ) || 1,
+
+            crop_x:
+                selection.crop_x,
+
+            crop_y:
+                selection.crop_y,
+
+            crop_width:
+                selection.crop_width,
+
+            crop_height:
+                selection.crop_height
+        });
+
+
+        controller.cancel();
+
+        renderRegionList();
+
+
+        hint.textContent =
+            "Area added. Change PAGE and LOAD PAGE if you need another page, or select another area on this page.";
+    };
+
+
+    /*
+     * 删除当前 QUESTION / ANSWER
+     * 的全部框。
+     */
+    $("#study-crop-clear").onclick =
+        () => {
+
+            working.splice(
+                0,
+                working.length
+            );
+
+            controller?.cancel();
+
+            renderRegionList();
+        };
+
+
+    /*
+     * 完成。
+     */
+    $("#study-crop-done").onclick =
+        () => {
+
+            if (!working.length) {
+                return status(
+                    `Select at least one ${label.toLowerCase()} area.`,
+                    true
+                );
+            }
+
+
+            controller?.destroy();
+
+            controller = null;
+
+
+            sheet.close();
+
+
+            onDone(
+                working.map(
+                    (item) => ({
+                        ...item
+                    })
+                )
+            );
+        };
+
+
+    /*
+     * 用户直接关闭弹窗时，
+     * 销毁 pointer listener。
+     */
+    sheet.addEventListener(
+        "close",
+        () => {
+
+            controller?.destroy();
+            controller = null;
+
+        },
+        {
+            once: true
+        }
+    );
+
+
+    renderRegionList();
+
+    await renderPage();
+}
+
+
+async function addShenlunQuestion() {
+
+    const detail =
+        $("#study-practice-detail");
+
+    const data =
+        detail._studyData;
+
+
+    const count =
+        data.shenlun_questions.length;
+
+
+    /*
+     * 申论整份文件只上传一次。
+     */
+    const material =
+        data.files.find(
+            (file) =>
+                [
+                    "material",
+                    "paper"
+                ].includes(
+                    file.file_kind
+                )
+        );
+
+
+    if (!material) {
+        return status(
+            "Upload the Shenlun PDF before adding questions.",
+            true
+        );
+    }
+
+
+    /*
+     * 一个题目和一个答案
+     * 都可以拥有多个框。
+     */
+    let questionRegions = [];
+    let answerRegions = [];
+
+
+    const dialog =
+        $("#study-editor");
+
+
+    $("#study-editor-title")
+        .textContent =
+        "New Shenlun Question";
+
+
+    $("#study-editor-kicker")
+        .textContent =
+        "QUESTION SETUP";
+
+
+    $("#study-editor-message")
+        .textContent = "";
+
+
+    /*
+     * 导题阶段现在只显示：
+     *
+     * 题号
+     * 题型
+     * 题目框选
+     * 答案框选
+     */
+    $("#study-editor-fields")
+        .innerHTML = `
+
+            <div class="study-field">
+
+                <label
+                    for="study-field-question_number"
+                >
+                    QUESTION NUMBER
+                </label>
+
+                <input
+                    id="study-field-question_number"
+                    name="question_number"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value="${count + 1}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="study-field">
+
+                <label
+                    for="study-field-question_type"
+                >
+                    TYPE
+                </label>
+
+                <select
+                    id="study-field-question_type"
+                    name="question_type"
+                >
+                    ${shenlunTypeOptions()}
+                </select>
+
+            </div>
+
+
+            <div
+                class="
+                    study-field
+                    full
+                    study-shenlun-picker-field
+                "
+            >
+
+                <label>
+                    QUESTION
+                </label>
+
+
+                <div
+                    class="study-shenlun-picker-row"
+                >
+
+                    <span
+                        id="study-shenlun-question-count"
+                    >
+                        0 areas selected
+                    </span>
+
+
+                    <button
+                        class="study-secondary"
+                        id="study-select-question-regions"
+                        type="button"
+                    >
+                        SELECT QUESTION
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="
+                    study-field
+                    full
+                    study-shenlun-picker-field
+                "
+            >
+
+                <label>
+                    ANSWER
+                </label>
+
+
+                <div
+                    class="study-shenlun-picker-row"
+                >
+
+                    <span
+                        id="study-shenlun-answer-count"
+                    >
+                        0 areas selected
+                    </span>
+
+
+                    <button
+                        class="study-secondary"
+                        id="study-select-answer-regions"
+                        type="button"
+                    >
+                        SELECT ANSWER
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+
+    const updateCounts = () => {
+
+        $("#study-shenlun-question-count")
+            .textContent =
+            `${questionRegions.length} area${
+                questionRegions.length === 1
+                    ? ""
+                    : "s"
+            } selected`;
+
+
+        $("#study-shenlun-answer-count")
+            .textContent =
+            `${answerRegions.length} area${
+                answerRegions.length === 1
+                    ? ""
+                    : "s"
+            } selected`;
+    };
+
+
+    /*
+     * 框题目。
+     */
+    $("#study-select-question-regions")
+        .onclick = () =>
+            openShenlunRegionSelector({
+
+                file: material,
+
+                regions:
+                    questionRegions,
+
+                label:
+                    "QUESTION",
+
+                onDone(regions) {
+                    questionRegions =
+                        regions;
+
+                    updateCounts();
+                }
+            });
+
+
+    /*
+     * 框参考答案。
+     */
+    $("#study-select-answer-regions")
+        .onclick = () =>
+            openShenlunRegionSelector({
+
+                file: material,
+
+                regions:
+                    answerRegions,
+
+                label:
+                    "ANSWER",
+
+                onDone(regions) {
+                    answerRegions =
+                        regions;
+
+                    updateCounts();
+                }
+            });
+
+
+    /*
+     * SAVE
+     */
+    dialog._onSave =
+        async (formData) => {
+
+            if (
+                !questionRegions.length
+            ) {
+                throw new Error(
+                    "Please select the question area first."
+                );
+            }
+
+
+            if (
+                !answerRegions.length
+            ) {
+                throw new Error(
+                    "Please select the answer area first."
+                );
+            }
+
+
+            const questionNumber =
+                Number(
+                    formData.question_number
+                );
+
+
+            /*
+             * title / prompt
+             * 数据库仍要求存在，
+             * 但用户无需手动填写。
+             */
+            const payload = {
+
+                practice_id:
+                    state.activePractice.id,
+
+                question_number:
+                    questionNumber,
+
+                title:
+                    `第${questionNumber}题`,
+
+                question_type:
+                    formData.question_type ||
+                    "other",
+
+                prompt: "",
+
+                material_scope:
+                    null,
+
+                max_characters:
+                    null,
+
+                points:
+                    null,
+
+                source_file_id:
+                    material.id,
+
+                question_regions:
+                    questionRegions,
+
+                answer_regions:
+                    answerRegions
+            };
+
+
+            const result =
+                await upsert(
+                    "shenlun_questions",
+                    payload
+                );
+
+
+            if (result.error) {
+                throw result.error;
+            }
+
+
+            return true;
+        };
+
+
+    updateCounts();
+
+
+    dialog.showModal();
+
+
+    setTimeout(
+        () =>
+            $(
+                "#study-field-question_number"
+            )?.focus(),
+        50
+    );
+}
 
     async function importReference(){const input=document.createElement("input");input.type="file";input.accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";input.onchange=async()=>{const file=input.files[0],question=$("#study-practice-detail")._studyData.shenlun_questions.find(item=>item.id===$("#study-practice-detail").dataset.questionId);if(!file||!question)return;status("Extracting reference…");try{const text=await extractText(file,true);openEditor({title:"Reference Import",kicker:"REVIEW BEFORE CONFIRM",fields:[{name:"body",label:`${String(question.question_number).padStart(2,"0")} ${question.title}`,type:"textarea",value:text,required:true,full:true}],onSave:async data=>{const existing=$("#study-practice-detail")._reference;const result=await upsert("shenlun_references",{practice_id:state.activePractice.id,question_id:question.id,body:data.body,confirmed:true},existing?.id);if(result.error)throw result.error;return true;}});}catch(error){status(error.message,true);}};input.click();}
     async function runReview(){const detail=$("#study-practice-detail"),question=detail._studyData.shenlun_questions.find(item=>item.id===detail.dataset.questionId);let answer=await saveShenlun(question,detail._answer,true);if(!answer)return;status("Kiora is reviewing the answer…");const result=await auth.requestStudyReview(answer.id);if(result.error){status(`Review unavailable: ${result.error.code||result.error.message}. Retry when the server is configured.`,true);return;}status("Review saved.");openPractice(state.activePractice.id);}
