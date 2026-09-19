@@ -379,24 +379,48 @@
     };
 
     stage.onpointerup = (event) => {
-        start = null;
+    // 用真正松开鼠标时的位置，再计算一次最终框选范围
+    if (start && box) {
+        const end = point(event);
 
-        if (
-            stage.hasPointerCapture &&
-            stage.hasPointerCapture(event.pointerId)
-        ) {
-            stage.releasePointerCapture(event.pointerId);
-        }
+        const x = Math.min(start.x, end.x);
+        const y = Math.min(start.y, end.y);
+        const width = Math.abs(end.x - start.x);
+        const height = Math.abs(end.y - start.y);
 
-        const saveButton = $("#study-crop-save");
+        Object.assign(box.style, {
+            left: `${x * 100}%`,
+            top: `${y * 100}%`,
+            width: `${width * 100}%`,
+            height: `${height * 100}%`
+        });
 
-        if (saveButton) {
-            saveButton.disabled =
-                !stage._selection ||
-                stage._selection.crop_width < 0.01 ||
-                stage._selection.crop_height < 0.01;
-        }
-    };
+        stage._selection = {
+            crop_x: x,
+            crop_y: y,
+            crop_width: width,
+            crop_height: height
+        };
+    }
+
+    start = null;
+
+    if (
+        stage.hasPointerCapture &&
+        stage.hasPointerCapture(event.pointerId)
+    ) {
+        stage.releasePointerCapture(event.pointerId);
+    }
+
+    const saveButton = $("#study-crop-save");
+
+    if (saveButton) {
+        saveButton.disabled =
+            !stage._selection ||
+            stage._selection.crop_width < 0.01 ||
+            stage._selection.crop_height < 0.01;
+    }
+};
 
     stage.onpointercancel = () => {
         start = null;
