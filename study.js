@@ -303,7 +303,105 @@
 
     function mistakeData(item, overrides={}) { return { practice_id:item.practice_id,question_number:item.question_number,source_type:item.source_type,subject:item.subject,knowledge_tag:item.knowledge_tag,image_path:item.image_path,paper_file_id:item.paper_file_id,paper_page:item.paper_page,crop_x:item.crop_x,crop_y:item.crop_y,crop_width:item.crop_width,crop_height:item.crop_height,question_snapshot:item.question_snapshot,my_answer:item.my_answer,correct_answer:item.correct_answer,reason:item.reason,status:item.status,is_public:item.is_public,...overrides }; }
     async function openCropEditor(item){const fileResult=await getEntity("files",item.paper_file_id),file=fileResult.data;if(!file)return status("Source paper is unavailable.",true);const url=await getSignedUrl(file.storage_path);if(!url)return status("Source paper could not be opened.",true);openSheet(`<header><div><p class="study-kicker">NORMALIZED CROP</p><h2>Select Question Area</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-crop-controls"><label>PAGE <input id="study-crop-page" type="number" min="1" value="${item.paper_page||1}"></label><button class="study-secondary" id="study-crop-load" type="button">LOAD PAGE</button><button class="study-primary" id="study-crop-save" type="button" disabled>SAVE AREA</button></div><p>Drag across the question area. Coordinates are stored from 0–1.</p><div id="study-crop-stage" class="study-crop-stage"></div></div>`);const load=async()=>{const stage=$("#study-crop-stage");stage.innerHTML="";let source;if(file.mime_type==="application/pdf"){await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs","pdfjsLib",true);const pdf=await window.pdfjsLib.getDocument(url).promise,pageNumber=Math.min(Math.max(Number($("#study-crop-page").value)||1,1),pdf.numPages),page=await pdf.getPage(pageNumber),viewport=page.getViewport({scale:1.6});source=document.createElement("canvas");source.width=viewport.width;source.height=viewport.height;await page.render({canvasContext:source.getContext("2d"),viewport}).promise;$("#study-crop-page").value=pageNumber;}else{source=document.createElement("img");source.src=url;await source.decode();}stage.append(source);installCropSelection(stage);};$("#study-crop-load").onclick=load;$("#study-crop-save").onclick=async()=>{const selection=$("#study-crop-stage")._selection;if(!selection)return;const result=await upsert("mistakes",mistakeData(item,{paper_page:Number($("#study-crop-page").value)||1,...selection}),item.id);if(result.error)return status(result.error.message,true);Object.assign(item,result.data);$("#study-sheet").close();renderMistakes();};await load();}
-    function installCropSelection(stage){let start=null,box=null;const point=event=>{const rect=stage.getBoundingClientRect();return{x:Math.min(Math.max((event.clientX-rect.left)/rect.width,0),1),y:Math.min(Math.max((event.clientY-rect.top)/rect.height,0),1)}};stage.onpointerdown=event=>{start=point(event);box=document.createElement("i");box.className="study-crop-selection";stage.querySelector(".study-crop-selection")?.remove();stage.append(box);stage.setPointerCapture(event.pointerId);};stage.onpointermove=event=>{if(!start||!box)return;const end=point(event),x=Math.min(start.x,end.x),y=Math.min(start.y,end.y),width=Math.abs(end.x-start.x),height=Math.abs(end.y-start.y);Object.assign(box.style,{left:`${x*100}%`,top:`${y*100}%`,width:`${width*100}%`,height:`${height*100}%`});stage._selection={crop_x:x,crop_y:y,crop_width:width,crop_height:height};};stage.onpointerup=()=>{start=null;$("#study-crop-save").disabled=!stage._selection||stage._selection.crop_width<.01||stage._selection.crop_height<.01;};}
+    function installCropSelection(stage) {
+    let start = null;
+    let box = null;
+
+    const clamp = (value) => Math.min(Math.max(value, 0), 1);
+
+    const point = (event) => {
+        const rect = stage.getBoundingClientRect();
+
+        // 使用 stage 的完整可滚动尺寸，而不是只使用当前可视区域
+        const fullWidth = stage.scrollWidth || rect.width;
+        const fullHeight = stage.scrollHeight || rect.height;
+
+        // 鼠标在完整 stage 内容中的实际位置
+        const x =
+            event.clientX -
+            rect.left +
+            stage.scrollLeft;
+
+        const y =
+            event.clientY -
+            rect.top +
+            stage.scrollTop;
+
+        return {
+            x: clamp(x / fullWidth),
+            y: clamp(y / fullHeight)
+        };
+    };
+
+    stage.onpointerdown = (event) => {
+        // 只响应主键
+        if (event.button !== 0) return;
+
+        start = point(event);
+
+        stage
+            .querySelector(".study-crop-selection")
+            ?.remove();
+
+        box = document.createElement("i");
+        box.className = "study-crop-selection";
+
+        stage.append(box);
+
+        if (stage.setPointerCapture) {
+            stage.setPointerCapture(event.pointerId);
+        }
+    };
+
+    stage.onpointermove = (event) => {
+        if (!start || !box) return;
+
+        const end = point(event);
+
+        const x = Math.min(start.x, end.x);
+        const y = Math.min(start.y, end.y);
+        const width = Math.abs(end.x - start.x);
+        const height = Math.abs(end.y - start.y);
+
+        Object.assign(box.style, {
+            left: `${x * 100}%`,
+            top: `${y * 100}%`,
+            width: `${width * 100}%`,
+            height: `${height * 100}%`
+        });
+
+        stage._selection = {
+            crop_x: x,
+            crop_y: y,
+            crop_width: width,
+            crop_height: height
+        };
+    };
+
+    stage.onpointerup = (event) => {
+        start = null;
+
+        if (
+            stage.hasPointerCapture &&
+            stage.hasPointerCapture(event.pointerId)
+        ) {
+            stage.releasePointerCapture(event.pointerId);
+        }
+
+        const saveButton = $("#study-crop-save");
+
+        if (saveButton) {
+            saveButton.disabled =
+                !stage._selection ||
+                stage._selection.crop_width < 0.01 ||
+                stage._selection.crop_height < 0.01;
+        }
+    };
+
+    stage.onpointercancel = () => {
+        start = null;
+    };
+}
 
     async function submitRevisit(){const item=filteredMistakes()[state.currentMistake],answer=$("[data-revisit-answer].active")?.dataset.revisitAnswer;if(!answer)return;const isCorrect=answer.toUpperCase()===item.correct_answer.toUpperCase();const result=await upsert("mistake_attempts",{mistake_id:item.id,answer,is_correct:isCorrect,attempted_at:new Date().toISOString()});if(result.error)return status(result.error.message,true);await upsert("mistakes",mistakeData(item,{status:isCorrect?"review":"learning"}),item.id);item.status=isCorrect?"review":"learning";const attempts=await list("mistake_attempts",{filters:{mistake_id:item.id}});openSheet(`<header><div><p class="study-kicker">REVISIT RESULT</p><h2>${isCorrect?"✓ CORRECT":"× NEEDS REVIEW"}</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-answer-reveal"><div><span>CURRENT</span><strong>${esc(answer)} ${isCorrect?"✓":"×"}</strong></div><div><span>LAST TIME</span><strong>${esc(item.my_answer||"—")}</strong></div></div><p class="study-kicker">ATTEMPTS</p>${(attempts.data||[]).map(attempt=>`<p>${displayDate(attempt.attempted_at)}　${esc(attempt.answer)} ${attempt.is_correct?"✓":"×"}</p>`).join("")}</div>`);}
 
