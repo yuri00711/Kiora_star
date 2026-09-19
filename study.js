@@ -217,7 +217,23 @@
     async function saveAptitudeAnswer(value, changes = {}) {
         const detail=$("#study-practice-detail"), data=detail._studyData, question=Number(detail.dataset.question), existing=data.aptitude_answers.find((item)=>item.question_number===question);
         const payload={practice_id:state.activePractice.id,question_number:question,answer:value ?? existing?.answer ?? null,flagged:changes.flagged ?? existing?.flagged ?? false};
-        const result=await upsert("aptitude_answers",payload,existing?.id||null); if(result.error){status(`Answer not saved: ${result.error.message}`,true);return;}
+        const result = await auth.write(
+                "study_upsert",
+                {
+                    entity: "aptitude_answers",
+                    id: existing?.id || null,
+                    data: payload
+                },
+                async () => {
+                    return db
+                        .from(tables.aptitude_answers)
+                        .upsert(payload, {
+                            onConflict: "practice_id,question_number"
+                        })
+                        .select("*")
+                        .single();
+                }
+            );
         if(existing) Object.assign(existing,result.data); else data.aptitude_answers.push(result.data);
         if(changes.advance && practiceAutoAdvance() && question<(state.activePractice.total_questions||1)) detail.dataset.question=question+1;
         updateAptitudeControls();
