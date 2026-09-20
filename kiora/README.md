@@ -46,12 +46,14 @@ The unconfigured Phase 0 Brain stores null cost fields. It cannot run or consume
 - Archive schema contract
 - No Dock, Runtime or model calls
 
-### Phase 1 — not implemented
+### Phase 1 — implemented
 
 - OWNER-only Dock
 - Conversation, Message, Event and active conversation recovery
 - Context Broker and page adapters
 - Brain Adapter and real chat
+
+Phase 1 requires `supabase-kiora-phase1-migration.sql`, the `kiora-runtime` deployment and an explicitly configured Brain before a provider can answer. First Boot remains an explicit OWNER action in the Dock.
 
 ### Phase 2 — not implemented
 

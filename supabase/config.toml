@@ -9,3 +9,8 @@ verify_jwt = false
 
 [functions.study-review]
 verify_jwt = false
+
+[functions.kiora-runtime]
+# kiora-runtime validates the real Supabase JWT itself, then calls
+# public.is_site_owner() with that same JWT before any service-role operation.
+verify_jwt = false

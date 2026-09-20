@@ -208,6 +208,14 @@
         return publish("viewer");
     }
 
+    async function getOwnerAccessToken() {
+        if (!client || authState.role !== "owner") return null;
+        const { data, error } = await client.auth.getSession();
+        if (error || !data.session?.access_token || !data.session.user) return null;
+        if (data.session.user.id !== authState.identity?.id) return null;
+        return data.session.access_token;
+    }
+
     function can(permission) {
         if (authState.role === "owner") return true;
         return authState.role === "editor" && EDITOR_PERMISSIONS.has(permission);
@@ -312,6 +320,7 @@
 
     window.KioraAuth = Object.freeze({
         can,
+        getOwnerAccessToken,
         initialize,
         loginEditor,
         loginOwner,
