@@ -1,0 +1,981 @@
+:root {
+    --sale-bg: #faf6f8;
+    --sale-paper: rgba(255, 255, 255, 0.48);
+    --sale-ink: #574854;
+    --sale-muted: #a18d9d;
+    --sale-line: rgba(120, 91, 115, 0.16);
+    --sale-line-strong: rgba(120, 91, 115, 0.28);
+    --sale-pink: #dcb8c9;
+    --sale-purple: #b9add1;
+    --sale-live: #9f7188;
+    --sale-forecast: #8e84aa;
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+
+.sale-body {
+    min-height: 100vh;
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(239, 214, 225, 0.32),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 85% 22%,
+            rgba(215, 207, 235, 0.28),
+            transparent 34%
+        ),
+        var(--sale-bg);
+
+    color: var(--sale-ink);
+}
+
+
+.sale-atmosphere {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: -1;
+}
+
+
+.sale-atmosphere i {
+    position: absolute;
+    width: 1px;
+    height: 45vh;
+    background:
+        linear-gradient(
+            to bottom,
+            transparent,
+            rgba(184, 145, 181, 0.18),
+            transparent
+        );
+    transform: rotate(22deg);
+}
+
+
+.sale-atmosphere i:nth-child(1) {
+    left: 12%;
+    top: 4%;
+}
+
+
+.sale-atmosphere i:nth-child(2) {
+    left: 61%;
+    top: 19%;
+    height: 58vh;
+}
+
+
+.sale-atmosphere i:nth-child(3) {
+    right: 9%;
+    top: 0;
+    height: 70vh;
+}
+
+
+.sale-atmosphere span {
+    position: absolute;
+    color: rgba(136, 100, 135, 0.25);
+}
+
+
+.sale-atmosphere span:nth-of-type(1) {
+    top: 18%;
+    left: 8%;
+}
+
+
+.sale-atmosphere span:nth-of-type(2) {
+    top: 41%;
+    right: 12%;
+}
+
+
+.sale-atmosphere span:nth-of-type(3) {
+    bottom: 18%;
+    left: 55%;
+}
+
+
+
+.sale-shell {
+    width:
+        min(
+            1280px,
+            calc(100% - 48px)
+        );
+
+    margin:
+        0 auto;
+
+    padding:
+        145px 0
+        100px;
+}
+
+
+
+.sale-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 50px;
+    align-items: end;
+
+    padding:
+        20px 0
+        65px;
+
+    border-bottom:
+        1px solid
+        var(--sale-line);
+}
+
+
+.sale-heading > div > p,
+.sale-section-heading p {
+    margin: 0 0 12px;
+
+    color:
+        var(--sale-muted);
+
+    font-size: 9px;
+    letter-spacing: 3px;
+}
+
+
+.sale-heading h1 {
+    margin: 0;
+
+    font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+    font-size:
+        clamp(54px, 8vw, 112px);
+
+    font-weight: 400;
+    line-height: 0.9;
+}
+
+
+.sale-heading > div > span {
+    display: block;
+
+    margin-top: 22px;
+
+    color:
+        var(--sale-muted);
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-style: italic;
+
+    font-size: 17px;
+}
+
+
+.sale-philosophy {
+    max-width: 300px;
+
+    margin: 0;
+
+    color:
+        var(--sale-muted);
+
+    font-size: 12px;
+    line-height: 2.1;
+    letter-spacing: 1px;
+}
+
+
+
+.sale-status {
+    margin:
+        28px 0;
+
+    padding:
+        15px 18px;
+
+    border:
+        1px solid
+        var(--sale-line);
+
+    color:
+        var(--sale-muted);
+
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+
+
+.sale-summary {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    margin:
+        55px 0;
+
+    border:
+        1px solid
+        var(--sale-line);
+}
+
+
+.sale-summary article {
+    min-height:
+        145px;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    gap:
+        9px;
+
+    padding:
+        28px 34px;
+
+    border-right:
+        1px solid
+        var(--sale-line);
+}
+
+
+.sale-summary article:last-child {
+    border-right: 0;
+}
+
+
+.sale-summary span,
+.sale-summary small {
+    color:
+        var(--sale-muted);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        2px;
+}
+
+
+.sale-summary strong {
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        38px;
+
+    font-weight:
+        400;
+}
+
+
+
+.sale-calendar-section,
+.sale-region-section {
+    margin-top:
+        85px;
+}
+
+
+.sale-section-heading {
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        end;
+
+    gap:
+        30px;
+
+    margin-bottom:
+        28px;
+}
+
+
+.sale-section-heading h2 {
+    margin: 0;
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        37px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-calendar-controls {
+    display:
+        flex;
+
+    gap:
+        8px;
+}
+
+
+.sale-calendar-controls button {
+    min-width:
+        44px;
+
+    height:
+        40px;
+
+    padding:
+        0 14px;
+
+    border:
+        1px solid
+        var(--sale-line);
+
+    background:
+        rgba(255, 255, 255, 0.3);
+
+    color:
+        var(--sale-ink);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        1.5px;
+
+    cursor:
+        pointer;
+}
+
+
+
+.sale-calendar-weekdays,
+.sale-calendar {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(7, 1fr);
+}
+
+
+.sale-calendar-weekdays {
+    border:
+        1px solid
+        var(--sale-line);
+
+    border-bottom:
+        0;
+}
+
+
+.sale-calendar-weekdays span {
+    padding:
+        14px;
+
+    border-right:
+        1px solid
+        var(--sale-line);
+
+    color:
+        var(--sale-muted);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        1.5px;
+
+    text-align:
+        center;
+}
+
+
+.sale-calendar-weekdays span:last-child {
+    border-right:
+        0;
+}
+
+
+.sale-calendar {
+    border-top:
+        1px solid
+        var(--sale-line);
+
+    border-left:
+        1px solid
+        var(--sale-line);
+}
+
+
+.sale-day {
+    min-height:
+        150px;
+
+    padding:
+        13px;
+
+    border-right:
+        1px solid
+        var(--sale-line);
+
+    border-bottom:
+        1px solid
+        var(--sale-line);
+
+    background:
+        rgba(255, 255, 255, 0.2);
+}
+
+
+.sale-day.is-empty {
+    background:
+        rgba(255, 255, 255, 0.06);
+}
+
+
+.sale-day.is-today {
+    background:
+        rgba(220, 184, 201, 0.13);
+}
+
+
+.sale-day-number {
+    display:
+        block;
+
+    margin-bottom:
+        12px;
+
+    color:
+        var(--sale-muted);
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        13px;
+}
+
+
+.sale-calendar-event {
+    display:
+        block;
+
+    margin:
+        6px 0;
+
+    padding:
+        7px 8px;
+
+    border-left:
+        2px solid
+        var(--sale-live);
+
+    background:
+        rgba(255, 255, 255, 0.43);
+
+    color:
+        var(--sale-ink);
+
+    font-size:
+        8px;
+
+    line-height:
+        1.5;
+}
+
+
+.sale-calendar-event.forecast {
+    border-left-color:
+        var(--sale-forecast);
+
+    opacity:
+        0.76;
+}
+
+
+.sale-calendar-event small {
+    display:
+        block;
+
+    margin-top:
+        2px;
+
+    color:
+        var(--sale-muted);
+
+    font-size:
+        7px;
+
+    letter-spacing:
+        1px;
+}
+
+
+
+.sale-region-grid {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap:
+        24px;
+}
+
+
+.sale-region-card {
+    position:
+        relative;
+
+    min-height:
+        430px;
+
+    padding:
+        38px;
+
+    overflow:
+        hidden;
+
+    border:
+        1px solid
+        var(--sale-line);
+
+    background:
+        var(--sale-paper);
+}
+
+
+.sale-region-number {
+    position:
+        absolute;
+
+    right:
+        28px;
+
+    top:
+        20px;
+
+    color:
+        rgba(122, 94, 120, 0.09);
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        78px;
+}
+
+
+.sale-region-card > header {
+    position:
+        relative;
+
+    z-index:
+        1;
+
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        start;
+}
+
+
+.sale-region-card > header span {
+    color:
+        var(--sale-muted);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        2px;
+}
+
+
+.sale-region-card h3 {
+    margin:
+        7px 0 0;
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        58px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-region-currency {
+    padding:
+        8px 10px;
+
+    border:
+        1px solid
+        var(--sale-line);
+}
+
+
+.sale-region-stats {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    margin:
+        35px 0;
+
+    border-top:
+        1px solid
+        var(--sale-line);
+
+    border-bottom:
+        1px solid
+        var(--sale-line);
+}
+
+
+.sale-region-stats div {
+    padding:
+        22px 8px 22px 0;
+}
+
+
+.sale-region-stats span {
+    display:
+        block;
+
+    margin-bottom:
+        7px;
+
+    color:
+        var(--sale-muted);
+
+    font-size:
+        7px;
+
+    letter-spacing:
+        1.5px;
+}
+
+
+.sale-region-stats strong {
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        24px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-region-preview {
+    min-height:
+        100px;
+}
+
+
+.sale-preview-item {
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    gap:
+        20px;
+
+    padding:
+        11px 0;
+
+    border-bottom:
+        1px solid
+        var(--sale-line);
+}
+
+
+.sale-preview-item span {
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+
+    font-size:
+        10px;
+}
+
+
+.sale-preview-item strong {
+    flex:
+        0 0 auto;
+
+    font-size:
+        9px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-preview-empty {
+    padding:
+        30px 0;
+
+    color:
+        var(--sale-muted);
+
+    font-size:
+        9px;
+
+    line-height:
+        1.8;
+}
+
+
+.sale-region-link {
+    display:
+        flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+
+    margin-top:
+        30px;
+
+    padding-top:
+        20px;
+
+    border-top:
+        1px solid
+        var(--sale-line);
+
+    color:
+        var(--sale-ink);
+
+    text-decoration:
+        none;
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        2px;
+}
+
+
+.sale-region-link:hover {
+    opacity:
+        0.62;
+}
+
+
+
+.sale-legend {
+    display:
+        flex;
+
+    gap:
+        30px;
+
+    margin-top:
+        55px;
+
+    padding:
+        24px 0;
+
+    border-top:
+        1px solid
+        var(--sale-line);
+
+    color:
+        var(--sale-muted);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        1.5px;
+}
+
+
+.sale-dot {
+    display:
+        inline-block;
+
+    width:
+        7px;
+
+    height:
+        7px;
+
+    margin-right:
+        8px;
+
+    border-radius:
+        50%;
+}
+
+
+.sale-dot.live {
+    background:
+        var(--sale-live);
+}
+
+
+.sale-dot.forecast {
+    background:
+        var(--sale-forecast);
+}
+
+
+
+@media (
+    max-width: 760px
+) {
+
+    .sale-shell {
+        width:
+            calc(100% - 32px);
+
+        padding-top:
+            110px;
+    }
+
+
+    .sale-heading {
+        display:
+            block;
+
+        padding-bottom:
+            38px;
+    }
+
+
+    .sale-philosophy {
+        margin-top:
+            28px;
+    }
+
+
+    .sale-summary {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .sale-summary article {
+        min-height:
+            105px;
+
+        border-right:
+            0;
+
+        border-bottom:
+            1px solid
+            var(--sale-line);
+    }
+
+
+    .sale-summary article:last-child {
+        border-bottom:
+            0;
+    }
+
+
+    .sale-calendar-section {
+        overflow-x:
+            auto;
+    }
+
+
+    .sale-calendar-weekdays,
+    .sale-calendar {
+        min-width:
+            720px;
+    }
+
+
+    .sale-day {
+        min-height:
+            120px;
+    }
+
+
+    .sale-region-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .sale-region-card {
+        padding:
+            28px 22px;
+    }
+
+
+    .sale-region-number {
+        font-size:
+            58px;
+    }
+
+
+    .sale-region-card h3 {
+        font-size:
+            45px;
+    }
+
+
+    .sale-legend {
+        flex-direction:
+            column;
+
+        gap:
+            12px;
+    }
+}

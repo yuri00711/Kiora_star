@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
+
+    <title>Sale · Kiora</title>
+
+    <meta
+        name="description"
+        content="Kiora Game Sale Observatory"
+    >
+
+    <link rel="stylesheet" href="theme.css">
+
+    <link
+        rel="stylesheet"
+        href="style.css?v=20260915-5"
+    >
+
+    <link
+        rel="stylesheet"
+        href="standalone.css?v=20260915-1"
+    >
+
+    <link
+        rel="stylesheet"
+        href="site-nav.css?v=20260918-1"
+    >
+
+    <link
+        rel="stylesheet"
+        href="sale.css?v=20260920-1"
+    >
+</head>
+
+
+<body
+    data-page="sale"
+    class="standalone-body sale-body"
+>
+
+    <div
+        class="sale-atmosphere"
+        aria-hidden="true"
+    >
+        <i></i>
+        <i></i>
+        <i></i>
+
+        <span>✦</span>
+        <span>◇</span>
+        <span>⋆</span>
+    </div>
+
+
+    <!-- ==========================================
+         TOP NAV
+    =========================================== -->
+
+    <header
+        id="site-top-nav"
+        class="site-top-nav"
+    >
+        <div class="site-top-nav-inner">
+
+            <a
+                class="site-top-logo"
+                href="/"
+                aria-label="Kiora home"
+            >
+                Kiora
+            </a>
+
+            <nav
+                class="site-desktop-nav"
+                aria-label="Primary navigation"
+            >
+                <a href="/">HOME</a>
+                <a href="about.html">ABOUT</a>
+                <a href="archive.html">ARCHIVE</a>
+                <a href="games.html">GAMES</a>
+                <a href="sale.html" aria-current="page">SALE</a>
+                <a href="writing.html">WRITING</a>
+                <a href="study.html">STUDY</a>
+            </nav>
+
+            <button
+                id="site-mobile-menu-button"
+                class="site-mobile-menu-button"
+                type="button"
+                aria-label="打开页面导航"
+                aria-controls="site-mobile-menu"
+                aria-expanded="false"
+            >
+                <span>MENU</span>
+                <i aria-hidden="true"></i>
+            </button>
+
+        </div>
+
+
+        <nav
+            id="site-mobile-menu"
+            class="site-mobile-menu"
+            aria-label="Mobile navigation"
+            aria-hidden="true"
+        >
+            <a href="/">
+                <span>01</span>
+                HOME
+            </a>
+
+            <a href="about.html">
+                <span>02</span>
+                ABOUT
+            </a>
+
+            <a href="archive.html">
+                <span>03</span>
+                ARCHIVE
+            </a>
+
+            <a href="games.html">
+                <span>04</span>
+                GAMES
+            </a>
+
+            <a
+                href="sale.html"
+                aria-current="page"
+            >
+                <span>05</span>
+                SALE
+            </a>
+
+            <a href="writing.html">
+                <span>06</span>
+                WRITING
+            </a>
+
+            <a href="study.html">
+                <span>07</span>
+                STUDY
+            </a>
+        </nav>
+    </header>
+
+
+
+    <!-- ==========================================
+         MAIN
+    =========================================== -->
+
+    <main class="sale-shell">
+
+        <header class="sale-heading">
+
+            <div>
+
+                <p>
+                    KIORA.SPACE /
+                    GAME SALE OBSERVATORY
+                </p>
+
+                <h1>
+                    Sale
+                </h1>
+
+                <span>
+                    Discount Constellation
+                </span>
+
+            </div>
+
+            <p class="sale-philosophy">
+                记录价格降落的轨迹，
+                也记录下一次可能出现的星光。
+            </p>
+
+        </header>
+
+
+
+        <!-- ======================================
+             STATUS
+        ======================================= -->
+
+        <p
+            id="sale-status"
+            class="sale-status"
+            role="status"
+            hidden
+        ></p>
+
+
+
+        <!-- ======================================
+             SUMMARY
+        ======================================= -->
+
+        <section class="sale-summary">
+
+            <article>
+                <span>
+                    GAMES
+                </span>
+
+                <strong
+                    id="sale-game-count"
+                >
+                    —
+                </strong>
+
+                <small>
+                    IN LIBRARY
+                </small>
+            </article>
+
+
+            <article>
+                <span>
+                    LIVE
+                </span>
+
+                <strong
+                    id="sale-live-count"
+                >
+                    —
+                </strong>
+
+                <small>
+                    SALES NOW
+                </small>
+            </article>
+
+
+            <article>
+                <span>
+                    FORECAST
+                </span>
+
+                <strong
+                    id="sale-forecast-count"
+                >
+                    —
+                </strong>
+
+                <small>
+                    UPCOMING
+                </small>
+            </article>
+
+        </section>
+
+
+
+        <!-- ======================================
+             CALENDAR
+        ======================================= -->
+
+        <section class="sale-calendar-section">
+
+            <header class="sale-section-heading">
+
+                <div>
+                    <p>
+                        DISCOUNT CALENDAR
+                    </p>
+
+                    <h2
+                        id="sale-calendar-title"
+                    >
+                        —
+                    </h2>
+                </div>
+
+
+                <div class="sale-calendar-controls">
+
+                    <button
+                        type="button"
+                        id="sale-prev-month"
+                        aria-label="Previous month"
+                    >
+                        ←
+                    </button>
+
+                    <button
+                        type="button"
+                        id="sale-today"
+                    >
+                        TODAY
+                    </button>
+
+                    <button
+                        type="button"
+                        id="sale-next-month"
+                        aria-label="Next month"
+                    >
+                        →
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <div class="sale-calendar-weekdays">
+
+                <span>MON</span>
+                <span>TUE</span>
+                <span>WED</span>
+                <span>THU</span>
+                <span>FRI</span>
+                <span>SAT</span>
+                <span>SUN</span>
+
+            </div>
+
+
+            <div
+                id="sale-calendar"
+                class="sale-calendar"
+            ></div>
+
+        </section>
+
+
+
+        <!-- ======================================
+             REGION OVERVIEW
+        ======================================= -->
+
+        <section class="sale-region-section">
+
+            <header class="sale-section-heading">
+
+                <div>
+
+                    <p>
+                        REGIONAL STORES
+                    </p>
+
+                    <h2>
+                        Overview
+                    </h2>
+
+                </div>
+
+            </header>
+
+
+            <div class="sale-region-grid">
+
+
+                <!-- HK -->
+
+                <article
+                    class="sale-region-card"
+                    data-region-card="HK"
+                >
+
+                    <div class="sale-region-number">
+                        01
+                    </div>
+
+                    <header>
+
+                        <div>
+
+                            <span>
+                                HONG KONG
+                            </span>
+
+                            <h3>
+                                HK
+                            </h3>
+
+                        </div>
+
+                        <span
+                            class="sale-region-currency"
+                        >
+                            HKD
+                        </span>
+
+                    </header>
+
+
+                    <div class="sale-region-stats">
+
+                        <div>
+
+                            <span>
+                                LIVE SALES
+                            </span>
+
+                            <strong
+                                id="sale-hk-live"
+                            >
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                FORECAST
+                            </span>
+
+                            <strong
+                                id="sale-hk-forecast"
+                            >
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                BALANCE
+                            </span>
+
+                            <strong
+                                id="sale-hk-balance"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="sale-hk-preview"
+                        class="sale-region-preview"
+                    ></div>
+
+
+                    <a
+                        class="sale-region-link"
+                        href="sale-region.html?region=HK"
+                    >
+                        OPEN HK STORE
+                        <span>→</span>
+                    </a>
+
+                </article>
+
+
+
+                <!-- JP -->
+
+                <article
+                    class="sale-region-card"
+                    data-region-card="JP"
+                >
+
+                    <div class="sale-region-number">
+                        02
+                    </div>
+
+                    <header>
+
+                        <div>
+
+                            <span>
+                                JAPAN
+                            </span>
+
+                            <h3>
+                                JP
+                            </h3>
+
+                        </div>
+
+                        <span
+                            class="sale-region-currency"
+                        >
+                            JPY
+                        </span>
+
+                    </header>
+
+
+                    <div class="sale-region-stats">
+
+                        <div>
+
+                            <span>
+                                LIVE SALES
+                            </span>
+
+                            <strong
+                                id="sale-jp-live"
+                            >
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                FORECAST
+                            </span>
+
+                            <strong
+                                id="sale-jp-forecast"
+                            >
+                                0
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                BALANCE
+                            </span>
+
+                            <strong
+                                id="sale-jp-balance"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="sale-jp-preview"
+                        class="sale-region-preview"
+                    ></div>
+
+
+                    <a
+                        class="sale-region-link"
+                        href="sale-region.html?region=JP"
+                    >
+                        OPEN JP STORE
+                        <span>→</span>
+                    </a>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ======================================
+             LEGEND
+        ======================================= -->
+
+        <section class="sale-legend">
+
+            <span>
+                <i class="sale-dot live"></i>
+                CONFIRMED SALE
+            </span>
+
+            <span>
+                <i class="sale-dot forecast"></i>
+                FORECAST
+            </span>
+
+        </section>
+
+    </main>
+
+
+
+    <footer class="standalone-footer">
+
+        <span>
+            Kiora's sale constellation
+        </span>
+
+        <span>
+            HK · JP
+        </span>
+
+    </footer>
+
+
+
+    <!-- ==========================================
+         JS
+    =========================================== -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+    <script
+        src="auth.js?v=20260918-1"
+    ></script>
+
+    <script
+        src="article-common.js?v=20260917-3"
+    ></script>
+
+    <script
+        src="script.js?v=20260915-8"
+    ></script>
+
+    <script
+        src="site-nav.js?v=20260918-1"
+    ></script>
+
+    <script
+        src="sale.js?v=20260920-1"
+    ></script>
+
+</body>
+
+</html>
