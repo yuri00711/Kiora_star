@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kiora.space/schemas/kiora-life-archive-v1.schema.json",
+  "title": "Kiora Life Archive 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "archive_version",
+    "exported_at",
+    "owner_subject",
+    "core",
+    "events",
+    "conversations",
+    "messages",
+    "memories",
+    "relationship",
+    "self",
+    "knowledge",
+    "research",
+    "feedback",
+    "growth",
+    "models",
+    "evaluations",
+    "usage",
+    "settings"
+  ],
+  "properties": {
+    "archive_version": { "const": "1.0" },
+    "exported_at": { "type": "string", "format": "date-time" },
+    "owner_subject": { "type": "string", "format": "uuid" },
+    "manifest": { "type": "object" },
+    "core": { "$ref": "#/$defs/records" },
+    "events": { "$ref": "#/$defs/records" },
+    "conversations": { "$ref": "#/$defs/records" },
+    "messages": { "$ref": "#/$defs/records" },
+    "memories": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records", "evidence", "links"],
+      "properties": {
+        "records": { "$ref": "#/$defs/records" },
+        "evidence": { "$ref": "#/$defs/records" },
+        "links": { "$ref": "#/$defs/records" }
+      }
+    },
+    "relationship": { "$ref": "#/$defs/records" },
+    "self": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["states", "interests", "habits"],
+      "properties": {
+        "states": { "$ref": "#/$defs/records" },
+        "interests": { "$ref": "#/$defs/records" },
+        "habits": { "$ref": "#/$defs/records" }
+      }
+    },
+    "knowledge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records", "sources", "source_links", "open_questions"],
+      "properties": {
+        "records": { "$ref": "#/$defs/records" },
+        "sources": { "$ref": "#/$defs/records" },
+        "source_links": { "$ref": "#/$defs/records" },
+        "open_questions": { "$ref": "#/$defs/records" }
+      }
+    },
+    "research": { "$ref": "#/$defs/records" },
+    "feedback": { "$ref": "#/$defs/records" },
+    "growth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidates", "training_examples", "datasets", "versions"],
+      "properties": {
+        "candidates": { "$ref": "#/$defs/records" },
+        "training_examples": { "$ref": "#/$defs/records" },
+        "datasets": { "$ref": "#/$defs/records" },
+        "versions": { "$ref": "#/$defs/records" }
+      }
+    },
+    "models": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registry", "runs"],
+      "properties": {
+        "registry": { "$ref": "#/$defs/records" },
+        "runs": { "$ref": "#/$defs/records" }
+      }
+    },
+    "evaluations": { "$ref": "#/$defs/records" },
+    "usage": { "$ref": "#/$defs/records" },
+    "settings": { "$ref": "#/$defs/records" }
+  },
+  "$defs": {
+    "records": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  }
+}
+

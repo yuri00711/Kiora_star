@@ -3,7 +3,7 @@
 
     const common = window.yuriArticles;
     const db = common.getClient();
-    const auth = ;
+    const auth = window.KioraAuth;
     const params = new URLSearchParams(window.location.search);
     const writingId = params.get("id");
     const requestedType = params.get("type");
