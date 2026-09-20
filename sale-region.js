@@ -624,7 +624,7 @@
     async function loadData() {
 
         status(
-            "Reading HK sale constellation…"
+            `Reading ${REGION} sale constellation…`
         );
 
 
@@ -928,7 +928,7 @@
                             "GAME ARCHIVE"
                         }
 
-                        · HK STORE
+                        · ${REGION} STORE
                     </p>
 
                 </div>
@@ -1219,7 +1219,7 @@
                     <div
                         class="sale-empty"
                     >
-                        No confirmed HK sale
+                        No confirmed ${REGION} sale
                         has been recorded yet.
                         <br>
                         OWNER 可以点击
@@ -1681,7 +1681,7 @@
 
 
                 status(
-                    "Saving HK balance…"
+                    `Saving ${REGION} balance…`
                 );
 
 
