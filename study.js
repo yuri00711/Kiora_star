@@ -865,12 +865,369 @@ async function renderShenlun(practice, data) {
 
     async function attachPaper(){const input=document.createElement("input");input.type="file";input.accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";input.onchange=async()=>{const file=input.files[0];if(!file)return;status("Uploading paper…");const upload=await uploadFile(file,`practices/${state.activePractice.id}/paper/${uid()}-${safeName(file.name)}`);if(upload.error){status(upload.error.message,true);return;}const extracted=await extractText(file).catch(()=>"");const saved=await upsert("files",{practice_id:state.activePractice.id,file_kind:state.activePractice.practice_type==="shenlun"?"material":"paper",storage_path:upload.data.path,file_name:file.name,mime_type:file.type,file_size:file.size,extracted_text:extracted||null});if(saved.error){status(saved.error.message,true);return;}status("Paper uploaded.");openPractice(state.activePractice.id);};input.click();}
 
-    async function importAnswerKey(){const input=document.createElement("input");input.type="file";input.accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";input.onchange=async()=>{const file=input.files[0];if(!file)return;status("Extracting Answer Key…");try{const upload=await uploadFile(file,`practices/${state.activePractice.id}/answer-key/${uid()}-${safeName(file.name)}`);if(upload.error)throw upload.error;const text=await extractText(file,true);const fileRecord=await upsert("files",{practice_id:state.activePractice.id,file_kind:"answer_key",storage_path:upload.data.path,file_name:file.name,mime_type:file.type,file_size:file.size,extracted_text:text});if(fileRecord.error)throw fileRecord.error;const parsed=parseAnswerKey(text);showKeyReview(parsed,fileRecord.data.id);}catch(error){status(`Answer Key import failed: ${error.message}`,true);}};input.click();}
+   async function importAnswerKey() {
+    const input = document.createElement("input");
 
-    function parseAnswerKey(text){const answers=new Map();const source=String(text||"").toUpperCase().replace(/[：、，]/g," ");let match;const ranges=/(\d{1,3})\s*[-~～至]\s*(\d{1,3})\s*[:.]?\s*([A-D]{2,})/g;while((match=ranges.exec(source))){const start=Number(match[1]),end=Number(match[2]),letters=match[3];for(let n=start;n<=end&&n-start<letters.length;n++)answers.set(n,letters[n-start]);}const singles=/(?:^|\s)(\d{1,3})\s*[.、:：]?\s*([A-D](?:[A-D])?)(?=\s|$|[,.，。])/g;while((match=singles.exec(source)))answers.set(Number(match[1]),match[2]);return [...answers].map(([question_number,correct_answer])=>({question_number,correct_answer})).sort((a,b)=>a.question_number-b.question_number);}
-    function showKeyReview(items,fileId){const total=state.activePractice.total_questions||items.at(-1)?.question_number||0,map=new Map(items.map(item=>[item.question_number,item.correct_answer]));openSheet(`<header><div><p class="study-kicker">ANSWER KEY REVIEW</p><h2>${items.length} / ${total} RECOGNIZED</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><form id="answer-key-review-form"><div class="study-answer-grid">${Array.from({length:total},(_,i)=>`<label class="study-field"><span>${String(i+1).padStart(3,"0")}</span><input name="key-${i+1}" value="${esc(map.get(i+1)||"")}" maxlength="8" placeholder="?"></label>`).join("")}</div><button class="study-primary" type="submit">CONFIRM ANSWER KEY</button></form></div>`);$("#answer-key-review-form")._fileId=fileId;}
+    input.type = "file";
+    input.accept =
+        "application/pdf," +
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document," +
+        "image/jpeg,image/png,image/webp";
+
+    input.onchange = async () => {
+        const file = input.files?.[0];
+
+        if (!file) return;
+
+        const total =
+            Number(state.activePractice?.total_questions) || 0;
+
+        status("Reading Answer Key…");
+
+        try {
+            /*
+             * 先上传原始答案文件。
+             */
+            const upload = await uploadFile(
+                file,
+                `practices/${state.activePractice.id}/answer-key/${uid()}-${safeName(file.name)}`
+            );
+
+            if (upload.error) {
+                throw upload.error;
+            }
+
+            /*
+             * 第一轮：
+             * 优先读取 PDF / Word 自己带的文字。
+             */
+            let text =
+                await extractAnswerKeyText(
+                    file,
+                    false
+                );
+
+            let parsed =
+                parseAnswerKey(
+                    text,
+                    total
+                );
+
+            /*
+             * 如果已经知道总题数，
+             * 就检查识别覆盖率。
+             *
+             * 例如 130 题只认出 20 题，
+             * 这显然不能算识别成功。
+             */
+            const nativeCoverage =
+                total
+                    ? parsed.length / total
+                    : parsed.length
+                        ? 1
+                        : 0;
+
+            /*
+             * 原生 PDF 提取明显不可靠时，
+             * 再使用 OCR。
+             *
+             * 不要像以前一样只判断
+             * “有没有超过 20 个字符”。
+             */
+            if (
+                (
+                    file.type === "application/pdf" ||
+                    file.type.startsWith("image/")
+                ) &&
+                (
+                    !parsed.length ||
+                    (
+                        total &&
+                        nativeCoverage < 0.7
+                    )
+                )
+            ) {
+                status(
+                    total
+                        ? `Native text recognized ${parsed.length}/${total}. Trying OCR…`
+                        : "Native text was unreliable. Trying OCR…"
+                );
+
+                const ocrText =
+                    await extractAnswerKeyText(
+                        file,
+                        true
+                    );
+
+                const ocrParsed =
+                    parseAnswerKey(
+                        ocrText,
+                        total
+                    );
+
+                /*
+                 * 哪一种认得更多，
+                 * 就用哪一种。
+                 */
+                if (
+                    ocrParsed.length >
+                    parsed.length
+                ) {
+                    text = ocrText;
+                    parsed = ocrParsed;
+                }
+            }
+
+            /*
+             * 保存原始识别文本。
+             */
+            const fileRecord =
+                await upsert(
+                    "files",
+                    {
+                        practice_id:
+                            state.activePractice.id,
+
+                        file_kind:
+                            "answer_key",
+
+                        storage_path:
+                            upload.data.path,
+
+                        file_name:
+                            file.name,
+
+                        mime_type:
+                            file.type,
+
+                        file_size:
+                            file.size,
+
+                        extracted_text:
+                            text
+                    }
+                );
+
+            if (fileRecord.error) {
+                throw fileRecord.error;
+            }
+
+            if (!parsed.length) {
+                status(
+                    "No answer numbers could be recognized. Please check the file format.",
+                    true
+                );
+            } else {
+                status(
+                    total
+                        ? `Recognized ${parsed.length}/${total} answers. Please review them before confirming.`
+                        : `Recognized ${parsed.length} answers. Please review them before confirming.`
+                );
+            }
+
+            showKeyReview(
+                parsed,
+                fileRecord.data.id
+            );
+
+        } catch (error) {
+            status(
+                `Answer Key import failed: ${error.message}`,
+                true
+            );
+        }
+    };
+
+    input.click();
+}
+
+
+function normalizeAnswerKeyText(text) {
+    return String(text || "")
+        /*
+         * 统一换行。
+         */
+        .replace(/\r\n?/g, "\n")
+
+        /*
+         * 一些常见全角符号。
+         */
+        .replace(/．/g, ".")
+        .replace(/：/g, ":")
+        .replace(/，/g, ",")
+        .replace(/；/g, ";")
+
+        /*
+         * 连续空格压缩，
+         * 但不要删除换行。
+         */
+        .replace(/[ \t]+/g, " ")
+
+        /*
+         * 太多空行压成一个。
+         */
+        .replace(/\n{3,}/g, "\n\n")
+
+        .toUpperCase();
+}
+
+
+function parseAnswerKey(
+    text,
+    expectedTotal = 0
+) {
+    const source =
+        normalizeAnswerKeyText(text);
+
+    const answers =
+        new Map();
+
+
+    /*
+     * 你的主要格式：
+     *
+     * 1. A 解析……
+     * 2、C 【解析】……
+     * 3 B 答案解析……
+     * 4（D）……
+     *
+     * 重点：
+     * 只取题号后面第一个 A-D。
+     * 后面解析内容完全不管。
+     */
+    const patterns = [
+
+        /*
+         * 优先匹配“新的一行开头”。
+         *
+         * 这是最安全的规则，
+         * 可以避免解析正文里的数字干扰。
+         */
+        /(?:^|\n)\s*(\d{1,3})\s*[.、,:：\-]?\s*[（(【\[]?\s*([A-D])\s*[）)】\]]?/g,
+
+
+        /*
+         * 某些 PDF 会把换行吃掉，
+         * 所以准备一个较宽松的备用规则。
+         *
+         * 比如：
+         * 1.A 解析…… 2.C 解析……
+         */
+        /(?:^|\s)(\d{1,3})\s*[.、,:：\-]\s*[（(【\[]?\s*([A-D])\s*[）)】\]]?/g
+    ];
+
+
+    for (
+        const pattern of patterns
+    ) {
+        let match;
+
+        while (
+            (
+                match =
+                    pattern.exec(source)
+            )
+        ) {
+            const number =
+                Number(match[1]);
+
+            const answer =
+                match[2];
+
+
+            if (
+                !Number.isFinite(number)
+            ) {
+                continue;
+            }
+
+
+            if (
+                number < 1
+            ) {
+                continue;
+            }
+
+
+            /*
+             * 如果 Practice 已经填写了
+             * TOTAL QUESTIONS，
+             * 就拒绝超出范围的数字。
+             *
+             * 比如解析正文出现：
+             * “2025 年……”
+             * 就不会被当题号。
+             */
+            if (
+                expectedTotal &&
+                number > expectedTotal
+            ) {
+                continue;
+            }
+
+
+            /*
+             * 第一次识别到的答案优先。
+             *
+             * 防止解析正文后面又出现
+             * “1.A” 这种干扰内容覆盖答案。
+             */
+            if (
+                !answers.has(number)
+            ) {
+                answers.set(
+                    number,
+                    answer
+                );
+            }
+        }
+
+
+        /*
+         * 第一套严格规则已经认得很好时，
+         * 不需要继续用宽松规则污染结果。
+         */
+        if (
+            expectedTotal
+                ? answers.size >=
+                  expectedTotal * 0.8
+                : answers.size >= 10
+        ) {
+            break;
+        }
+    }
+
+
+    /*
+     * 最后再做一次简单连续性清理。
+     */
+    return Array
+        .from(answers)
+        .map(
+            ([
+                question_number,
+                correct_answer
+            ]) => ({
+                question_number,
+                correct_answer
+            })
+        )
+        .filter(
+            (item) =>
+                /^[A-D]$/.test(
+                    item.correct_answer
+                )
+        )
+        .sort(
+            (a, b) =>
+                a.question_number -
+                b.question_number
+        );
+}
 
     async function confirmAnswerKey(form){status("Saving confirmed Answer Key…");const total=state.activePractice.total_questions||0;for(let number=1;number<=total;number++){const answer=form.elements[`key-${number}`].value.trim().toUpperCase();if(!answer)continue;const existing=$("#study-practice-detail")._studyData.answer_keys.find(item=>item.question_number===number);const result=await upsert("answer_keys",{practice_id:state.activePractice.id,question_number:number,correct_answer:answer,source_file_id:form._fileId,confirmed:true},existing?.id);if(result.error){status(`Answer ${number} failed to save.`,true);return;}}$("#study-sheet").close();status("Answer Key confirmed.");openPractice(state.activePractice.id);}
+
+    
 
     async function extractText(file,allowOcr=false){if(file.type.includes("wordprocessingml")){await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js","mammoth");return (await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value;}if(file.type==="application/pdf"){await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs","pdfjsLib",true);const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text="";for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(" ")+"\n";}if(text.trim().length>20)return text;if(!allowOcr)return text;await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),viewport=page.getViewport({scale:1.6}),canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:context,viewport}).promise;const result=await window.Tesseract.recognize(canvas,"chi_sim+eng",{logger:message=>status(`OCR page ${i}/${pdf.numPages} · ${Math.round((message.progress||0)*100)}%`)});text+=result.data.text+"\n";}return text;}if(file.type.startsWith("image/")&&allowOcr){await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");const result=await window.Tesseract.recognize(file,"chi_sim+eng",{logger:message=>status(`OCR ${Math.round((message.progress||0)*100)}%`)});return result.data.text;}throw new Error("This file contains no extractable text.");}
     function loadScript(src,global,module=false){if(window[global])return Promise.resolve();if(module)return import(src).then(value=>{window[global]=value;if(global==="pdfjsLib"&&value.GlobalWorkerOptions)value.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";});return new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error("Parser could not be loaded."));document.head.append(script);});}
@@ -2022,7 +2379,117 @@ async function addShenlunQuestion() {
 }
 
     async function importReference(){const input=document.createElement("input");input.type="file";input.accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";input.onchange=async()=>{const file=input.files[0],question=$("#study-practice-detail")._studyData.shenlun_questions.find(item=>item.id===$("#study-practice-detail").dataset.questionId);if(!file||!question)return;status("Extracting reference…");try{const text=await extractText(file,true);openEditor({title:"Reference Import",kicker:"REVIEW BEFORE CONFIRM",fields:[{name:"body",label:`${String(question.question_number).padStart(2,"0")} ${question.title}`,type:"textarea",value:text,required:true,full:true}],onSave:async data=>{const existing=$("#study-practice-detail")._reference;const result=await upsert("shenlun_references",{practice_id:state.activePractice.id,question_id:question.id,body:data.body,confirmed:true},existing?.id);if(result.error)throw result.error;return true;}});}catch(error){status(error.message,true);}};input.click();}
-    async function runReview(){const detail=$("#study-practice-detail"),question=detail._studyData.shenlun_questions.find(item=>item.id===detail.dataset.questionId);let answer=await saveShenlun(question,detail._answer,true);if(!answer)return;status("Kiora is reviewing the answer…");const result=await auth.requestStudyReview(answer.id);if(result.error){status(`Review unavailable: ${result.error.code||result.error.message}. Retry when the server is configured.`,true);return;}status("Review saved.");openPractice(state.activePractice.id);}
+    
+    async function runReview() {
+    const detail =
+        $("#study-practice-detail");
+
+    const question =
+        detail._studyData.shenlun_questions.find(
+            item =>
+                item.id ===
+                detail.dataset.questionId
+        );
+
+    if (!question) {
+        status(
+            "Question unavailable.",
+            true
+        );
+        return;
+    }
+
+    const answer =
+        await saveShenlun(
+            question,
+            detail._answer,
+            true
+        );
+
+    if (!answer) {
+        return;
+    }
+
+    if (!answer.body?.trim()) {
+        status(
+            "请先填写答案。",
+            true
+        );
+        return;
+    }
+
+    const button =
+        $('[data-action="review-shenlun"]');
+
+    if (button) {
+        button.disabled = true;
+        button.textContent =
+            "KIORA IS REVIEWING…";
+    }
+
+    status(
+        "Kiora is reviewing the answer…"
+    );
+
+    const result =
+        await auth.requestStudyReview(
+            answer.id
+        );
+
+    if (result.error) {
+        if (button) {
+            button.disabled = false;
+            button.textContent =
+                "SUBMIT FOR KIORA REVIEW";
+        }
+
+        status(
+            `Review unavailable: ${
+                result.error.code ||
+                result.error.message
+            }.`,
+            true
+        );
+
+        return;
+    }
+
+    const output =
+        $("#study-review-output");
+
+    if (output) {
+        output.innerHTML =
+            reviewMarkup(
+                result.data
+            );
+
+        output.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+
+    detail._answer = answer;
+
+    if (button) {
+        button.disabled = false;
+        button.textContent =
+            "REVIEW AGAIN";
+    }
+
+    status(
+        `Review complete${
+            result.data?.model
+                ? ` · ${result.data.model}${
+                      result.data?.model_version
+                          ? ` · ${result.data.model_version}`
+                          : ""
+                  }`
+                : ""
+        }.`
+    );
+}
+
     async function addRevision(){const detail=$("#study-practice-detail"),question=detail._studyData.shenlun_questions.find(item=>item.id===detail.dataset.questionId),answer=detail._answer,reviews=await list("reviews",{filters:{question_id:question.id}}),review=(reviews.data||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];if(!review)return;const result=await upsert("revisions",{practice_id:state.activePractice.id,question_id:question.id,answer_id:answer.id,review_id:review.id,title:`${state.activePractice.title} · ${question.title}`,category:question.question_type,issue_tags:[review.assessment?.main_issue].filter(Boolean),source_snapshot:{material_scope:question.material_scope,prompt:question.prompt},status:"pending"});if(result.error)return status(result.error.message,true);state.revisions.unshift(result.data);status("Added to Revision Archive.");}
 
     async function archiveSelected(form){const detail=$("#study-practice-detail"),data=detail._studyData,selected=Array.from(form.elements.wrong).filter(input=>input.checked).map(input=>Number(input.value));for(const number of selected){const mine=data.aptitude_answers.find(x=>x.question_number===number)?.answer||null,correct=data.answer_keys.find(x=>x.question_number===number)?.correct_answer;if(!correct)continue;const result=await upsert("mistakes",{practice_id:state.activePractice.id,question_number:number,source_type:"practice",subject:state.activePractice.subject||"APTITUDE",paper_file_id:data.files.find(x=>x.file_kind==="paper")?.id||null,my_answer:mine,correct_answer:correct,reason:null,status:"learning",is_public:false});if(!result.error)state.mistakes.unshift(result.data);}$("#study-sheet").close();status(`${selected.length} records added to Mistake Book.`);renderHome();}
