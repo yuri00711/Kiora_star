@@ -1374,3 +1374,648 @@
     }
 
 }
+
+/* =========================================================
+   SALE RECORD DIALOG 2.0
+========================================================= */
+
+.sale-record-dialog {
+    width:
+        min(
+            760px,
+            calc(100% - 34px)
+        );
+
+    max-height:
+        88vh;
+
+    overflow-y:
+        auto;
+
+    border:
+        1px solid
+        rgba(
+            119,
+            91,
+            114,
+            0.2
+        );
+
+    background:
+        rgba(
+            251,
+            247,
+            249,
+            0.98
+        );
+
+    box-shadow:
+        0 32px 90px
+        rgba(
+            70,
+            50,
+            68,
+            0.14
+        );
+}
+
+
+.sale-record-dialog form {
+    padding:
+        38px 42px 32px;
+
+    gap: 0;
+}
+
+
+.sale-dialog-heading {
+    margin-bottom:
+        8px;
+
+    padding-bottom:
+        28px;
+}
+
+
+.sale-dialog-heading h2 {
+    font-size:
+        36px;
+}
+
+
+.sale-dialog-heading > div > span {
+    display:
+        block;
+
+    margin-top:
+        8px;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        9px;
+
+    letter-spacing:
+        0.6px;
+}
+
+
+
+/* SECTION */
+
+.sale-dialog-section {
+    display:
+        grid;
+
+    grid-template-columns:
+        135px
+        minmax(
+            0,
+            1fr
+        );
+
+    gap:
+        28px;
+
+    padding:
+        27px 0;
+
+    border-bottom:
+        1px solid
+        var(--sr-line);
+}
+
+
+.sale-dialog-section-title {
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        12px;
+}
+
+
+.sale-dialog-section-title > span {
+    color:
+        rgba(
+            126,
+            94,
+            123,
+            0.38
+        );
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        11px;
+}
+
+
+.sale-dialog-section-title p {
+    margin:
+        0 0 6px;
+
+    color:
+        var(--sr-ink);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        2px;
+}
+
+
+.sale-dialog-section-title small {
+    display:
+        block;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        8px;
+
+    line-height:
+        1.6;
+}
+
+
+
+/* GAME AUTOCOMPLETE */
+
+.sale-game-picker {
+    position:
+        relative;
+}
+
+
+#sale-record-game-search {
+    height:
+        50px;
+
+    padding:
+        0 16px;
+
+    font-family:
+        Georgia,
+        "Yu Mincho",
+        serif;
+
+    font-size:
+        16px;
+}
+
+
+.sale-game-suggestions {
+    position:
+        absolute;
+
+    z-index:
+        100;
+
+    top:
+        calc(100% + 6px);
+
+    left: 0;
+    right: 0;
+
+    display:
+        none;
+
+    max-height:
+        275px;
+
+    overflow-y:
+        auto;
+
+    border:
+        1px solid
+        var(--sr-line-strong);
+
+    background:
+        rgba(
+            253,
+            250,
+            251,
+            0.99
+        );
+
+    box-shadow:
+        0 18px 45px
+        rgba(
+            74,
+            55,
+            72,
+            0.11
+        );
+}
+
+
+.sale-game-suggestions.open {
+    display:
+        block;
+}
+
+
+.sale-game-suggestion {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        20px;
+
+    width:
+        100%;
+
+    min-height:
+        48px;
+
+    padding:
+        10px 15px;
+
+    border: 0;
+
+    border-bottom:
+        1px solid
+        var(--sr-line);
+
+    background:
+        transparent;
+
+    color:
+        var(--sr-ink);
+
+    text-align:
+        left;
+
+    cursor:
+        pointer;
+}
+
+
+.sale-game-suggestion:last-child {
+    border-bottom: 0;
+}
+
+
+.sale-game-suggestion:hover {
+    background:
+        rgba(
+            203,
+            177,
+            196,
+            0.12
+        );
+}
+
+
+.sale-game-suggestion span {
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+
+    font-family:
+        Georgia,
+        "Yu Mincho",
+        serif;
+
+    font-size:
+        14px;
+}
+
+
+.sale-game-suggestion small {
+    flex:
+        0 0 auto;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        7px;
+
+    letter-spacing:
+        1px;
+}
+
+
+.sale-game-suggestion-empty {
+    padding:
+        22px 15px;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        9px;
+
+    text-align:
+        center;
+}
+
+
+
+/* PRICE */
+
+.sale-price-grid {
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        105px
+        minmax(0, 1fr);
+
+    gap:
+        12px;
+}
+
+
+.sale-price-grid label,
+.sale-date-grid label,
+.sale-source-field {
+    display:
+        grid;
+
+    gap:
+        8px;
+}
+
+
+.sale-price-grid label > span,
+.sale-date-grid label > span,
+.sale-source-field > span {
+    color:
+        var(--sr-soft);
+
+    font-size:
+        7px;
+
+    letter-spacing:
+        1.3px;
+}
+
+
+.sale-price-input {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    height:
+        48px;
+
+    border:
+        1px solid
+        var(--sr-line);
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.4
+        );
+}
+
+
+.sale-price-input:focus-within {
+    border-color:
+        var(--sr-line-strong);
+}
+
+
+.sale-price-input i {
+    padding-left:
+        13px;
+
+    color:
+        var(--sr-soft);
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        13px;
+
+    font-style:
+        normal;
+}
+
+
+.sale-price-input input {
+    min-width: 0;
+
+    height:
+        46px;
+
+    padding:
+        0 12px;
+
+    border: 0;
+
+    background:
+        transparent;
+}
+
+
+.sale-discount-input input {
+    text-align:
+        center;
+}
+
+
+.sale-discount-input i {
+    padding:
+        0 13px 0 0;
+}
+
+
+.sale-price-input.calculated {
+    background:
+        rgba(
+            210,
+            190,
+            207,
+            0.09
+        );
+}
+
+
+.sale-price-formula {
+    grid-column:
+        2;
+
+    margin:
+        11px 0 0;
+
+    color:
+        var(--sr-soft);
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        9px;
+
+    letter-spacing:
+        0.5px;
+}
+
+
+
+/* DATE */
+
+.sale-date-grid {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(
+                0,
+                1fr
+            )
+        );
+
+    gap:
+        12px;
+}
+
+
+
+/* FOOTER */
+
+.sale-dialog-footer {
+    display:
+        flex;
+
+    justify-content:
+        flex-end;
+
+    gap:
+        10px;
+
+    padding-top:
+        28px;
+}
+
+
+.sale-dialog-footer button {
+    min-width:
+        105px;
+}
+
+
+.sale-dialog-footer .primary {
+    min-width:
+        130px;
+
+    background:
+        rgba(
+            185,
+            155,
+            177,
+            0.14
+        );
+}
+
+
+
+/* MOBILE */
+
+@media (
+    max-width: 650px
+) {
+
+    .sale-record-dialog form {
+        padding:
+            27px 20px 24px;
+    }
+
+
+    .sale-dialog-section {
+        grid-template-columns:
+            1fr;
+
+        gap:
+            15px;
+
+        padding:
+            22px 0;
+    }
+
+
+    .sale-dialog-section-title {
+        align-items:
+            center;
+    }
+
+
+    .sale-price-grid {
+        grid-template-columns:
+            1fr
+            90px;
+    }
+
+
+    .sale-price-grid label:last-child {
+        grid-column:
+            1 / -1;
+    }
+
+
+    .sale-price-formula {
+        grid-column:
+            1 / -1;
+    }
+
+
+    .sale-date-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .sale-dialog-footer {
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            1fr;
+    }
+
+
+    .sale-dialog-footer button,
+    .sale-dialog-footer .primary {
+        width:
+            100%;
+
+        min-width:
+            0;
+    }
+
+}
