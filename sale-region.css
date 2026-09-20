@@ -1575,19 +1575,13 @@
 
 .sale-game-suggestions {
     position:
-        absolute;
-
-    z-index:
-        100;
-
-    top:
-        calc(100% + 6px);
-
-    left: 0;
-    right: 0;
+        static;
 
     display:
         none;
+
+    margin-top:
+        6px;
 
     max-height:
         275px;
@@ -2020,29 +2014,7 @@
 
 }
 
-.sale-game-picker {
-    position: relative;
-    z-index: 30;
-}
-
-.sale-game-suggestions {
-    z-index: 9999;
-}
-
-.sale-dialog-section:first-of-type {
-    position: relative;
-    z-index: 20;
-}
-
-.sale-record-dialog {
-    overflow: visible;
-}
-
-.sale-record-dialog form {
-    overflow: visible;
-}
-
-.sale-record-dialog {
-    overflow-y: auto;
-    overflow-x: visible;
+.sale-price-input.calculated input[readonly] {
+    cursor:
+        default;
 }

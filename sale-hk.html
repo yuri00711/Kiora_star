@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="site-nav.css?v=20260918-1">
 
     <!-- 这一页自己的 CSS -->
-    <link rel="stylesheet" href="sale-region.css?v=20260920-1">
+    <link rel="stylesheet" href="sale-region.css?v=20260920-5">
 </head>
 
 
@@ -503,58 +503,99 @@
          ADD SALE DIALOG
     =========================================== -->
 
-    <dialog
-        id="sale-record-dialog"
-        class="sale-dialog"
+   <dialog
+    id="sale-record-dialog"
+    class="sale-dialog sale-record-dialog"
+>
+
+    <form
+        id="sale-record-form"
+        method="dialog"
     >
 
-        <form
-            id="sale-record-form"
-            method="dialog"
-        >
+        <header class="sale-dialog-heading">
 
-            <header>
-
-                <div>
-
-                    <p>
-                        CONFIRMED SALE
-                    </p>
-
-                    <h2>
-                        Add price record
-                    </h2>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    data-close-dialog
-                >
-                    ×
-                </button>
-
-            </header>
-
-
-
-            <label>
+            <div>
+                <p>CONFIRMED SALE</p>
+                <h2>Add price record</h2>
 
                 <span>
-                    GAME
+                    Record a confirmed Hong Kong store discount.
                 </span>
+            </div>
 
-                <select
-                    id="sale-record-game"
+            <button
+                type="button"
+                data-close-dialog
+                aria-label="Close"
+            >
+                ×
+            </button>
+
+        </header>
+
+
+        <!-- GAME -->
+
+        <section class="sale-dialog-section">
+
+            <div class="sale-dialog-section-title">
+                <span>01</span>
+
+                <div>
+                    <p>GAME</p>
+                    <small>
+                        输入部分名称即可自动匹配
+                    </small>
+                </div>
+            </div>
+
+
+            <div class="sale-game-picker">
+
+                <input
+                    id="sale-record-game-search"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="输入游戏名称，例如：薄桜鬼"
                     required
-                ></select>
+                >
 
-            </label>
+                <!-- 真正保存的 game id -->
+                <input
+                    id="sale-record-game"
+                    type="hidden"
+                >
+
+                <div
+                    id="sale-game-suggestions"
+                    class="sale-game-suggestions"
+                ></div>
+
+            </div>
+
+        </section>
 
 
 
-            <div class="sale-dialog-grid">
+        <!-- PRICE -->
+
+        <section class="sale-dialog-section">
+
+            <div class="sale-dialog-section-title">
+                <span>02</span>
+
+                <div>
+                    <p>PRICE</p>
+
+                    <small>
+                        输入原价与折扣，自动计算折后价
+                    </small>
+                </div>
+            </div>
+
+
+            <div class="sale-price-grid">
 
                 <label>
 
@@ -562,12 +603,41 @@
                         REGULAR PRICE
                     </span>
 
-                    <input
-                        id="sale-record-regular"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                    >
+                    <div class="sale-price-input">
+                        <i>HK$</i>
+
+                        <input
+                            id="sale-record-regular"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="500.00"
+                        >
+                    </div>
+
+                </label>
+
+
+                <label>
+
+                    <span>
+                        DISCOUNT
+                    </span>
+
+                    <div class="sale-price-input sale-discount-input">
+
+                        <input
+                            id="sale-record-discount"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                            placeholder="50"
+                        >
+
+                        <i>%</i>
+
+                    </div>
 
                 </label>
 
@@ -578,38 +648,54 @@
                         SALE PRICE
                     </span>
 
-                    <input
-                        id="sale-record-price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        required
-                    >
+                    <div class="sale-price-input calculated">
+                        <i>HK$</i>
+
+                        <input
+                            id="sale-record-price"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="250.00"
+                            required
+                            readonly
+                        >
+                    </div>
 
                 </label>
 
             </div>
 
 
+            <p
+                id="sale-price-formula"
+                class="sale-price-formula"
+            >
+                输入原价和折扣后自动计算
+            </p>
 
-            <div class="sale-dialog-grid">
+        </section>
 
-                <label>
 
-                    <span>
-                        DISCOUNT %
-                    </span>
 
-                    <input
-                        id="sale-record-discount"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                    >
+        <!-- DATE -->
 
-                </label>
+        <section class="sale-dialog-section">
 
+            <div class="sale-dialog-section-title">
+                <span>03</span>
+
+                <div>
+                    <p>SALE PERIOD</p>
+
+                    <small>
+                        折扣开始与结束时间
+                    </small>
+                </div>
+            </div>
+
+
+            <div class="sale-date-grid">
 
                 <label>
 
@@ -624,26 +710,44 @@
 
                 </label>
 
+
+                <label>
+
+                    <span>
+                        END
+                    </span>
+
+                    <input
+                        id="sale-record-end"
+                        type="datetime-local"
+                    >
+
+                </label>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- SOURCE -->
+
+        <section class="sale-dialog-section">
+
+            <div class="sale-dialog-section-title">
+                <span>04</span>
+
+                <div>
+                    <p>SOURCE</p>
+
+                    <small>
+                        Hong Kong store 或价格来源
+                    </small>
+                </div>
             </div>
 
 
-
-            <label>
-
-                <span>
-                    END
-                </span>
-
-                <input
-                    id="sale-record-end"
-                    type="datetime-local"
-                >
-
-            </label>
-
-
-
-            <label>
+            <label class="sale-source-field">
 
                 <span>
                     STORE / SOURCE URL
@@ -657,29 +761,31 @@
 
             </label>
 
+        </section>
 
 
-            <footer>
 
-                <button
-                    type="button"
-                    data-close-dialog
-                >
-                    CANCEL
-                </button>
+        <footer class="sale-dialog-footer">
 
-                <button
-                    type="submit"
-                    class="primary"
-                >
-                    SAVE SALE
-                </button>
+            <button
+                type="button"
+                data-close-dialog
+            >
+                CANCEL
+            </button>
 
-            </footer>
+            <button
+                type="submit"
+                class="primary"
+            >
+                SAVE SALE
+            </button>
 
-        </form>
+        </footer>
 
-    </dialog>
+    </form>
+
+</dialog>
 
 
 
@@ -712,7 +818,7 @@
     <script src="site-nav.js?v=20260918-1"></script>
 
     <!-- HK / JP 共用 -->
-    <script src="sale-region.js?v=20260920-1"></script>
+    <script src="sale-region.js?v=20260920-5"></script>
 
 </body>
 
