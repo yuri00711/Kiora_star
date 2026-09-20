@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
+
+    <title>HK Sale · Kiora</title>
+
+    <meta
+        name="description"
+        content="Kiora Hong Kong game sale observatory"
+    >
+
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="style.css?v=20260915-5">
+    <link rel="stylesheet" href="standalone.css?v=20260915-1">
+    <link rel="stylesheet" href="site-nav.css?v=20260918-1">
+
+    <!-- 这一页自己的 CSS -->
+    <link rel="stylesheet" href="sale-region.css?v=20260920-1">
+</head>
+
+
+<body
+    data-page="sale"
+    data-sale-region="HK"
+    class="standalone-body sale-region-body"
+>
+
+    <div
+        class="sale-region-atmosphere"
+        aria-hidden="true"
+    >
+        <i></i>
+        <i></i>
+        <i></i>
+
+        <span>✦</span>
+        <span>◇</span>
+        <span>⋆</span>
+    </div>
+
+
+    <!-- ==========================================
+         TOP NAV
+    =========================================== -->
+
+    <header
+        id="site-top-nav"
+        class="site-top-nav"
+    >
+        <div class="site-top-nav-inner">
+
+            <a
+                class="site-top-logo"
+                href="/"
+            >
+                Kiora
+            </a>
+
+
+            <nav
+                class="site-desktop-nav"
+                aria-label="Primary navigation"
+            >
+                <a href="/">HOME</a>
+                <a href="about.html">ABOUT</a>
+                <a href="archive.html">ARCHIVE</a>
+                <a href="games.html">GAMES</a>
+
+                <a
+                    href="sale.html"
+                    aria-current="page"
+                >
+                    SALE
+                </a>
+
+                <a href="writing.html">WRITING</a>
+                <a href="study.html">STUDY</a>
+            </nav>
+
+
+            <button
+                id="site-mobile-menu-button"
+                class="site-mobile-menu-button"
+                type="button"
+                aria-label="打开页面导航"
+                aria-controls="site-mobile-menu"
+                aria-expanded="false"
+            >
+                <span>MENU</span>
+                <i></i>
+            </button>
+
+        </div>
+
+
+        <nav
+            id="site-mobile-menu"
+            class="site-mobile-menu"
+            aria-label="Mobile navigation"
+            aria-hidden="true"
+        >
+            <a href="/">
+                <span>01</span>
+                HOME
+            </a>
+
+            <a href="about.html">
+                <span>02</span>
+                ABOUT
+            </a>
+
+            <a href="archive.html">
+                <span>03</span>
+                ARCHIVE
+            </a>
+
+            <a href="games.html">
+                <span>04</span>
+                GAMES
+            </a>
+
+            <a
+                href="sale.html"
+                aria-current="page"
+            >
+                <span>05</span>
+                SALE
+            </a>
+
+            <a href="writing.html">
+                <span>06</span>
+                WRITING
+            </a>
+
+            <a href="study.html">
+                <span>07</span>
+                STUDY
+            </a>
+
+        </nav>
+    </header>
+
+
+
+    <!-- ==========================================
+         MAIN
+    =========================================== -->
+
+    <main class="sale-region-shell">
+
+
+        <!-- ======================================
+             HERO
+        ======================================= -->
+
+        <header class="sale-region-heading">
+
+            <div>
+
+                <a
+                    class="sale-region-back"
+                    href="sale.html"
+                >
+                    ← SALE OBSERVATORY
+                </a>
+
+
+                <p>
+                    REGIONAL STORE / 01
+                </p>
+
+
+                <h1>
+                    Hong Kong
+                </h1>
+
+
+                <span>
+                    HK Nintendo eShop · HKD
+                </span>
+
+            </div>
+
+
+            <div class="sale-region-heading-mark">
+                HK
+            </div>
+
+        </header>
+
+
+
+        <!-- ======================================
+             STATUS
+        ======================================= -->
+
+        <p
+            id="sale-region-status"
+            class="sale-region-status"
+            role="status"
+            hidden
+        ></p>
+
+
+
+        <!-- ======================================
+             WALLET
+        ======================================= -->
+
+        <section class="sale-wallet">
+
+            <div>
+
+                <p class="sale-kicker">
+                    STORE BALANCE
+                </p>
+
+                <strong id="sale-wallet-balance">
+                    —
+                </strong>
+
+                <span>
+                    AVAILABLE HKD
+                </span>
+
+            </div>
+
+
+            <div class="sale-wallet-actions">
+
+                <button
+                    id="sale-edit-balance"
+                    type="button"
+                    hidden
+                >
+                    EDIT BALANCE
+                </button>
+
+                <a href="sale.html">
+                    OVERVIEW →
+                </a>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ======================================
+             LIVE SALES
+        ======================================= -->
+
+        <section class="sale-region-section">
+
+            <header class="sale-region-section-heading">
+
+                <div>
+
+                    <p class="sale-kicker">
+                        CONFIRMED SALE
+                    </p>
+
+                    <h2>
+                        On sale now
+                    </h2>
+
+                </div>
+
+
+                <div class="sale-section-actions">
+
+                    <span id="sale-live-count">
+                        0 GAMES
+                    </span>
+
+                    <button
+                        id="sale-add-record"
+                        type="button"
+                        hidden
+                    >
+                        ＋ ADD SALE
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <div
+                id="sale-live-list"
+                class="sale-game-list"
+            ></div>
+
+        </section>
+
+
+
+        <!-- ======================================
+             FORECAST
+        ======================================= -->
+
+        <section class="sale-region-section">
+
+            <header class="sale-region-section-heading">
+
+                <div>
+
+                    <p class="sale-kicker">
+                        FORECAST
+                    </p>
+
+                    <h2>
+                        Possible next sales
+                    </h2>
+
+                </div>
+
+
+                <span id="sale-forecast-count">
+                    0 GAMES
+                </span>
+
+            </header>
+
+
+            <p class="sale-forecast-note">
+                Forecasts are estimates based on recorded sale history.
+                They are not confirmed store discounts.
+            </p>
+
+
+            <div
+                id="sale-forecast-list"
+                class="sale-game-list"
+            ></div>
+
+        </section>
+
+
+
+        <!-- ======================================
+             SELECTED PURCHASE
+        ======================================= -->
+
+        <aside
+            id="sale-selection-panel"
+            class="sale-selection-panel"
+        >
+
+            <div>
+
+                <p class="sale-kicker">
+                    SELECTED
+                </p>
+
+                <strong id="sale-selected-count">
+                    0
+                </strong>
+
+                <span>
+                    GAMES
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <p class="sale-kicker">
+                    TOTAL
+                </p>
+
+                <strong id="sale-selected-total">
+                    HK$0
+                </strong>
+
+                <span>
+                    CURRENT PRICE
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <p class="sale-kicker">
+                    BALANCE AFTER PURCHASE
+                </p>
+
+                <strong id="sale-balance-after">
+                    —
+                </strong>
+
+                <span id="sale-balance-note">
+                    SELECT GAMES TO CALCULATE
+                </span>
+
+            </div>
+
+
+            <button
+                id="sale-clear-selection"
+                type="button"
+            >
+                CLEAR
+            </button>
+
+        </aside>
+
+    </main>
+
+
+
+    <!-- ==========================================
+         BALANCE DIALOG
+    =========================================== -->
+
+    <dialog
+        id="sale-balance-dialog"
+        class="sale-dialog"
+    >
+
+        <form
+            id="sale-balance-form"
+            method="dialog"
+        >
+
+            <header>
+
+                <div>
+
+                    <p>
+                        HK STORE
+                    </p>
+
+                    <h2>
+                        Edit balance
+                    </h2>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    data-close-dialog
+                >
+                    ×
+                </button>
+
+            </header>
+
+
+            <label>
+
+                <span>
+                    HKD BALANCE
+                </span>
+
+                <input
+                    id="sale-balance-input"
+                    name="balance"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                >
+
+            </label>
+
+
+            <footer>
+
+                <button
+                    type="button"
+                    data-close-dialog
+                >
+                    CANCEL
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary"
+                >
+                    SAVE
+                </button>
+
+            </footer>
+
+        </form>
+
+    </dialog>
+
+
+
+    <!-- ==========================================
+         ADD SALE DIALOG
+    =========================================== -->
+
+    <dialog
+        id="sale-record-dialog"
+        class="sale-dialog"
+    >
+
+        <form
+            id="sale-record-form"
+            method="dialog"
+        >
+
+            <header>
+
+                <div>
+
+                    <p>
+                        CONFIRMED SALE
+                    </p>
+
+                    <h2>
+                        Add price record
+                    </h2>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    data-close-dialog
+                >
+                    ×
+                </button>
+
+            </header>
+
+
+
+            <label>
+
+                <span>
+                    GAME
+                </span>
+
+                <select
+                    id="sale-record-game"
+                    required
+                ></select>
+
+            </label>
+
+
+
+            <div class="sale-dialog-grid">
+
+                <label>
+
+                    <span>
+                        REGULAR PRICE
+                    </span>
+
+                    <input
+                        id="sale-record-regular"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                    >
+
+                </label>
+
+
+                <label>
+
+                    <span>
+                        SALE PRICE
+                    </span>
+
+                    <input
+                        id="sale-record-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                    >
+
+                </label>
+
+            </div>
+
+
+
+            <div class="sale-dialog-grid">
+
+                <label>
+
+                    <span>
+                        DISCOUNT %
+                    </span>
+
+                    <input
+                        id="sale-record-discount"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                    >
+
+                </label>
+
+
+                <label>
+
+                    <span>
+                        START
+                    </span>
+
+                    <input
+                        id="sale-record-start"
+                        type="datetime-local"
+                    >
+
+                </label>
+
+            </div>
+
+
+
+            <label>
+
+                <span>
+                    END
+                </span>
+
+                <input
+                    id="sale-record-end"
+                    type="datetime-local"
+                >
+
+            </label>
+
+
+
+            <label>
+
+                <span>
+                    STORE / SOURCE URL
+                </span>
+
+                <input
+                    id="sale-record-source"
+                    type="url"
+                    placeholder="https://..."
+                >
+
+            </label>
+
+
+
+            <footer>
+
+                <button
+                    type="button"
+                    data-close-dialog
+                >
+                    CANCEL
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary"
+                >
+                    SAVE SALE
+                </button>
+
+            </footer>
+
+        </form>
+
+    </dialog>
+
+
+
+    <footer class="standalone-footer">
+
+        <span>
+            Kiora's sale constellation
+        </span>
+
+        <span>
+            HONG KONG · HKD
+        </span>
+
+    </footer>
+
+
+
+    <!-- ==========================================
+         JS
+    =========================================== -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="auth.js?v=20260918-1"></script>
+
+    <script src="article-common.js?v=20260917-3"></script>
+
+    <script src="script.js?v=20260915-8"></script>
+
+    <script src="site-nav.js?v=20260918-1"></script>
+
+    <!-- HK / JP 共用 -->
+    <script src="sale-region.js?v=20260920-1"></script>
+
+</body>
+
+</html>

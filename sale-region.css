@@ -1,0 +1,1376 @@
+:root {
+    --sr-bg: #faf6f8;
+    --sr-paper: rgba(255, 253, 252, 0.56);
+    --sr-paper-strong: rgba(255, 253, 252, 0.82);
+
+    --sr-ink: #554852;
+    --sr-soft: #9b8797;
+    --sr-faint: rgba(119, 91, 114, 0.09);
+
+    --sr-line: rgba(119, 91, 114, 0.16);
+    --sr-line-strong: rgba(119, 91, 114, 0.28);
+
+    --sr-accent: #a47691;
+    --sr-forecast: #8b80a7;
+
+    --sr-danger: #9e626d;
+}
+
+
+/* =========================================================
+   BASE
+========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+
+.sale-region-body {
+    min-height: 100vh;
+
+    color: var(--sr-ink);
+
+    background:
+        radial-gradient(
+            circle at 13% 12%,
+            rgba(239, 216, 226, 0.36),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 84% 30%,
+            rgba(219, 210, 237, 0.25),
+            transparent 38%
+        ),
+        #faf6f8;
+}
+
+
+
+/* =========================================================
+   ATMOSPHERE
+========================================================= */
+
+.sale-region-atmosphere {
+    position: fixed;
+    inset: 0;
+
+    z-index: -1;
+
+    overflow: hidden;
+
+    pointer-events: none;
+}
+
+
+.sale-region-atmosphere i {
+    position: absolute;
+
+    width: 1px;
+    height: 65vh;
+
+    background:
+        linear-gradient(
+            transparent,
+            rgba(164, 118, 145, 0.17),
+            transparent
+        );
+
+    transform: rotate(23deg);
+}
+
+
+.sale-region-atmosphere i:nth-child(1) {
+    top: -8%;
+    left: 13%;
+}
+
+
+.sale-region-atmosphere i:nth-child(2) {
+    top: 20%;
+    left: 62%;
+}
+
+
+.sale-region-atmosphere i:nth-child(3) {
+    top: -4%;
+    right: 8%;
+
+    height: 80vh;
+}
+
+
+.sale-region-atmosphere span {
+    position: absolute;
+
+    color:
+        rgba(143, 104, 140, 0.22);
+}
+
+
+.sale-region-atmosphere span:nth-of-type(1) {
+    top: 21%;
+    left: 8%;
+}
+
+
+.sale-region-atmosphere span:nth-of-type(2) {
+    top: 47%;
+    right: 11%;
+}
+
+
+.sale-region-atmosphere span:nth-of-type(3) {
+    bottom: 17%;
+    left: 57%;
+}
+
+
+
+/* =========================================================
+   SHELL
+========================================================= */
+
+.sale-region-shell {
+    width:
+        min(
+            1280px,
+            calc(100% - 52px)
+        );
+
+    margin:
+        0 auto;
+
+    padding:
+        145px 0
+        180px;
+}
+
+
+
+/* =========================================================
+   HEADING
+========================================================= */
+
+.sale-region-heading {
+    position: relative;
+
+    display: flex;
+
+    align-items: end;
+    justify-content: space-between;
+
+    min-height: 270px;
+
+    padding:
+        25px 0
+        56px;
+
+    border-bottom:
+        1px solid
+        var(--sr-line);
+
+    overflow: hidden;
+}
+
+
+.sale-region-back {
+    display: inline-block;
+
+    margin-bottom: 35px;
+
+    color:
+        var(--sr-soft);
+
+    text-decoration: none;
+
+    font-size: 8px;
+
+    letter-spacing: 2px;
+}
+
+
+.sale-region-back:hover {
+    color:
+        var(--sr-ink);
+}
+
+
+.sale-region-heading p,
+.sale-kicker {
+    margin:
+        0 0 12px;
+
+    color:
+        var(--sr-soft);
+
+    font-size: 8px;
+
+    letter-spacing: 2.6px;
+}
+
+
+.sale-region-heading h1 {
+    margin: 0;
+
+    font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+    font-size:
+        clamp(
+            55px,
+            8vw,
+            110px
+        );
+
+    font-weight: 400;
+
+    line-height: 0.9;
+}
+
+
+.sale-region-heading > div > span {
+    display: block;
+
+    margin-top: 22px;
+
+    color:
+        var(--sr-soft);
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size: 16px;
+
+    font-style: italic;
+}
+
+
+.sale-region-heading-mark {
+    position: absolute;
+
+    right: 0;
+    bottom: -26px;
+
+    color:
+        rgba(
+            142,
+            111,
+            139,
+            0.065
+        );
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        clamp(
+            150px,
+            24vw,
+            340px
+        );
+
+    line-height: 0.8;
+
+    pointer-events: none;
+}
+
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.sale-region-status {
+    margin:
+        25px 0;
+
+    padding:
+        14px 18px;
+
+    border:
+        1px solid
+        var(--sr-line);
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        9px;
+
+    letter-spacing: 1px;
+}
+
+
+.sale-region-status.error {
+    color:
+        var(--sr-danger);
+}
+
+
+
+/* =========================================================
+   WALLET
+========================================================= */
+
+.sale-wallet {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 30px;
+
+    margin-top:
+        55px;
+
+    padding:
+        38px 42px;
+
+    border:
+        1px solid
+        var(--sr-line);
+
+    background:
+        rgba(
+            255,
+            253,
+            252,
+            0.37
+        );
+}
+
+
+.sale-wallet strong {
+    display: block;
+
+    margin:
+        4px 0 8px;
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        clamp(
+            38px,
+            6vw,
+            68px
+        );
+
+    font-weight: 400;
+}
+
+
+.sale-wallet > div > span {
+    color:
+        var(--sr-soft);
+
+    font-size:
+        8px;
+
+    letter-spacing: 2px;
+}
+
+
+.sale-wallet-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+
+.sale-wallet-actions button,
+.sale-wallet-actions a,
+.sale-section-actions button {
+    min-height:
+        40px;
+
+    padding:
+        0 16px;
+
+    border:
+        1px solid
+        var(--sr-line);
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.3
+        );
+
+    color:
+        var(--sr-ink);
+
+    text-decoration:
+        none;
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        1.5px;
+
+    cursor:
+        pointer;
+}
+
+
+.sale-wallet-actions a {
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+}
+
+
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.sale-region-section {
+    margin-top:
+        85px;
+}
+
+
+.sale-region-section-heading {
+    display: flex;
+
+    align-items: end;
+    justify-content: space-between;
+
+    gap: 30px;
+
+    margin-bottom:
+        28px;
+}
+
+
+.sale-region-section-heading h2 {
+    margin: 0;
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        40px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-region-section-heading > span,
+.sale-section-actions > span {
+    color:
+        var(--sr-soft);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        1.5px;
+}
+
+
+.sale-section-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 18px;
+}
+
+
+.sale-forecast-note {
+    max-width:
+        620px;
+
+    margin:
+        -10px 0
+        30px;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        9px;
+
+    line-height:
+        1.8;
+
+    letter-spacing:
+        0.7px;
+}
+
+
+
+/* =========================================================
+   GAME LIST
+========================================================= */
+
+.sale-game-list {
+    border-top:
+        1px solid
+        var(--sr-line);
+}
+
+
+.sale-game-row {
+    display: grid;
+
+    grid-template-columns:
+        45px
+        54px
+        minmax(0, 1fr)
+        120px
+        130px
+        110px;
+
+    align-items:
+        center;
+
+    gap:
+        22px;
+
+    min-height:
+        106px;
+
+    padding:
+        18px 0;
+
+    border-bottom:
+        1px solid
+        var(--sr-line);
+
+    transition:
+        background
+        180ms ease;
+}
+
+
+.sale-game-row:hover {
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.22
+        );
+}
+
+
+.sale-game-row.forecast {
+    opacity:
+        0.78;
+}
+
+
+.sale-game-check {
+    display:
+        flex;
+
+    align-items:
+        center;
+    justify-content:
+        center;
+}
+
+
+.sale-game-check input {
+    width:
+        15px;
+
+    height:
+        15px;
+
+    accent-color:
+        var(--sr-accent);
+}
+
+
+.sale-game-cover {
+    width:
+        46px;
+
+    height:
+        64px;
+
+    overflow:
+        hidden;
+
+    border:
+        1px solid
+        var(--sr-line);
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.4
+        );
+}
+
+
+.sale-game-cover img {
+    display:
+        block;
+
+    width:
+        100%;
+
+    height:
+        100%;
+
+    object-fit:
+        cover;
+}
+
+
+.sale-game-cover span {
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    width:
+        100%;
+
+    height:
+        100%;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        9px;
+}
+
+
+.sale-game-info {
+    min-width: 0;
+}
+
+
+.sale-game-info h3 {
+    margin:
+        0 0 7px;
+
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        17px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-game-info p {
+    margin: 0;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        8px;
+
+    line-height:
+        1.7;
+
+    letter-spacing:
+        1px;
+}
+
+
+.sale-game-discount strong {
+    display:
+        block;
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        24px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-game-discount span,
+.sale-game-price span,
+.sale-game-date span {
+    display:
+        block;
+
+    margin-bottom:
+        5px;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        7px;
+
+    letter-spacing:
+        1.4px;
+}
+
+
+.sale-game-price strong,
+.sale-game-date strong {
+    display:
+        block;
+
+    font-size:
+        11px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-old-price {
+    display:
+        block;
+
+    margin-top:
+        5px;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        8px;
+
+    text-decoration:
+        line-through;
+}
+
+
+.sale-history-low {
+    display:
+        block;
+
+    margin-top:
+        5px;
+
+    color:
+        var(--sr-accent);
+
+    font-size:
+        7px;
+
+    letter-spacing:
+        0.7px;
+}
+
+
+.sale-empty {
+    padding:
+        60px 0;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        10px;
+
+    line-height:
+        2;
+
+    text-align:
+        center;
+}
+
+
+
+/* =========================================================
+   SELECTED PANEL
+========================================================= */
+
+.sale-selection-panel {
+    position: fixed;
+
+    z-index: 700;
+
+    left: 50%;
+    bottom: 22px;
+
+    transform:
+        translateX(-50%);
+
+    display: grid;
+
+    grid-template-columns:
+        130px
+        180px
+        minmax(220px, 1fr)
+        75px;
+
+    align-items:
+        center;
+
+    gap:
+        25px;
+
+    width:
+        min(
+            900px,
+            calc(100% - 40px)
+        );
+
+    padding:
+        18px 24px;
+
+    border:
+        1px solid
+        var(--sr-line-strong);
+
+    background:
+        rgba(
+            250,
+            246,
+            248,
+            0.91
+        );
+
+    backdrop-filter:
+        blur(18px);
+
+    box-shadow:
+        0 14px 50px
+        rgba(
+            90,
+            63,
+            85,
+            0.08
+        );
+}
+
+
+.sale-selection-panel strong {
+    display:
+        block;
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        23px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-selection-panel span {
+    color:
+        var(--sr-soft);
+
+    font-size:
+        7px;
+
+    letter-spacing:
+        1.2px;
+}
+
+
+.sale-selection-panel .sale-kicker {
+    margin-bottom:
+        5px;
+}
+
+
+#sale-balance-after.negative {
+    color:
+        var(--sr-danger);
+}
+
+
+#sale-clear-selection {
+    height:
+        42px;
+
+    border:
+        1px solid
+        var(--sr-line);
+
+    background:
+        transparent;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        1.5px;
+
+    cursor:
+        pointer;
+}
+
+
+
+/* =========================================================
+   DIALOG
+========================================================= */
+
+.sale-dialog {
+    width:
+        min(
+            570px,
+            calc(100% - 32px)
+        );
+
+    padding: 0;
+
+    border:
+        1px solid
+        var(--sr-line-strong);
+
+    background:
+        #faf7f9;
+
+    color:
+        var(--sr-ink);
+}
+
+
+.sale-dialog::backdrop {
+    background:
+        rgba(
+            60,
+            48,
+            58,
+            0.22
+        );
+
+    backdrop-filter:
+        blur(4px);
+}
+
+
+.sale-dialog form {
+    display:
+        grid;
+
+    gap:
+        22px;
+
+    padding:
+        30px;
+}
+
+
+.sale-dialog header {
+    display:
+        flex;
+
+    align-items:
+        start;
+
+    justify-content:
+        space-between;
+
+    gap:
+        20px;
+
+    padding-bottom:
+        20px;
+
+    border-bottom:
+        1px solid
+        var(--sr-line);
+}
+
+
+.sale-dialog header p {
+    margin:
+        0 0 7px;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        2px;
+}
+
+
+.sale-dialog h2 {
+    margin: 0;
+
+    font-family:
+        Georgia,
+        serif;
+
+    font-size:
+        31px;
+
+    font-weight:
+        400;
+}
+
+
+.sale-dialog header button {
+    border: 0;
+
+    background:
+        transparent;
+
+    color:
+        var(--sr-soft);
+
+    font-size:
+        24px;
+
+    cursor:
+        pointer;
+}
+
+
+.sale-dialog label {
+    display:
+        grid;
+
+    gap:
+        8px;
+}
+
+
+.sale-dialog label > span {
+    color:
+        var(--sr-soft);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        1.5px;
+}
+
+
+.sale-dialog input,
+.sale-dialog select {
+    width:
+        100%;
+
+    min-height:
+        46px;
+
+    padding:
+        0 13px;
+
+    border:
+        1px solid
+        var(--sr-line);
+
+    outline: 0;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.48
+        );
+
+    color:
+        var(--sr-ink);
+
+    font:
+        inherit;
+}
+
+
+.sale-dialog input:focus,
+.sale-dialog select:focus {
+    border-color:
+        var(--sr-line-strong);
+}
+
+
+.sale-dialog-grid {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap:
+        15px;
+}
+
+
+.sale-dialog footer {
+    display:
+        flex;
+
+    justify-content:
+        flex-end;
+
+    gap:
+        10px;
+
+    padding-top:
+        6px;
+}
+
+
+.sale-dialog footer button {
+    min-height:
+        42px;
+
+    padding:
+        0 18px;
+
+    border:
+        1px solid
+        var(--sr-line);
+
+    background:
+        transparent;
+
+    color:
+        var(--sr-ink);
+
+    font-size:
+        8px;
+
+    letter-spacing:
+        1.5px;
+
+    cursor:
+        pointer;
+}
+
+
+.sale-dialog footer button.primary {
+    background:
+        rgba(
+            184,
+            151,
+            174,
+            0.16
+        );
+}
+
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+    max-width: 850px
+) {
+
+    .sale-region-shell {
+        width:
+            calc(100% - 32px);
+
+        padding-top:
+            110px;
+
+        padding-bottom:
+            250px;
+    }
+
+
+    .sale-region-heading {
+        min-height:
+            230px;
+    }
+
+
+    .sale-wallet {
+        align-items:
+            start;
+
+        flex-direction:
+            column;
+    }
+
+
+    .sale-wallet-actions {
+        width:
+            100%;
+
+        flex-wrap:
+            wrap;
+    }
+
+
+    .sale-region-section-heading {
+        align-items:
+            start;
+
+        flex-direction:
+            column;
+    }
+
+
+    .sale-game-row {
+        grid-template-columns:
+            30px
+            45px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            14px;
+
+        padding:
+            20px 0;
+    }
+
+
+    .sale-game-cover {
+        width:
+            40px;
+
+        height:
+            56px;
+    }
+
+
+    .sale-game-discount,
+    .sale-game-price,
+    .sale-game-date {
+        grid-column:
+            3;
+    }
+
+
+    .sale-game-discount,
+    .sale-game-price,
+    .sale-game-date {
+        display:
+            grid;
+
+        grid-template-columns:
+            90px
+            1fr;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .sale-game-discount span,
+    .sale-game-price span,
+    .sale-game-date span {
+        margin: 0;
+    }
+
+
+    .sale-selection-panel {
+        bottom:
+            10px;
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            );
+
+        gap:
+            15px;
+
+        padding:
+            16px;
+
+        width:
+            calc(
+                100% - 20px
+            );
+    }
+
+
+    .sale-selection-panel > div:nth-child(3) {
+        grid-column:
+            1 / -1;
+    }
+
+
+    #sale-clear-selection {
+        width:
+            100%;
+    }
+
+}
+
+
+
+@media (
+    max-width: 560px
+) {
+
+    .sale-region-heading-mark {
+        right:
+            -20px;
+
+        font-size:
+            150px;
+    }
+
+
+    .sale-wallet {
+        padding:
+            27px 22px;
+    }
+
+
+    .sale-dialog-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .sale-dialog form {
+        padding:
+            24px 20px;
+    }
+
+}
