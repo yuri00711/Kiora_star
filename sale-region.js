@@ -1259,7 +1259,7 @@
                     <div
                         class="sale-empty"
                     >
-                        No HK forecast yet.
+                        No ${REGION} forecast yet.
                         <br>
                         有足够历史价格后，
                         这里会显示预测结果。
@@ -1791,242 +1791,479 @@
        ADD SALE RECORD
     ===================================================== */
 
-    function populateGameSelect() {
+    function normalizeSaleSearch(value) {
 
-        const select =
-            $(
-                "#sale-record-game"
+        return String(value ?? "")
+            .normalize("NFKC")
+            .toLocaleLowerCase()
+            .replace(/\s+/g, "")
+            .replace(
+                /[・･\-‐‑‒–—―~〜～_:：!！?？、。,.，'"“”‘’（）()【】\[\]{}<>＜＞\/\\|｜]/g,
+                ""
             );
-
-
-        if (!select) {
-            return;
-        }
-
-
-        const games =
-            [...state.games]
-                .sort(
-                    (
-                        a,
-                        b
-                    ) =>
-                        gameTitle(
-                            a
-                        )
-                        .localeCompare(
-                            gameTitle(
-                                b
-                            ),
-                            "zh-CN"
-                        )
-                );
-
-
-        select.innerHTML =
-            `
-                <option
-                    value=""
-                >
-                    SELECT GAME
-                </option>
-            ` +
-            games
-                .map(
-                    (
-                        game
-                    ) => `
-                        <option
-                            value="${esc(
-                                game.id
-                            )}"
-                        >
-                            ${esc(
-                                gameTitle(
-                                    game
-                                )
-                            )}
-                        </option>
-                    `
-                )
-                .join("");
 
     }
 
 
+    function saleGameSearchScore(text, query) {
 
-    $(
-        "#sale-add-record"
-    )
-        ?.addEventListener(
-            "click",
+        const target =
+            normalizeSaleSearch(text);
+
+        const keyword =
+            normalizeSaleSearch(query);
+
+
+        if (!keyword) {
+            return 0;
+        }
+
+
+        const includedAt =
+            target.indexOf(keyword);
+
+
+        if (includedAt !== -1) {
+            return 10000 - includedAt;
+        }
+
+
+        let cursor = 0;
+        let gap = 0;
+
+
+        for (const character of keyword) {
+
+            const found =
+                target.indexOf(
+                    character,
+                    cursor
+                );
+
+
+            if (found === -1) {
+                return 0;
+            }
+
+
+            gap +=
+                found - cursor;
+
+            cursor =
+                found + 1;
+
+        }
+
+
+        return 1000 - gap;
+
+    }
+
+
+    function setupGameAutocomplete() {
+
+        const input =
+            $("#sale-record-game-search");
+
+        const hidden =
+            $("#sale-record-game");
+
+        const suggestions =
+            $("#sale-game-suggestions");
+
+
+        if (
+            !input ||
+            !hidden ||
+            !suggestions
+        ) {
+            return;
+        }
+
+
+        const searchableGames =
+            state.games.map(
+                (game) => ({
+                    game,
+                    title:
+                        gameTitle(game),
+                    searchText:
+                        [
+                            gameTitle(game),
+                            game.title,
+                            game.name,
+                            game.game_title,
+                            game.cn_title,
+                            game.jp_title
+                        ]
+                        .filter(Boolean)
+                        .join(" ")
+                })
+            );
+
+
+        const closeSuggestions =
             () => {
+                suggestions.classList.remove(
+                    "open"
+                );
+            };
 
-                if (
-                    !state.writable
-                ) {
+
+        const renderSuggestions =
+            (query) => {
+                if (!String(query).trim()) {
+
+                    suggestions.innerHTML = `
+                        <div class="sale-game-suggestion-empty">
+                            输入部分游戏名称开始搜索
+                        </div>
+                    `;
+
+                    suggestions.classList.add(
+                        "open"
+                    );
+
+                    return;
+
+                }
+
+
+                const matches =
+                    searchableGames
+                        .map(
+                            (item) => ({
+                                ...item,
+                                score:
+                                    saleGameSearchScore(
+                                        item.searchText,
+                                        query
+                                    )
+                            })
+                        )
+                        .filter(
+                            (item) =>
+                                item.score > 0
+                        )
+                        .sort(
+                            (a, b) =>
+                                b.score - a.score ||
+                                a.title.localeCompare(
+                                    b.title,
+                                    "ja"
+                                )
+                        )
+                        .slice(0, 12);
+
+
+                if (!matches.length) {
+
+                    suggestions.innerHTML = `
+                        <div class="sale-game-suggestion-empty">
+                            没有找到匹配的游戏
+                        </div>
+                    `;
+
+                } else {
+
+                    suggestions.innerHTML =
+                        matches
+                            .map(
+                                ({ game, title }) => `
+                                    <button
+                                        type="button"
+                                        class="sale-game-suggestion"
+                                        data-sale-game-id="${esc(game.id)}"
+                                    >
+                                        <span>${esc(title)}</span>
+                                        <small>${esc(
+                                            gamePlatform(game) ||
+                                            "GAME ARCHIVE"
+                                        )}</small>
+                                    </button>
+                                `
+                            )
+                            .join("");
+
+                }
+
+
+                suggestions.classList.add(
+                    "open"
+                );
+
+            };
+
+
+        input.oninput =
+            () => {
+                hidden.value = "";
+
+                renderSuggestions(
+                    input.value
+                );
+            };
+
+
+        input.onfocus =
+            () => {
+                renderSuggestions(
+                    input.value
+                );
+            };
+
+
+        suggestions.onclick =
+            (event) => {
+
+                const button =
+                    event.target.closest(
+                        "[data-sale-game-id]"
+                    );
+
+
+                if (!button) {
                     return;
                 }
 
 
-                $(
-                    "#sale-record-form"
-                ).reset();
+                const id =
+                    String(
+                        button.dataset.saleGameId
+                    );
+
+                const selectedGame =
+                    state.games.find(
+                        (game) =>
+                            String(game.id) === id
+                    );
 
 
-                populateGameSelect();
+                if (!selectedGame) {
+                    return;
+                }
 
 
-                $(
-                    "#sale-record-dialog"
-                )
+                input.value =
+                    gameTitle(selectedGame);
+
+                hidden.value =
+                    id;
+
+                closeSuggestions();
+
+            };
+
+
+        input.value = "";
+        hidden.value = "";
+        suggestions.innerHTML = "";
+        closeSuggestions();
+
+    }
+
+
+    function recalculateSalePrice() {
+
+        const regularInput =
+            $("#sale-record-regular");
+
+        const discountInput =
+            $("#sale-record-discount");
+
+        const priceInput =
+            $("#sale-record-price");
+
+        const formula =
+            $("#sale-price-formula");
+
+
+        if (
+            !regularInput ||
+            !discountInput ||
+            !priceInput
+        ) {
+            return;
+        }
+
+
+        const regular =
+            Number.parseFloat(
+                regularInput.value
+            );
+
+        const discount =
+            Number.parseFloat(
+                discountInput.value
+            );
+
+
+        if (
+            !Number.isFinite(regular) ||
+            regular < 0 ||
+            !Number.isFinite(discount) ||
+            discount < 0 ||
+            discount > 100
+        ) {
+
+            priceInput.value = "";
+
+            if (formula) {
+                formula.textContent =
+                    "输入原价和折扣后自动计算";
+            }
+
+            return;
+
+        }
+
+
+        let salePrice =
+            regular *
+            (1 - discount / 100);
+
+
+        if (REGION === "JP") {
+            salePrice =
+                Math.round(salePrice);
+        } else {
+            salePrice =
+                Math.round(
+                    salePrice * 100
+                ) / 100;
+        }
+
+
+        priceInput.value =
+            String(salePrice);
+
+        if (formula) {
+            const payPercent =
+                100 - discount;
+
+            formula.textContent =
+                `${money(regular)} × ${payPercent}% = ${money(salePrice)}`;
+        }
+
+    }
+
+
+    $("#sale-add-record")
+        ?.addEventListener(
+            "click",
+            () => {
+
+                if (!state.writable) {
+                    return;
+                }
+
+
+                $("#sale-record-form")
+                    .reset();
+
+                $("#sale-record-price").value = "";
+
+                const formula =
+                    $("#sale-price-formula");
+
+                if (formula) {
+                    formula.textContent =
+                        "输入原价和折扣后自动计算";
+                }
+
+                setupGameAutocomplete();
+
+                $("#sale-record-dialog")
                     .showModal();
 
             }
         );
 
 
-
-    /*
-     * 输入原价和折后价后，
-     * 自动算折扣率。
-     */
-
-    function autoDiscount() {
-
-        const regular =
-            Number(
-                $(
-                    "#sale-record-regular"
-                ).value
-            );
-
-
-        const sale =
-            Number(
-                $(
-                    "#sale-record-price"
-                ).value
-            );
-
-
-        if (
-            !Number.isFinite(
-                regular
-            ) ||
-            !Number.isFinite(
-                sale
-            ) ||
-            regular <= 0 ||
-            sale < 0
-        ) {
-            return;
-        }
-
-
-        const percent =
-            Math.round(
-                (
-                    1 -
-                    sale /
-                        regular
-                ) *
-                100
-            );
-
-
-        $(
-            "#sale-record-discount"
-        ).value =
-            Math.max(
-                0,
-                Math.min(
-                    100,
-                    percent
-                )
-            );
-
-    }
-
-
-
-    $(
-        "#sale-record-regular"
-    )
+    $("#sale-record-regular")
         ?.addEventListener(
             "input",
-            autoDiscount
+            recalculateSalePrice
         );
 
 
-    $(
-        "#sale-record-price"
-    )
+    $("#sale-record-regular")
         ?.addEventListener(
-            "input",
-            autoDiscount
+            "change",
+            recalculateSalePrice
         );
 
 
+    $("#sale-record-discount")
+        ?.addEventListener(
+            "input",
+            recalculateSalePrice
+        );
 
-    $(
-        "#sale-record-form"
-    )
+
+    $("#sale-record-discount")
+        ?.addEventListener(
+            "change",
+            recalculateSalePrice
+        );
+
+
+    $("#sale-record-form")
         ?.addEventListener(
             "submit",
-            async (
-                event
-            ) => {
+            async (event) => {
 
                 event.preventDefault();
 
 
-                if (
-                    !state.writable
-                ) {
+                if (!state.writable) {
                     return;
                 }
 
 
                 const gameId =
-                    Number(
-                        $(
-                            "#sale-record-game"
-                        ).value
-                    );
-
+                    $("#sale-record-game")
+                        .value
+                        .trim();
 
                 const salePrice =
                     Number(
-                        $(
-                            "#sale-record-price"
-                        ).value
+                        $("#sale-record-price").value
+                    );
+
+                const regularRaw =
+                    $("#sale-record-regular").value;
+
+                const discountRaw =
+                    $("#sale-record-discount").value;
+
+                const validGame =
+                    /^\d+$/.test(gameId) &&
+                    state.games.some(
+                        (game) =>
+                            String(game.id) === gameId
                     );
 
 
-                const regularRaw =
-                    $(
-                        "#sale-record-regular"
-                    ).value;
+                if (!validGame) {
 
+                    status(
+                        "请先从匹配结果里选择一个游戏。",
+                        true
+                    );
 
-                const discountRaw =
-                    $(
-                        "#sale-record-discount"
-                    ).value;
+                    return;
+
+                }
 
 
                 if (
-                    !Number.isFinite(
-                        gameId
-                    ) ||
-                    !Number.isFinite(
-                        salePrice
-                    )
+                    !$("#sale-record-price").value ||
+                    !Number.isFinite(salePrice)
                 ) {
 
                     status(
-                        "Select a game and enter the sale price.",
+                        "请输入有效的原价和折扣。",
                         true
                     );
 
@@ -2036,90 +2273,56 @@
 
 
                 const starts =
-                    $(
-                        "#sale-record-start"
-                    ).value;
-
+                    $("#sale-record-start").value;
 
                 const ends =
-                    $(
-                        "#sale-record-end"
-                    ).value;
-
+                    $("#sale-record-end").value;
 
                 const source =
-                    $(
-                        "#sale-record-source"
-                    ).value
-                    .trim();
+                    $("#sale-record-source")
+                        .value
+                        .trim();
 
 
-                status(
-                    "Saving sale record…"
-                );
+                status("Saving sale record…");
 
 
                 const result =
                     await db
-                        .from(
-                            "game_price_history"
-                        )
+                        .from("game_price_history")
                         .insert({
-
                             game_id:
                                 gameId,
-
                             region:
                                 REGION,
-
                             currency:
                                 CURRENCY,
-
                             regular_price:
-                                regularRaw
-                                    ? Number(
-                                          regularRaw
-                                      )
-                                    : null,
-
+                                regularRaw === ""
+                                    ? null
+                                    : Number(regularRaw),
                             sale_price:
                                 salePrice,
-
                             discount_percent:
-                                discountRaw
-                                    ? Number(
-                                          discountRaw
-                                      )
-                                    : null,
-
+                                discountRaw === ""
+                                    ? null
+                                    : Number(discountRaw),
                             sale_starts_at:
                                 starts
-                                    ? new Date(
-                                          starts
-                                      )
-                                          .toISOString()
+                                    ? new Date(starts).toISOString()
                                     : null,
-
                             sale_ends_at:
                                 ends
-                                    ? new Date(
-                                          ends
-                                      )
-                                          .toISOString()
+                                    ? new Date(ends).toISOString()
                                     : null,
-
                             source_url:
-                                source ||
-                                null
-
+                                source || null
                         })
                         .select("*")
                         .single();
 
 
-                if (
-                    result.error
-                ) {
+                if (result.error) {
 
                     status(
                         result.error.message,
@@ -2135,16 +2338,9 @@
                     result.data
                 );
 
-
                 closeDialogs();
-
-                status(
-                    "Sale record saved."
-                );
-
-
+                status("Sale record saved.");
                 renderLive();
-
                 renderSelection();
 
             }

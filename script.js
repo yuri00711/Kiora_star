@@ -148,7 +148,7 @@ const supabaseClient =
         supabaseKey
     );
 
-const kioraAuth = window.KioraAuth;
+const kioraAuth = ;
 
 
 /* =========================================

@@ -2,7 +2,7 @@
     "use strict";
 
     const db = window.yuriArticles.getClient();
-    const auth = window.KioraAuth;
+    const auth = ;
     const statusLine = document.getElementById("tier-status");
     const boardRoot = document.getElementById("tier-board");
     let games = [];
