@@ -615,7 +615,695 @@
 
     }
 
+/* =====================================================
+   AI SALE FORECAST
+===================================================== */
 
+function confidenceToNumber(
+    confidence
+) {
+
+    const value =
+        String(
+            confidence || ""
+        )
+        .toLowerCase();
+
+    if (
+        value === "high"
+    ) {
+        return 0.9;
+    }
+
+    if (
+        value === "medium"
+    ) {
+        return 0.65;
+    }
+
+    return 0.35;
+
+}
+
+
+function completedSaleHistory(
+    gameId
+) {
+
+    const current =
+        today();
+
+
+    /*
+     * 只把已经结束的真实折扣
+     * 当作预测依据。
+     */
+
+    return state.prices
+
+        .filter(
+            (item) => {
+
+                if (
+                    item.region !==
+                    REGION
+                ) {
+                    return false;
+                }
+
+
+                if (
+                    Number(
+                        item.game_id
+                    ) !==
+                    Number(
+                        gameId
+                    )
+                ) {
+                    return false;
+                }
+
+
+                const start =
+                    dateOnly(
+                        item.sale_starts_at
+                    );
+
+
+                const end =
+                    dateOnly(
+                        item.sale_ends_at
+                    );
+
+
+                /*
+                 * 至少必须有开始日期。
+                 */
+
+                if (!start) {
+                    return false;
+                }
+
+
+                /*
+                 * 如果存在结束日期，
+                 * 必须已经结束。
+                 */
+
+                if (
+                    end &&
+                    end >= current
+                ) {
+                    return false;
+                }
+
+
+                /*
+                 * 没有结束日期时，
+                 * 开始日期至少必须早于今天。
+                 */
+
+                if (
+                    !end &&
+                    start >= current
+                ) {
+                    return false;
+                }
+
+
+                return true;
+
+            }
+        )
+
+        .sort(
+            (a, b) =>
+                String(
+                    a.sale_starts_at || ""
+                )
+                .localeCompare(
+                    String(
+                        b.sale_starts_at || ""
+                    )
+                )
+        );
+
+}
+
+
+function latestRegularPrice(
+    gameId
+) {
+
+    const row =
+        [...state.prices]
+
+            .filter(
+                (item) =>
+                    item.region ===
+                        REGION &&
+                    Number(
+                        item.game_id
+                    ) ===
+                        Number(
+                            gameId
+                        ) &&
+                    Number.isFinite(
+                        Number(
+                            item.regular_price
+                        )
+                    )
+            )
+
+            .sort(
+                (a, b) =>
+                    String(
+                        b.observed_at ||
+                        b.created_at ||
+                        ""
+                    )
+                    .localeCompare(
+                        String(
+                            a.observed_at ||
+                            a.created_at ||
+                            ""
+                        )
+                    )
+            )[0];
+
+
+    if (!row) {
+        return null;
+    }
+
+
+    const price =
+        Number(
+            row.regular_price
+        );
+
+
+    return Number.isFinite(
+        price
+    )
+        ? price
+        : null;
+
+}
+
+
+function hasUsableForecast(
+    gameId
+) {
+
+    const current =
+        today();
+
+
+    return state.forecasts.some(
+        (item) =>
+
+            item.region ===
+                REGION &&
+
+            Number(
+                item.game_id
+            ) ===
+                Number(
+                    gameId
+                ) &&
+
+            (
+                !item.predicted_end ||
+                item.predicted_end >=
+                    current
+            )
+    );
+
+}
+
+
+async function askSaleForecast(
+    game,
+    historyRows
+) {
+
+    const history =
+        historyRows.map(
+            (row) => ({
+                start_date:
+                    dateOnly(
+                        row.sale_starts_at
+                    ),
+
+                end_date:
+                    dateOnly(
+                        row.sale_ends_at
+                    ),
+
+                discount:
+                    row.discount_percent !==
+                        null &&
+                    row.discount_percent !==
+                        undefined
+                        ? Number(
+                            row.discount_percent
+                        )
+                        : null,
+
+                sale_price:
+                    row.sale_price !==
+                        null &&
+                    row.sale_price !==
+                        undefined
+                        ? Number(
+                            row.sale_price
+                        )
+                        : null
+            })
+        );
+
+
+    const {
+        data,
+        error
+    } =
+        await db.functions.invoke(
+            "predict-sale",
+            {
+                body: {
+
+                    gameName:
+                        gameTitle(
+                            game
+                        ),
+
+                    region:
+                        REGION,
+
+                    history
+
+                }
+            }
+        );
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    if (
+        data?.error
+    ) {
+        throw new Error(
+            data.error
+        );
+    }
+
+
+    return (
+        data?.forecast ||
+        null
+    );
+
+}
+
+
+function buildForecastRow(
+    game,
+    aiForecast
+) {
+
+    if (
+        !aiForecast ||
+        !aiForecast.predicted_start
+    ) {
+        return null;
+    }
+
+
+    const discountMin =
+        Number(
+            aiForecast
+                .expected_discount_min
+        );
+
+
+    const discountMax =
+        Number(
+            aiForecast
+                .expected_discount_max
+        );
+
+
+    let predictedDiscount =
+        null;
+
+
+    if (
+        Number.isFinite(
+            discountMin
+        ) &&
+        Number.isFinite(
+            discountMax
+        )
+    ) {
+
+        predictedDiscount =
+            Math.round(
+                (
+                    discountMin +
+                    discountMax
+                ) / 2
+            );
+
+    } else if (
+        Number.isFinite(
+            discountMin
+        )
+    ) {
+
+        predictedDiscount =
+            Math.round(
+                discountMin
+            );
+
+    } else if (
+        Number.isFinite(
+            discountMax
+        )
+    ) {
+
+        predictedDiscount =
+            Math.round(
+                discountMax
+            );
+
+    }
+
+
+    const regularPrice =
+        latestRegularPrice(
+            game.id
+        );
+
+
+    let predictedPrice =
+        null;
+
+
+    if (
+        regularPrice !== null &&
+        predictedDiscount !== null
+    ) {
+
+        predictedPrice =
+            regularPrice *
+            (
+                1 -
+                predictedDiscount /
+                    100
+            );
+
+
+        if (
+            REGION === "JP"
+        ) {
+
+            predictedPrice =
+                Math.round(
+                    predictedPrice
+                );
+
+        } else {
+
+            predictedPrice =
+                Math.round(
+                    predictedPrice *
+                    100
+                ) / 100;
+
+        }
+
+    }
+
+
+    return {
+
+        game_id:
+            game.id,
+
+        region:
+            REGION,
+
+        currency:
+            CURRENCY,
+
+        predicted_start:
+            aiForecast
+                .predicted_start,
+
+        predicted_end:
+            aiForecast
+                .predicted_end ||
+            aiForecast
+                .predicted_start,
+
+        predicted_discount_percent:
+            predictedDiscount,
+
+        predicted_price:
+            predictedPrice,
+
+        confidence:
+            confidenceToNumber(
+                aiForecast.confidence
+            ),
+
+        /*
+         * 目前页面没有显示 reason，
+         * 先保留在内存里。
+         */
+        ai_reason:
+            aiForecast.reason ||
+            "",
+
+        generated_at:
+            new Date()
+                .toISOString(),
+
+        created_at:
+            new Date()
+                .toISOString()
+
+    };
+
+}
+
+
+async function generateAIForecasts() {
+
+    /*
+     * 按 game_id 分组，
+     * 找出拥有足够历史记录的游戏。
+     */
+
+    const gameIds =
+        Array.from(
+            new Set(
+                state.prices
+
+                    .filter(
+                        (item) =>
+                            item.region ===
+                            REGION
+                    )
+
+                    .map(
+                        (item) =>
+                            Number(
+                                item.game_id
+                            )
+                    )
+
+                    .filter(
+                        Number.isFinite
+                    )
+            )
+        );
+
+
+    for (
+        const gameId
+        of gameIds
+    ) {
+
+        /*
+         * 已经有仍然有效的预测，
+         * 不重复消耗 DeepSeek token。
+         */
+
+        if (
+            hasUsableForecast(
+                gameId
+            )
+        ) {
+            continue;
+        }
+
+
+        const history =
+            completedSaleHistory(
+                gameId
+            );
+
+
+        /*
+         * 两次历史折扣就允许 AI 分析。
+         */
+
+        if (
+            history.length < 2
+        ) {
+            continue;
+        }
+
+
+        const game =
+            gameById(
+                gameId
+            );
+
+
+        if (!game) {
+            continue;
+        }
+
+
+        try {
+
+            console.log(
+                `[SALE AI] analysing ${
+                    gameTitle(game)
+                } (${REGION})`,
+                history
+            );
+
+
+            const aiForecast =
+                await askSaleForecast(
+                    game,
+                    history
+                );
+
+
+            const forecast =
+                buildForecastRow(
+                    game,
+                    aiForecast
+                );
+
+
+            if (!forecast) {
+                continue;
+            }
+
+
+            /*
+             * 先立刻放到 state，
+             * 页面无需等待数据库再次读取。
+             */
+
+            state.forecasts.unshift(
+                forecast
+            );
+
+
+            /*
+             * 再尝试保存到
+             * game_sale_forecasts。
+             *
+             * 不保存 ai_reason，
+             * 避免你的旧表没有这个字段。
+             */
+
+            const saveResult =
+                await db
+                    .from(
+                        "game_sale_forecasts"
+                    )
+                    .insert({
+
+                        game_id:
+                            forecast.game_id,
+
+                        region:
+                            forecast.region,
+
+                        currency:
+                            forecast.currency,
+
+                        predicted_start:
+                            forecast
+                                .predicted_start,
+
+                        predicted_end:
+                            forecast
+                                .predicted_end,
+
+                        predicted_discount_percent:
+                            forecast
+                                .predicted_discount_percent,
+
+                        predicted_price:
+                            forecast
+                                .predicted_price,
+
+                        confidence:
+                            forecast
+                                .confidence,
+
+                        generated_at:
+                            forecast
+                                .generated_at
+
+                    });
+
+
+            /*
+             * 即使数据库保存失败，
+             * 当前页面仍然可以显示 AI 结果。
+             */
+
+            if (
+                saveResult.error
+            ) {
+
+                console.warn(
+                    "Forecast generated, but could not be saved:",
+                    saveResult.error
+                );
+
+            }
+
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                `[SALE AI] ${
+                    gameTitle(game)
+                } forecast failed:`,
+                error
+            );
+
+        }
+
+    }
+
+}
 
     /* =====================================================
        LOAD DATA
@@ -773,6 +1461,14 @@
 
             }
 
+
+            status("");
+
+            status(
+                `Analysing ${REGION} sale history…`
+            );
+
+            await generateAIForecasts();
 
             status("");
 
