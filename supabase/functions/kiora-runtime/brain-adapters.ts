@@ -59,11 +59,25 @@ class OpenAICompatibleAdapter implements BrainAdapter {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: request.model.model_key,
-          messages: request.messages,
-          temperature: number(config.temperature, 0.8, 0, 2),
-          max_tokens: Math.round(number(config.max_output_tokens, 800, 64, 4000)),
-        }),
+  model: request.model.model_key,
+  messages: request.messages,
+
+  // DeepSeek Flash 默认开启 thinking。
+  // Daily Brain 主要用于普通陪伴聊天，因此默认关闭，
+  // 避免 reasoning 占用输出预算并导致 final content 为空。
+  ...(request.model.model_key.startsWith("deepseek-")
+    ? {
+        thinking: {
+          type: config.thinking === "enabled" ? "enabled" : "disabled",
+        },
+      }
+    : {}),
+
+  temperature: number(config.temperature, 0.8, 0, 2),
+  max_tokens: Math.round(
+    number(config.max_output_tokens, 800, 64, 4000)
+  ),
+}),
         signal: AbortSignal.timeout(Math.round(number(config.timeout_ms, 60000, 5000, 120000))),
       });
     } catch (error) {
@@ -83,8 +97,38 @@ class OpenAICompatibleAdapter implements BrainAdapter {
     } catch {
       throw new KioraRuntimeError("BRAIN_RESPONSE_INVALID", 502);
     }
-    const content = responseText(payload);
-    if (!content) throw new KioraRuntimeError("BRAIN_RESPONSE_INVALID", 502);
+    const choices = Array.isArray(payload.choices) ? payload.choices : [];
+const first = choices[0] as JsonObject | undefined;
+const message = first?.message as JsonObject | undefined;
+
+const content = responseText(payload);
+
+if (!content) {
+  const reasoningContent =
+    typeof message?.reasoning_content === "string"
+      ? message.reasoning_content
+      : "";
+
+  const toolCalls = Array.isArray(message?.tool_calls)
+    ? message.tool_calls
+    : [];
+
+  const finishReason =
+    typeof first?.finish_reason === "string"
+      ? first.finish_reason
+      : "unknown";
+
+  console.error("KIORA_PROVIDER_EMPTY_CONTENT", {
+    provider: request.model.provider,
+    model: request.model.model_key,
+    finishReason,
+    hasReasoning: Boolean(reasoningContent),
+    hasToolCalls: toolCalls.length > 0,
+    requestId: requestId || null,
+  });
+
+  throw new KioraRuntimeError("BRAIN_RESPONSE_INVALID", 502);
+}
     const usage = payload.usage && typeof payload.usage === "object" ? payload.usage as JsonObject : {};
     const reportedInput = Number(usage.prompt_tokens);
     const reportedOutput = Number(usage.completion_tokens);

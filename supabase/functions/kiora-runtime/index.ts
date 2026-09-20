@@ -6,9 +6,15 @@ import { routeDailyBrain } from "./brain-router.ts";
 import { assertChatBudget, budgetSnapshot, calculateCost } from "./budget-manager.ts";
 import { sanitizePageContext } from "./context.ts";
 import { buildBrainMessages } from "./core.ts";
+import { loadLifeContext, type LifeContext } from "./memory-retrieval.ts";
+import { maybeReflect } from "./reflection.ts";
 import type { BrainResult, CostResult, JsonObject, ModelRecord } from "./types.ts";
 
-const ACTIONS = new Set(["status", "bootstrap", "start", "new_conversation", "send_message"]);
+const ACTIONS = new Set([
+  "status", "bootstrap", "start", "new_conversation", "send_message", "reflect",
+  "memory_evidence", "forget_memory", "delete_memory",
+]);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function runtimeError(error: unknown): KioraRuntimeError {
   if (error instanceof KioraRuntimeError) return error;
@@ -21,10 +27,18 @@ function runtimeError(error: unknown): KioraRuntimeError {
     "KIORA_OWNER_REQUIRED", "KIORA_NOT_STARTED", "ACTIVE_CONVERSATION_MISSING",
     "MODEL_NOT_FOUND", "INVALID_MESSAGE", "INVALID_TURN_KEY", "INVALID_CONTEXT",
     "INVALID_ASSISTANT_MESSAGE", "INVALID_USAGE", "MODEL_RUN_NOT_FOUND",
+    "INVALID_MEMORY_ID", "MEMORY_NOT_FOUND", "PHASE2_NOT_ENABLED",
+    "REFLECTION_RESPONSE_INVALID", "REFLECTION_BUDGET_DEFERRED",
   ]);
   return known.has(message)
     ? new KioraRuntimeError(message, 400)
     : new KioraRuntimeError("RUNTIME_ERROR", 500);
+}
+
+function uuid(value: unknown, code = "INVALID_MEMORY_ID"): string {
+  const result = String(value ?? "");
+  if (!UUID.test(result)) throw new KioraRuntimeError(code, 400);
+  return result;
 }
 
 function object(value: unknown): JsonObject {
@@ -113,6 +127,30 @@ async function recentConversation(db: SupabaseClient, ownerId: string, conversat
   return (data || []).reverse() as Array<{ role: string; content: string }>;
 }
 
+async function latestExchange(db: SupabaseClient, ownerId: string, conversationId: string): Promise<JsonObject | null> {
+  const { data, error } = await db.from("kiora_messages")
+    .select("id,role,content,page_context,created_at")
+    .eq("owner_id", ownerId).eq("conversation_id", conversationId)
+    .in("role", ["owner", "kiora"]).order("created_at", { ascending: false }).limit(8);
+  if (error) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
+  const rows = (data || []) as JsonObject[];
+  const ownerMessage = rows.find((row) => row.role === "owner");
+  if (!ownerMessage) return null;
+  const ownerTime = new Date(String(ownerMessage.created_at)).getTime();
+  const assistant = rows.find((row) => row.role === "kiora" && new Date(String(row.created_at)).getTime() >= ownerTime);
+  return { owner: ownerMessage, assistant: assistant || null };
+}
+
+async function reflectSafely(args: Parameters<typeof maybeReflect>[0]): Promise<JsonObject> {
+  try {
+    return await maybeReflect(args);
+  } catch (error) {
+    const normalized = runtimeError(error);
+    console.error("KIORA_REFLECTION_FAILED", normalized.code);
+    return { status: "failed", code: normalized.code };
+  }
+}
+
 async function priorTurnResult(db: SupabaseClient, ownerId: string, modelRunId: string): Promise<JsonObject> {
   const { data: run, error } = await db.from("kiora_model_runs")
     .select("status,response_message_id,error_code")
@@ -180,10 +218,70 @@ Deno.serve(async (request) => {
 
     if (action === "new_conversation") {
       only(body, ["action", "title"]);
+      const settings = await loadSettings(db, ownerId);
+      const oldConversationId = typeof settings?.active_conversation_id === "string" ? settings.active_conversation_id : null;
+      if (settings && oldConversationId && object(settings.feature_flags || {}).memory_enabled === true) {
+        const exchange = await latestExchange(db, ownerId, oldConversationId);
+        if (exchange) {
+          const ownerMessage = object(exchange.owner);
+          const assistant = exchange.assistant ? object(exchange.assistant) : null;
+          const model = await routeDailyBrain(db, ownerId, settings.daily_brain_model_id as string | null);
+          await reflectSafely({
+            db, ownerId, conversationId: oldConversationId, sourceMessageId: String(ownerMessage.id),
+            ownerMessage: String(ownerMessage.content), assistantMessageId: assistant ? String(assistant.id) : null,
+            assistantMessage: assistant ? String(assistant.content) : "", pageContext: object(ownerMessage.page_context),
+            settings, model, forceTrigger: "conversation_switch",
+          });
+        }
+      }
       const title = body.title === undefined ? null : String(body.title).slice(0, 160);
       const { error } = await db.rpc("kiora_create_conversation", { target_owner: ownerId, conversation_title: title });
       if (error) throw error;
       return jsonResponse(origin, { success: true, data: await bootstrap(db, ownerId) });
+    }
+
+    if (action === "memory_evidence") {
+      only(body, ["action", "memory_id"]);
+      const memoryId = uuid(body.memory_id);
+      const [memoryResult, evidenceResult, linksResult] = await Promise.all([
+        db.from("kiora_memories").select("id,memory_type,content,summary,confidence,status,importance,context_tags,created_at,updated_at")
+          .eq("owner_id", ownerId).eq("id", memoryId).maybeSingle(),
+        db.from("kiora_memory_evidence").select("id,conversation_id,message_id,feedback_id,evidence_type,excerpt,weight,created_at")
+          .eq("owner_id", ownerId).eq("memory_id", memoryId).order("created_at", { ascending: true }),
+        db.from("kiora_memory_links").select("id,from_memory_id,to_memory_id,relation,note,created_at")
+          .eq("owner_id", ownerId).or(`from_memory_id.eq.${memoryId},to_memory_id.eq.${memoryId}`),
+      ]);
+      if (memoryResult.error || evidenceResult.error || linksResult.error) throw new KioraRuntimeError("MEMORY_READ_FAILED", 500);
+      if (!memoryResult.data) throw new KioraRuntimeError("MEMORY_NOT_FOUND", 404);
+      return jsonResponse(origin, { success: true, data: { memory: memoryResult.data, evidence: evidenceResult.data || [], links: linksResult.data || [] } });
+    }
+
+    if (action === "forget_memory" || action === "delete_memory") {
+      only(body, ["action", "memory_id"]);
+      const memoryId = uuid(body.memory_id);
+      const functionName = action === "forget_memory" ? "kiora_forget_memory" : "kiora_delete_memory";
+      const { data, error } = await db.rpc(functionName, { target_owner: ownerId, target_memory_id: memoryId });
+      if (error) throw error;
+      if (data !== true) throw new KioraRuntimeError("MEMORY_NOT_FOUND", 404);
+      return jsonResponse(origin, { success: true, data: { memory_id: memoryId, status: action === "forget_memory" ? "forgotten" : "deleted" } });
+    }
+
+    if (action === "reflect") {
+      only(body, ["action"]);
+      const settings = await loadSettings(db, ownerId);
+      const conversationId = typeof settings?.active_conversation_id === "string" ? settings.active_conversation_id : null;
+      if (!settings || !conversationId) throw new KioraRuntimeError("ACTIVE_CONVERSATION_MISSING", 409);
+      const exchange = await latestExchange(db, ownerId, conversationId);
+      if (!exchange) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 409);
+      const ownerMessage = object(exchange.owner);
+      const assistant = exchange.assistant ? object(exchange.assistant) : null;
+      const model = await routeDailyBrain(db, ownerId, settings.daily_brain_model_id as string | null);
+      const result = await maybeReflect({
+        db, ownerId, conversationId, sourceMessageId: String(ownerMessage.id), ownerMessage: String(ownerMessage.content),
+        assistantMessageId: assistant ? String(assistant.id) : null, assistantMessage: assistant ? String(assistant.content) : "",
+        pageContext: object(ownerMessage.page_context), settings, model, forceTrigger: "manual",
+      });
+      return jsonResponse(origin, { success: true, data: result });
     }
 
     only(body, ["action", "content", "client_message_key", "page_context"]);
@@ -228,7 +326,11 @@ Deno.serve(async (request) => {
       const definition = await coreDefinition(db, ownerId, settings.active_core_version_id);
       const conversationId = String(begunTurn.conversation_id);
       const history = await recentConversation(db, ownerId, conversationId);
-      const brainMessages = buildBrainMessages(definition, history, pageContext);
+      let lifeContext: LifeContext | undefined;
+      if (object(settings.feature_flags || {}).memory_enabled === true) {
+        lifeContext = await loadLifeContext(db, ownerId, content, pageContext, object(settings.reflection_config || {}));
+      }
+      const brainMessages = buildBrainMessages(definition, history, pageContext, lifeContext);
       const estimatedInputTokens = Math.ceil(brainMessages.reduce((sum, message) => sum + message.content.length, 0) / 3);
       const projectedOutputTokens = Math.max(64, Number(model.config?.max_output_tokens) || 800);
       const projectedCost = calculateCost(model, estimatedInputTokens, projectedOutputTokens);
@@ -251,17 +353,16 @@ Deno.serve(async (request) => {
         used_metadata: { ...brainResult.usageMetadata, provider_model: brainResult.providerModel },
       });
       if (completeError) throw completeError;
+      await reflectSafely({
+        db, ownerId, conversationId, sourceMessageId: String(begunTurn.message_id), ownerMessage: content,
+        assistantMessageId: String(object(completed).message_id || "") || null,
+        assistantMessage: brainResult.content, pageContext, settings, model,
+      });
       return jsonResponse(origin, {
         success: true,
         data: {
           reply: completed,
           conversation_id: conversationId,
-          usage: {
-            input_tokens: brainResult.inputTokens,
-            output_tokens: brainResult.outputTokens,
-            amount: cost.totalCost,
-            currency: cost.currency,
-          },
         },
       });
     } catch (error) {

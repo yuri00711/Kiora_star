@@ -57,15 +57,30 @@ export async function budgetSnapshot(
   const rows = data || [];
   const spent = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const chatSpent = rows.filter((row) => row.category === "chat").reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const reflectionSpent = rows.filter((row) => row.category === "reflection").reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   return {
     currency: currency || budgetConfig.currency || null,
     spent,
     chat_spent: chatSpent,
+    reflection_spent: reflectionSpent,
     monthly_budget: finite(budgetConfig.monthly_budget),
     soft_limit: finite(budgetConfig.soft_limit),
     hard_limit: finite(budgetConfig.hard_limit),
     chat_budget: finite(budgetConfig.chat_budget),
+    background_budget: finite(budgetConfig.background_budget),
   };
+}
+
+export function assertReflectionBudget(snapshot: JsonObject, projectedCost = 0): void {
+  const spent = Number(snapshot.spent) || 0;
+  const reflectionSpent = Number(snapshot.reflection_spent) || 0;
+  const projected = Math.max(0, projectedCost);
+  const hard = finite(snapshot.hard_limit) ?? finite(snapshot.monthly_budget);
+  const background = finite(snapshot.background_budget);
+  if (hard !== null && spent + projected > hard) throw new KioraRuntimeError("REFLECTION_BUDGET_DEFERRED", 402);
+  if (background !== null && reflectionSpent + projected > background) {
+    throw new KioraRuntimeError("REFLECTION_BUDGET_DEFERRED", 402);
+  }
 }
 
 export function assertChatBudget(snapshot: JsonObject, projectedCost = 0): void {
