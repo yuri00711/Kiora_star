@@ -335,7 +335,11 @@ export async function runResearch(
   });
   if (completed.error) throw completed.error;
   return {
-    status: claims.length ? "completed" : "no_reliable_sources",
+    status: claims.length
+  ? "completed"
+  : sourceMaterial.length
+    ? "no_grounded_claims"
+    : "no_reliable_sources",
     sources: fetched.filter((source) => source.fetch_status === "fetched").map((source) => ({
       title: source.title,
       domain: source.domain,
