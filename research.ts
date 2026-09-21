@@ -11,6 +11,30 @@ function object(value: unknown): JsonObject {
   return value && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : {};
 }
 
+function researchErrorDetails(error: unknown): JsonObject {
+  if (error instanceof Error) {
+    const maybe = error as Error & { code?: unknown; details?: unknown; hint?: unknown };
+    return {
+      name: error.name,
+      message: String(error.message || "").slice(0, 600),
+      code: maybe.code == null ? null : String(maybe.code).slice(0, 160),
+      details: maybe.details == null ? null : String(maybe.details).slice(0, 600),
+      hint: maybe.hint == null ? null : String(maybe.hint).slice(0, 600),
+    };
+  }
+  if (error && typeof error === "object") {
+    const value = error as JsonObject;
+    return {
+      name: typeof value.name === "string" ? value.name.slice(0, 160) : "NON_ERROR_OBJECT",
+      message: typeof value.message === "string" ? value.message.slice(0, 600) : "",
+      code: value.code == null ? null : String(value.code).slice(0, 160),
+      details: value.details == null ? null : String(value.details).slice(0, 600),
+      hint: value.hint == null ? null : String(value.hint).slice(0, 600),
+    };
+  }
+  return { name: typeof error, message: String(error ?? "").slice(0, 600) };
+}
+
 function parseExtraction(content: string): JsonObject {
   const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
@@ -112,11 +136,20 @@ export async function runResearch(
   let discovered = decision.urls.map((url) => ({ url, title: "", snippet: "" }));
   let searchCost = 0;
   if (!discovered.length) {
-    const search = await searchAdapter(String(config.search_adapter || "unconfigured"))
-      .search(decision.query, config, maxSources);
-    discovered = search.results;
-    searchCost = Math.max(0, search.cost);
-    assertResearchBudget(budget, searchCost);
+    try {
+      const search = await searchAdapter(String(config.search_adapter || "unconfigured"))
+        .search(decision.query, config, maxSources);
+      discovered = search.results;
+      searchCost = Math.max(0, search.cost);
+      assertResearchBudget(budget, searchCost);
+    } catch (error) {
+      console.error("KIORA_RESEARCH_STAGE_FAILED", {
+        stage: "search",
+        ...researchErrorDetails(error),
+      });
+      if (error instanceof KioraRuntimeError) throw error;
+      throw new KioraRuntimeError("RESEARCH_SEARCH_RUNTIME_FAILED", 502);
+    }
   }
 
   const fetched: JsonObject[] = [];
@@ -166,7 +199,13 @@ export async function runResearch(
     target_research_run_id: String(ids.research_run_id),
     source_records: fetched.map(({ text: _text, ...source }) => source),
   });
-  if (staged.error) throw staged.error;
+  if (staged.error) {
+    console.error("KIORA_RESEARCH_STAGE_FAILED", {
+      stage: "stage_sources",
+      ...researchErrorDetails(staged.error),
+    });
+    throw new KioraRuntimeError("RESEARCH_SOURCE_STAGE_FAILED", 500);
+  }
 
   const sourceMaterial = fetched.filter((source) => source.fetch_status === "fetched").flatMap((source) => {
     const text = String(source.text).slice(0, 18_000);
@@ -344,7 +383,7 @@ export async function runResearch(
   });
   if (completed.error) throw completed.error;
   return {
-    status: claims.length ? "completed" : "no_reliable_sources",
+    status: claims.length ? "completed" : "no_grounded_claims",
     sources: fetched.filter((source) => source.fetch_status === "fetched").map((source) => ({
       title: source.title,
       domain: source.domain,
