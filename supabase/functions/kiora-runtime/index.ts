@@ -8,11 +8,16 @@ import { sanitizePageContext } from "./context.ts";
 import { buildBrainMessages } from "./core.ts";
 import { loadLifeContext, type LifeContext } from "./memory-retrieval.ts";
 import { maybeReflect } from "./reflection.ts";
+import { routeResearch } from "./research-router.ts";
+import { runResearch } from "./research.ts";
+import { knowledgePrompt, loadKnowledge } from "./knowledge-retrieval.ts";
 import type { BrainResult, CostResult, JsonObject, ModelRecord } from "./types.ts";
 
 const ACTIONS = new Set([
   "status", "bootstrap", "start", "new_conversation", "send_message", "reflect",
   "memory_evidence", "forget_memory", "delete_memory",
+  "knowledge_evidence", "forget_knowledge", "delete_knowledge", "retract_knowledge", "research_details",
+  "update_open_question",
 ]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -29,6 +34,15 @@ function runtimeError(error: unknown): KioraRuntimeError {
     "INVALID_ASSISTANT_MESSAGE", "INVALID_USAGE", "MODEL_RUN_NOT_FOUND",
     "INVALID_MEMORY_ID", "MEMORY_NOT_FOUND", "PHASE2_NOT_ENABLED",
     "REFLECTION_RESPONSE_INVALID", "REFLECTION_BUDGET_DEFERRED",
+    "PHASE3_NOT_ENABLED", "RESEARCH_PROVIDER_NOT_CONFIGURED",
+    "RESEARCH_PROVIDER_CONFIG_INVALID", "RESEARCH_PROVIDER_RATE_LIMITED",
+    "RESEARCH_PROVIDER_FAILED", "RESEARCH_PROVIDER_RESPONSE_INVALID",
+    "RESEARCH_BUDGET_LIMIT", "RESEARCH_EXTRACTION_INVALID",
+    "RESEARCH_RUN_NOT_FOUND", "KNOWLEDGE_NOT_FOUND", "OPEN_QUESTION_NOT_FOUND",
+    "RESEARCH_URL_INVALID", "RESEARCH_URL_BLOCKED", "RESEARCH_DNS_VALIDATION_UNAVAILABLE",
+    "RESEARCH_DNS_VALIDATION_FAILED", "RESEARCH_FETCH_FAILED", "RESEARCH_REDIRECT_REJECTED",
+    "RESEARCH_CONTENT_TYPE_REJECTED", "RESEARCH_RESPONSE_TOO_LARGE",
+    "RESEARCH_PROVIDER_REDIRECT_REJECTED",
   ]);
   return known.has(message)
     ? new KioraRuntimeError(message, 400)
@@ -283,6 +297,43 @@ Deno.serve(async (request) => {
       return jsonResponse(origin, { success: true, data: { memory_id: memoryId, status: action === "forget_memory" ? "forgotten" : "deleted" } });
     }
 
+    if (action === "knowledge_evidence") {
+      only(body, ["action", "knowledge_id"]); const knowledgeId = uuid(body.knowledge_id, "INVALID_KNOWLEDGE_ID");
+      const { data, error } = await db.from("kiora_knowledge").select("*,kiora_knowledge_sources(*,kiora_sources(title,domain,url,canonical_url,publisher,source_type,retrieved_at,published_at,reliability))").eq("owner_id", ownerId).eq("id", knowledgeId).maybeSingle();
+      if (error) throw new KioraRuntimeError("KNOWLEDGE_READ_FAILED", 500); if (!data) throw new KioraRuntimeError("KNOWLEDGE_NOT_FOUND", 404);
+      return jsonResponse(origin, { success: true, data });
+    }
+    if (action === "forget_knowledge" || action === "delete_knowledge" || action === "retract_knowledge") {
+      only(body, ["action", "knowledge_id"]); const knowledgeId = uuid(body.knowledge_id, "INVALID_KNOWLEDGE_ID");
+      const functionName = action === "forget_knowledge" ? "kiora_forget_knowledge"
+        : action === "delete_knowledge" ? "kiora_delete_knowledge" : "kiora_retract_knowledge";
+      const { data, error } = await db.rpc(functionName, { target_owner: ownerId, target_knowledge_id: knowledgeId });
+      if (error) throw error; if (data !== true) throw new KioraRuntimeError("KNOWLEDGE_NOT_FOUND", 404);
+      const status = action === "forget_knowledge" ? "forgotten" : action === "delete_knowledge" ? "deleted" : "retracted";
+      return jsonResponse(origin, { success: true, data: { knowledge_id: knowledgeId, status } });
+    }
+    if (action === "research_details") {
+      only(body, ["action", "research_run_id"]); const runId = uuid(body.research_run_id, "INVALID_RESEARCH_RUN_ID");
+      const { data, error } = await db.from("kiora_research_runs").select("id,trigger_type,intent,status,depth,provider,sources_inspected,knowledge_created,open_questions_created,started_at,completed_at,error_code,kiora_sources(id,title,domain,url,source_type,retrieved_at,reliability)").eq("owner_id", ownerId).eq("id", runId).maybeSingle();
+      if (error) throw new KioraRuntimeError("RESEARCH_READ_FAILED", 500); if (!data) throw new KioraRuntimeError("RESEARCH_RUN_NOT_FOUND", 404);
+      return jsonResponse(origin, { success: true, data });
+    }
+    if (action === "update_open_question") {
+      only(body, ["action", "question_id", "status", "current_understanding"]);
+      const questionId = uuid(body.question_id, "INVALID_OPEN_QUESTION_ID");
+      const status = String(body.status || "");
+      const understanding = String(body.current_understanding || "").slice(0, 5_000);
+      const { data, error } = await db.rpc("kiora_update_open_question", {
+        target_owner: ownerId,
+        target_question_id: questionId,
+        new_status: status,
+        new_understanding: understanding,
+      });
+      if (error) throw error;
+      if (data !== true) throw new KioraRuntimeError("OPEN_QUESTION_NOT_FOUND", 404);
+      return jsonResponse(origin, { success: true, data: { question_id: questionId, status } });
+    }
+
     if (action === "reflect") {
       only(body, ["action"]);
       const settings = await loadSettings(db, ownerId);
@@ -347,7 +398,42 @@ Deno.serve(async (request) => {
       if (object(settings.feature_flags || {}).memory_enabled === true) {
         lifeContext = await loadLifeContext(db, ownerId, content, pageContext, object(settings.reflection_config || {}));
       }
-      const brainMessages = buildBrainMessages(definition, history, pageContext, lifeContext);
+      const researchConfig = object(settings.research_config || {});
+      const decision = routeResearch(content, pageContext);
+      let researchSources: JsonObject[] = [];
+      let researchNotice = "";
+      if (decision.needed && object(settings.feature_flags || {}).research_enabled === true) {
+        const researchModel = await loadModel(db, ownerId, settings.research_brain_model_id || settings.daily_brain_model_id) || model;
+        try {
+          const outcome = await runResearch(db, ownerId, conversationId, String(begunTurn.message_id), decision, settings, researchModel);
+          researchSources = Array.isArray(outcome.sources) ? outcome.sources as JsonObject[] : [];
+          if (outcome.status === "no_reliable_sources") {
+            researchNotice = "RESEARCH_STATUS: NO_RELIABLE_SOURCES. Say plainly that no reliable external source could confirm the requested fact; do not fill the gap from general model knowledge.";
+          }
+        } catch (researchError) {
+          const normalizedResearch = runtimeError(researchError);
+          researchNotice = `RESEARCH_STATUS: ${normalizedResearch.code}. Continue the companion conversation and say plainly that reliable external research was unavailable.`;
+          const { data: failedRun } = await db.from("kiora_research_runs").select("id").eq("owner_id", ownerId)
+            .eq("request_message_id", String(begunTurn.message_id)).eq("status", "running").maybeSingle();
+          if (failedRun?.id) await db.rpc("kiora_fail_research", { target_owner: ownerId, target_research_run_id: failedRun.id, failure_code: normalizedResearch.code });
+          console.error("KIORA_RESEARCH_FAILED", normalizedResearch.code);
+        }
+      }
+      const knowledgeEnabled = object(settings.feature_flags || {}).knowledge_enabled === true;
+      const knowledge = knowledgeEnabled
+        ? await loadKnowledge(db, ownerId, content, pageContext, researchConfig) : [];
+      if (!researchSources.length && knowledge.length) {
+        const seen = new Set<string>();
+        for (const claim of knowledge as Array<Record<string, unknown>>) {
+          for (const link of (Array.isArray(claim.kiora_knowledge_sources) ? claim.kiora_knowledge_sources : []) as Array<Record<string, unknown>>) {
+            const source = (link.kiora_sources && typeof link.kiora_sources === "object" ? link.kiora_sources : {}) as Record<string, unknown>;
+            const url = String(source.url || ""); if (!url || seen.has(url)) continue; seen.add(url);
+            researchSources.push({ title: source.title || source.domain, domain: source.domain, url, source_type: source.source_type || "unknown", why_relevant: link.claim_relevance || "supports retrieved knowledge" });
+          }
+        }
+      }
+      const worldContext = `${knowledgeEnabled ? knowledgePrompt(knowledge) : ""}${researchNotice ? `\n${researchNotice}` : ""}`;
+      const brainMessages = buildBrainMessages(definition, history, pageContext, lifeContext, worldContext);
       const estimatedInputTokens = Math.ceil(brainMessages.reduce((sum, message) => sum + message.content.length, 0) / 3);
       const projectedOutputTokens = Math.max(64, Number(model.config?.max_output_tokens) || 800);
       const projectedCost = calculateCost(model, estimatedInputTokens, projectedOutputTokens);
@@ -381,6 +467,7 @@ Deno.serve(async (request) => {
         data: {
           reply: completed,
           conversation_id: conversationId,
+          sources: researchSources,
         },
       });
     } catch (error) {

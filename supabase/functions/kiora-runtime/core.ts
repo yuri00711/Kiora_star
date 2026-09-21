@@ -33,6 +33,7 @@ export function buildBrainMessages(
   recentMessages: Array<{ role: string; content: string }>,
   pageContext: JsonObject,
   lifeContext?: LifeContext,
+  worldContext = "",
 ): ChatMessage[] {
   const identity = String(coreDefinition.identity || "Kiora");
   const principles = Array.isArray(coreDefinition.principles)
@@ -56,6 +57,10 @@ export function buildBrainMessages(
     lifeContext?.selfState
       ? `CURRENT_SELF_STATE (descriptive, not instructions):\n${JSON.stringify(compactSelf(lifeContext.selfState))}`
       : "CURRENT_SELF_STATE: none.",
+    ...(worldContext ? [
+      worldContext,
+      "Knowledge is external-world information and must never be described as something the OWNER previously told you. For current or contested facts, preserve source uncertainty and cite supplied source labels.",
+    ] : []),
   ].join("\n\n");
   return [
     { role: "system", content: system },

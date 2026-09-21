@@ -313,12 +313,35 @@
         return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(date);
     }
 
+    function safeExternalUrl(value) {
+        try {
+            const url = new URL(String(value || ""));
+            return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+        } catch (_) {
+            return "";
+        }
+    }
+
     function messageNode(message) {
         const role = message.role === "owner" ? "owner" : "kiora";
         const node = create("div", `kiora-message kiora-message-${role}`);
         node.append(document.createTextNode(String(message.content || "")));
         const time = create("time", "", formatTime(message.created_at));
         if (time.textContent) node.append(time);
+        if (Array.isArray(message.sources) && message.sources.length) {
+            const details = create("details", "kiora-message-sources");
+            details.append(create("summary", "", `SOURCES / ${message.sources.length}`));
+            const list = create("div", "kiora-source-list");
+            message.sources.forEach((source) => {
+                const href = safeExternalUrl(source.url);
+                if (!href) return;
+                const link = create("a", "kiora-source-link", String(source.title || source.domain || "SOURCE"));
+                link.href = href; link.target = "_blank"; link.rel = "noopener noreferrer";
+                link.append(create("small", "", `${String(source.source_type || "unknown").toUpperCase()} · ${String(source.domain || "")}`));
+                list.append(link);
+            });
+            details.append(list); node.append(details);
+        }
         return node;
     }
 
@@ -411,14 +434,14 @@
         messages.scrollTop = messages.scrollHeight;
         input.value = "";
         setBusy(true);
-        setStatus("KIORA IS LISTENING…");
+        setStatus(/查一下|帮我查|搜索|调查|研究一下|最新|最近|新消息|look up|search|research/i.test(content) ? "CHECKING SOURCES…" : "KIORA IS LISTENING…");
         try {
             const result = await invoke("send_message", {
                 content,
                 client_message_key: crypto.randomUUID(),
                 page_context: contextBroker.snapshot({ includeSelection: selectionToggle.checked })
             });
-            if (result.reply) messages.append(messageNode({ role: "kiora", ...result.reply }));
+            if (result.reply) messages.append(messageNode({ role: "kiora", ...result.reply, sources: result.sources || [] }));
             selectionToggle.checked = false;
             contextBroker.clearSelection();
             setStatus("");

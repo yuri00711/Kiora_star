@@ -69,9 +69,14 @@ Phase 1 requires `supabase-kiora-phase1-migration.sql`, the `kiora-runtime` depl
 
 Phase 2 requires `supabase-kiora-phase2-migration.sql`, a redeploy of `kiora-runtime`, explicit Phase 2 feature enablement and publishing the versioned Dock assets. It does not enable research, agency, training, automatic Core changes or voice.
 
-### Phase 3 — not implemented
+### Phase 3 — implemented
 
-- Knowledge, sources, research and open questions
+- Provider-neutral Search Adapter and separate SSRF-safe Fetch layer
+- Normalized Sources, atomic Knowledge, provenance links, Research Runs and Open Questions
+- Freshness-aware Knowledge retrieval kept strictly separate from Memory
+- Grounded structured extraction, conflict/supersession handling and folded chat citations
+- Curiosity candidates that require confirmation and never auto-run
+- Research Brain routing, limits, budgets and separate Usage Ledger categories
 
 ### Phase 4 — not implemented
 

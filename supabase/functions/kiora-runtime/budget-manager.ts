@@ -58,17 +58,33 @@ export async function budgetSnapshot(
   const spent = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const chatSpent = rows.filter((row) => row.category === "chat").reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const reflectionSpent = rows.filter((row) => row.category === "reflection").reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const researchCategories = new Set(["research", "search", "knowledge_extraction", "research_reflection"]);
+  const researchSpent = rows.filter((row) => researchCategories.has(row.category)).reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   return {
     currency: currency || budgetConfig.currency || null,
     spent,
     chat_spent: chatSpent,
     reflection_spent: reflectionSpent,
+    research_spent: researchSpent,
     monthly_budget: finite(budgetConfig.monthly_budget),
     soft_limit: finite(budgetConfig.soft_limit),
     hard_limit: finite(budgetConfig.hard_limit),
     chat_budget: finite(budgetConfig.chat_budget),
     background_budget: finite(budgetConfig.background_budget),
+    research_budget: finite(budgetConfig.research_budget),
   };
+}
+
+export function assertResearchBudget(snapshot: JsonObject, projectedCost = 0): void {
+  const spent = Number(snapshot.spent) || 0;
+  const researchSpent = Number(snapshot.research_spent) || 0;
+  const projected = Math.max(0, projectedCost);
+  const hard = finite(snapshot.hard_limit) ?? finite(snapshot.monthly_budget);
+  const research = finite(snapshot.research_budget);
+  if (hard !== null && spent + projected > hard) throw new KioraRuntimeError("RESEARCH_BUDGET_LIMIT", 402);
+  if (research !== null && researchSpent + projected > research) {
+    throw new KioraRuntimeError("RESEARCH_BUDGET_LIMIT", 402);
+  }
 }
 
 export function assertReflectionBudget(snapshot: JsonObject, projectedCost = 0): void {

@@ -74,6 +74,11 @@
 .kiora-message-owner { align-self: flex-end; padding: 11px 14px; border-radius: 17px 17px 4px 17px; background: rgba(217, 196, 220, .31); }
 .kiora-message-kiora { align-self: flex-start; padding-left: 15px; border-left: 1px solid rgba(167,128,168,.38); }
 .kiora-message time { display: block; margin-top: 5px; color: var(--kiora-muted); font-size: 9px; letter-spacing: .08em; }
+.kiora-message-sources { margin-top: 12px; border-top: 1px solid var(--kiora-line); padding-top: 8px; }
+.kiora-message-sources summary { cursor: pointer; color: var(--kiora-muted); font-size: 9px; letter-spacing: .16em; }
+.kiora-source-list { display: grid; gap: 7px; margin-top: 9px; }
+.kiora-source-link { color: var(--kiora-ink); font-size: 11px; text-decoration: none; overflow-wrap: anywhere; }
+.kiora-source-link small { display: block; color: var(--kiora-muted); font-size: 8px; letter-spacing: .1em; }
 .kiora-empty, .kiora-first-boot { margin: auto; max-width: 290px; text-align: center; line-height: 1.8; color: var(--kiora-muted); font-size: 13px; }
 .kiora-first-boot strong { display: block; margin-bottom: 13px; color: var(--kiora-ink); font-size: 18px; font-weight: 400; letter-spacing: .12em; }
 .kiora-first-boot button, .kiora-context-choice button { margin-top: 16px; min-height: 42px; padding: 0 18px; border: 1px solid var(--kiora-line); background: rgba(255,255,255,.55); color: var(--kiora-ink); font: inherit; font-size: 10px; letter-spacing: .18em; cursor: pointer; }
