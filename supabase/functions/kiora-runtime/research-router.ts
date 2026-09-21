@@ -11,14 +11,29 @@ export type ResearchDecision = {
 };
 
 function minimalQuery(message: string, entityName: string, explicitSelection: string): string {
-  const cleanedMessage = message
+  let cleanedMessage = message
     .replace(/https?:\/\/[^\s<>"']+/gi, " ")
-    .replace(/(帮我|请|查一下|搜索一下|調べて|検索して|look up|search for)/gi, " ")
-    .replace(/\s+/g, " ").trim().slice(0, 220);
-  // Selected text is included only after the OWNER enabled INCLUDE SELECTION in the
-  // Dock. It is still minimized and never includes an entire Writing body.
+    .replace(/(请|麻烦你)?\s*(帮我)?\s*(联网|上网|网络)?\s*(查一下|查询|查找|搜索一下|搜索|调查|研究一下)/gi, " ")
+    .replace(/(調べて|検索して|look up|search for|research)/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  cleanedMessage = cleanedMessage
+    .replace(/[，,。；;]?\s*(找出|告诉我|請告訴我|并把来源|並把來源|把来源|把來源|每条必须|每條必須|如果某条|如果某條).*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 220);
+
+  const deictic = usesCurrentPageEntity(message);
+  const entityHint = deictic ? entityName : "";
+
   const selectedHint = explicitSelection.replace(/\s+/g, " ").trim().slice(0, 160);
-  return [entityName, cleanedMessage, selectedHint].filter(Boolean).join(" ").slice(0, 380);
+  return [entityHint, cleanedMessage, selectedHint].filter(Boolean).join(" ").slice(0, 380);
+}
+
+export function usesCurrentPageEntity(message: string): boolean {
+  return /(这个|這個|这款|這款|这篇|這篇|这里|這裡|当前(?:页面|頁面|作品|游戏|遊戲|文章)?|當前(?:頁面|作品|遊戲|文章)?|它|他|她)/i.test(message) ||
+    /\b(?:this|it|the current (?:page|work|game|article))\b/i.test(message);
 }
 
 export function routeResearch(message: string, page: JsonObject): ResearchDecision {
@@ -32,6 +47,7 @@ export function routeResearch(message: string, page: JsonObject): ResearchDecisi
   const visible = page.visible && typeof page.visible === "object" ? page.visible as JsonObject : {};
   const entityName = String(visible.title || visible.name || "").trim();
   const explicitSelection = typeof page.explicit_selection === "string" ? page.explicit_selection : "";
+  const usesEntity = usesCurrentPageEntity(message);
   const depth = /(深度|详细调查|deep research)/i.test(message) ? "deep" : explicit ? "normal" : "quick";
   return {
     needed: explicit || freshnessRequired,
@@ -41,9 +57,9 @@ export function routeResearch(message: string, page: JsonObject): ResearchDecisi
     query: minimalQuery(message, entityName, explicitSelection),
     urls,
     entity: {
-      entity_type: visible.entity_type || null,
-      entity_id: visible.entity_id || null,
-      canonical_name: entityName || null,
+      entity_type: usesEntity ? visible.entity_type || null : null,
+      entity_id: usesEntity ? visible.entity_id || null : null,
+      canonical_name: usesEntity ? entityName || null : null,
     },
   };
 }

@@ -1,5 +1,6 @@
 import { KioraRuntimeError } from "../_shared/kiora-owner.ts";
 import { validatePublicUrl } from "./safe-fetch.ts";
+import { sanitizePostgresText } from "./postgres-sanitize.ts";
 import type { JsonObject } from "./types.ts";
 
 export type SearchResult = { url: string; title: string; snippet: string };
@@ -124,8 +125,8 @@ class GenericJson implements SearchAdapter {
         const publicUrl = await validatePublicUrl(rawUrl);
         results.push({
           url: publicUrl.href,
-          title: String(at(candidate, String(config.title_field || "title")) || "").slice(0, 1_000),
-          snippet: String(at(candidate, String(config.snippet_field || "snippet")) || "").slice(0, 1_000),
+          title: sanitizePostgresText(at(candidate, String(config.title_field || "title"))).slice(0, 1_000),
+          snippet: sanitizePostgresText(at(candidate, String(config.snippet_field || "snippet"))).slice(0, 1_000),
         });
       } catch {
         // Unsafe discoveries are discarded before Fetch.
@@ -195,8 +196,8 @@ class Tavily implements SearchAdapter {
         const publicUrl = await validatePublicUrl(rawUrl);
         results.push({
           url: publicUrl.href,
-          title: String(candidate.title || "").slice(0, 1_000),
-          snippet: String(candidate.content || "").slice(0, 1_000),
+          title: sanitizePostgresText(candidate.title).slice(0, 1_000),
+          snippet: sanitizePostgresText(candidate.content).slice(0, 1_000),
         });
       } catch {
         // Unsafe discoveries are discarded before Fetch.

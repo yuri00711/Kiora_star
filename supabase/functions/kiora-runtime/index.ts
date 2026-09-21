@@ -10,6 +10,7 @@ import { loadLifeContext, type LifeContext } from "./memory-retrieval.ts";
 import { maybeReflect } from "./reflection.ts";
 import { routeResearch } from "./research-router.ts";
 import { runResearch } from "./research.ts";
+import { safeResearchErrorDetails } from "./research-diagnostics.ts";
 import { knowledgePrompt, loadKnowledge } from "./knowledge-retrieval.ts";
 import type { BrainResult, CostResult, JsonObject, ModelRecord } from "./types.ts";
 
@@ -43,6 +44,8 @@ function runtimeError(error: unknown): KioraRuntimeError {
     "RESEARCH_DNS_VALIDATION_FAILED", "RESEARCH_FETCH_FAILED", "RESEARCH_REDIRECT_REJECTED",
     "RESEARCH_CONTENT_TYPE_REJECTED", "RESEARCH_RESPONSE_TOO_LARGE",
     "RESEARCH_PROVIDER_REDIRECT_REJECTED",
+    "RESEARCH_SEARCH_RUNTIME_FAILED", "RESEARCH_SOURCE_STAGE_FAILED",
+    "RESEARCH_COMPLETE_FAILED",
   ]);
   return known.has(message)
     ? new KioraRuntimeError(message, 400)
@@ -314,9 +317,24 @@ Deno.serve(async (request) => {
     }
     if (action === "research_details") {
       only(body, ["action", "research_run_id"]); const runId = uuid(body.research_run_id, "INVALID_RESEARCH_RUN_ID");
-      const { data, error } = await db.from("kiora_research_runs").select("id,trigger_type,intent,status,depth,provider,sources_inspected,knowledge_created,open_questions_created,started_at,completed_at,error_code,kiora_sources(id,title,domain,url,source_type,retrieved_at,reliability)").eq("owner_id", ownerId).eq("id", runId).maybeSingle();
+      const { data, error } = await db.from("kiora_research_runs").select(`
+        id,trigger_type,intent,status,depth,provider,sources_inspected,knowledge_created,
+        open_questions_created,started_at,completed_at,error_code,
+        sources:kiora_research_run_sources(
+          source_ref,fetch_status,relevant_excerpt,reliability,http_status,content_type,fetch_error,source_snapshot,observed_at,
+          source:kiora_sources(id,title,domain,url,canonical_url,source_type,retrieved_at,last_verified_at,content_hash)
+        )
+      `).eq("owner_id", ownerId).eq("id", runId).maybeSingle();
       if (error) throw new KioraRuntimeError("RESEARCH_READ_FAILED", 500); if (!data) throw new KioraRuntimeError("RESEARCH_RUN_NOT_FOUND", 404);
-      return jsonResponse(origin, { success: true, data });
+      const details = data as JsonObject;
+      const observations = Array.isArray(details.sources) ? details.sources as JsonObject[] : [];
+      const legacySources = observations.map((observation) => {
+        const source = observation.source && typeof observation.source === "object" && !Array.isArray(observation.source)
+          ? observation.source as JsonObject : {};
+        const { source: _source, ...researchObservation } = observation;
+        return { ...source, research_observation: researchObservation };
+      });
+      return jsonResponse(origin, { success: true, data: { ...details, kiora_sources: legacySources } });
     }
     if (action === "update_open_question") {
       only(body, ["action", "question_id", "status", "current_understanding"]);
@@ -408,14 +426,36 @@ Deno.serve(async (request) => {
           const outcome = await runResearch(db, ownerId, conversationId, String(begunTurn.message_id), decision, settings, researchModel);
           researchSources = Array.isArray(outcome.sources) ? outcome.sources as JsonObject[] : [];
           if (outcome.status === "no_reliable_sources") {
-            researchNotice = "RESEARCH_STATUS: NO_RELIABLE_SOURCES. Say plainly that no reliable external source could confirm the requested fact; do not fill the gap from general model knowledge.";
+            researchNotice = "External research ran, but no readable reliable source material was available. Explain that no reliable source could be read for this request; do not expose internal status codes or claim that web search is disconnected.";
+          } else if (outcome.status === "no_grounded_claims") {
+            researchNotice = "External sources were found and read, but no claim passed strict grounding. Say that sources were found but the requested fact could not yet be verified; do not expose internal status codes or claim that search is unavailable.";
           }
         } catch (researchError) {
+          console.error("KIORA_RESEARCH_ERROR_DETAIL", safeResearchErrorDetails(researchError));
           const normalizedResearch = runtimeError(researchError);
-          researchNotice = `RESEARCH_STATUS: ${normalizedResearch.code}. Continue the companion conversation and say plainly that reliable external research was unavailable.`;
-          const { data: failedRun } = await db.from("kiora_research_runs").select("id").eq("owner_id", ownerId)
+          researchNotice = normalizedResearch.code === "RESEARCH_PROVIDER_NOT_CONFIGURED"
+            ? "External research is not configured for this request. Explain this briefly without exposing internal error codes."
+            : "External research could not be completed during this request. Continue with available context, clearly mark uncertainty, and do not expose internal error codes or claim that search is permanently unavailable.";
+          const { data: failedRun, error: failedRunReadError } = await db.from("kiora_research_runs").select("id").eq("owner_id", ownerId)
             .eq("request_message_id", String(begunTurn.message_id)).eq("status", "running").maybeSingle();
-          if (failedRun?.id) await db.rpc("kiora_fail_research", { target_owner: ownerId, target_research_run_id: failedRun.id, failure_code: normalizedResearch.code });
+          if (failedRunReadError) {
+            console.error("KIORA_RESEARCH_FAILURE_RECORD_STAGE_FAILED", {
+              stage: "find_running_research",
+              ...safeResearchErrorDetails(failedRunReadError),
+            });
+          } else if (failedRun?.id) {
+            const { error: failRecordError } = await db.rpc("kiora_fail_research", {
+              target_owner: ownerId,
+              target_research_run_id: failedRun.id,
+              failure_code: normalizedResearch.code,
+            });
+            if (failRecordError) {
+              console.error("KIORA_RESEARCH_FAILURE_RECORD_STAGE_FAILED", {
+                stage: "mark_research_failed",
+                ...safeResearchErrorDetails(failRecordError),
+              });
+            }
+          }
           console.error("KIORA_RESEARCH_FAILED", normalizedResearch.code);
         }
       }

@@ -1,4 +1,5 @@
 import { KioraRuntimeError } from "../_shared/kiora-owner.ts";
+import { sanitizePostgresText } from "./postgres-sanitize.ts";
 import type { JsonObject } from "./types.ts";
 
 const BLOCKED_HOSTS = new Set(["localhost", "localhost.localdomain", "metadata.google.internal"]);
@@ -97,14 +98,14 @@ export async function validatePublicUrl(value: string): Promise<URL> {
 }
 
 function decode(text: string): string {
-  return text.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<")
+  return sanitizePostgresText(text.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'")
     .replace(/&#(\d+);/g, (_match, number) => {
       const codePoint = Number(number);
       return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
         ? String.fromCodePoint(codePoint)
         : "";
-    });
+    }));
 }
 
 function meta(html: string, name: string): string {
