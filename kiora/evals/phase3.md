@@ -6,6 +6,8 @@ Run `node --experimental-strip-types kiora/evals/phase3-hotfix.test.mjs` before 
 
 Run `node --experimental-strip-types kiora/evals/phase3-postgres-unicode.test.mjs` to verify that external Source records containing NUL, unpaired surrogates, C0 controls, CJK, and emoji are recursively sanitized before every Source RPC.
 
+Run `node --experimental-strip-types kiora/evals/phase3-plpgsql-ambiguity.test.mjs` to verify that local PL/pgSQL ID variables cannot collide with `ON CONFLICT` column names and that repeated Source processing still uses the idempotent helper.
+
 - A: explicit recent Game research creates Run → fetched Source → atomic Knowledge → Source Link; reply exposes a folded source list.
 - B: repeat the same claim key; Knowledge count stays stable while corroboration/last verification increase.
 - C: a later official claim supplies `supersedes_claim_key`; old Knowledge becomes superseded.
