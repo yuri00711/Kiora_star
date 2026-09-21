@@ -141,6 +141,23 @@ async function latestExchange(db: SupabaseClient, ownerId: string, conversationI
   return { owner: ownerMessage, assistant: assistant || null };
 }
 
+async function previousAssistantForMessage(
+  db: SupabaseClient,
+  ownerId: string,
+  conversationId: string,
+  sourceMessageId: string,
+): Promise<JsonObject | null> {
+  const { data: source, error: sourceError } = await db.from("kiora_messages").select("created_at")
+    .eq("owner_id", ownerId).eq("id", sourceMessageId).maybeSingle();
+  if (sourceError) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
+  if (!source?.created_at) return null;
+  const { data, error } = await db.from("kiora_messages").select("id,content,created_at")
+    .eq("owner_id", ownerId).eq("conversation_id", conversationId).eq("role", "kiora")
+    .lt("created_at", source.created_at).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (error) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
+  return data as JsonObject | null;
+}
+
 async function reflectSafely(args: Parameters<typeof maybeReflect>[0]): Promise<JsonObject> {
   try {
     return await maybeReflect(args);
@@ -353,10 +370,11 @@ Deno.serve(async (request) => {
         used_metadata: { ...brainResult.usageMetadata, provider_model: brainResult.providerModel },
       });
       if (completeError) throw completeError;
+      const feedbackTarget = await previousAssistantForMessage(db, ownerId, conversationId, String(begunTurn.message_id));
       await reflectSafely({
         db, ownerId, conversationId, sourceMessageId: String(begunTurn.message_id), ownerMessage: content,
-        assistantMessageId: String(object(completed).message_id || "") || null,
-        assistantMessage: brainResult.content, pageContext, settings, model,
+        assistantMessageId: feedbackTarget ? String(feedbackTarget.id) : null,
+        assistantMessage: feedbackTarget ? String(feedbackTarget.content) : "", pageContext, settings, model,
       });
       return jsonResponse(origin, {
         success: true,

@@ -42,7 +42,13 @@
         section: "study",
         active_view: document.querySelector(".study-view:not([hidden])")?.dataset.view || "home"
     }, ["answers", "notes", "private study files"]));
-    broker.register("sale", () => common("sale", { section: "sale", region: document.body.dataset.saleRegion || "overview" }, ["wallet records"]));
+    const saleContext = () => common("sale", {
+        section: "sale",
+        region: document.body.dataset.saleRegion || (location.pathname.includes("-jp") ? "JP" : location.pathname.includes("-hk") ? "HK" : "overview")
+    }, ["wallet records"]);
+    broker.register("sale", saleContext);
+    broker.register("sale-jp", saleContext);
+    broker.register("sale-hk", saleContext);
     broker.register("tier-board", () => common("tier_board", { title: text("#board-title") || "Tier Board", description: text("#board-description") }));
     broker.register("export-profile", () => common("profile_export", { section: "profile export" }, ["profile export source"]));
     broker.register("currently-playing", () => common("about", { section: "currently playing editor" }, ["currently playing draft"]));

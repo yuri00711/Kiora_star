@@ -10,6 +10,10 @@
     const client = window.yuriArticles?.getClient?.()
         || window.yuriArchive?.supabaseClient
         || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const UI_STATE_KEY = "kiora_ui_state_v1";
+    const DESKTOP_MIN_WIDTH = 320;
+    const DESKTOP_MIN_HEIGHT = 360;
+    const VIEWPORT_MARGIN = 8;
     let root;
     let panel;
     let entry;
@@ -25,6 +29,8 @@
     let selectionToggle;
     let state = null;
     let busy = false;
+    let uiState = readUiState();
+    let pointerOperation = null;
 
     const errors = Object.freeze({
         AUTH_REQUIRED: "OWNER session 已失效，请重新登录。",
@@ -50,16 +56,116 @@
         return node;
     }
 
+    function readUiState() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(UI_STATE_KEY) || "null");
+            if (!saved || typeof saved !== "object") throw new Error("INVALID");
+            const savedNumber = (value) => typeof value === "number" && Number.isFinite(value) ? value : NaN;
+            return {
+                open: saved.open === true,
+                minimized: saved.minimized !== false,
+                x: savedNumber(saved.x),
+                y: savedNumber(saved.y),
+                width: savedNumber(saved.width),
+                height: savedNumber(saved.height),
+                mobileSnap: [0.4, 0.7, 0.95].includes(Number(saved.mobileSnap)) ? Number(saved.mobileSnap) : 0.7
+            };
+        } catch (_) {
+            return { open: false, minimized: true, x: NaN, y: NaN, width: 420, height: NaN, mobileSnap: 0.7 };
+        }
+    }
+
+    function saveUiState() {
+        try { localStorage.setItem(UI_STATE_KEY, JSON.stringify(uiState)); } catch (_) { /* device storage unavailable */ }
+    }
+
+    function isMobile() {
+        return window.matchMedia("(max-width: 767px)").matches;
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), Math.max(min, max));
+    }
+
+    function clampedDesktopState(source = uiState) {
+        const width = clamp(Number.isFinite(source.width) ? source.width : 420, DESKTOP_MIN_WIDTH, innerWidth - VIEWPORT_MARGIN * 2);
+        const height = clamp(Number.isFinite(source.height) ? source.height : innerHeight - 36, DESKTOP_MIN_HEIGHT, innerHeight - VIEWPORT_MARGIN * 2);
+        const defaultX = innerWidth - width - 18;
+        const x = clamp(Number.isFinite(source.x) ? source.x : defaultX, VIEWPORT_MARGIN, innerWidth - width - VIEWPORT_MARGIN);
+        const y = clamp(Number.isFinite(source.y) ? source.y : 18, VIEWPORT_MARGIN, innerHeight - height - VIEWPORT_MARGIN);
+        return { width, height, x, y };
+    }
+
+    function applyWindowGeometry() {
+        if (!panel) return;
+        if (isMobile()) {
+            panel.style.removeProperty("left");
+            panel.style.removeProperty("top");
+            panel.style.removeProperty("width");
+            panel.style.height = `${Math.round(innerHeight * uiState.mobileSnap)}px`;
+            return;
+        }
+        const next = clampedDesktopState();
+        Object.assign(uiState, next);
+        panel.style.left = `${next.x}px`;
+        panel.style.top = `${next.y}px`;
+        panel.style.width = `${next.width}px`;
+        panel.style.height = `${next.height}px`;
+    }
+
+    function beginPanelPointer(event, mode) {
+        if (event.button !== undefined && event.button !== 0) return;
+        if (event.target.closest("button, input, textarea, label")) return;
+        event.preventDefault();
+        panel.setPointerCapture(event.pointerId);
+        pointerOperation = {
+            mode,
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            x: uiState.x,
+            y: uiState.y,
+            width: panel.getBoundingClientRect().width,
+            height: panel.getBoundingClientRect().height
+        };
+    }
+
+    function movePanelPointer(event) {
+        if (!pointerOperation || event.pointerId !== pointerOperation.pointerId) return;
+        const dx = event.clientX - pointerOperation.startX;
+        const dy = event.clientY - pointerOperation.startY;
+        if (isMobile()) {
+            const height = clamp(pointerOperation.height - dy, innerHeight * 0.4, innerHeight * 0.95);
+            panel.style.height = `${height}px`;
+            return;
+        }
+        const draft = { ...uiState };
+        if (pointerOperation.mode === "move") {
+            draft.x = pointerOperation.x + dx;
+            draft.y = pointerOperation.y + dy;
+        } else {
+            if (pointerOperation.mode.includes("e")) draft.width = pointerOperation.width + dx;
+            if (pointerOperation.mode.includes("s")) draft.height = pointerOperation.height + dy;
+        }
+        Object.assign(uiState, clampedDesktopState(draft));
+        applyWindowGeometry();
+    }
+
+    function endPanelPointer(event) {
+        if (!pointerOperation || event.pointerId !== pointerOperation.pointerId) return;
+        if (isMobile()) {
+            const ratio = panel.getBoundingClientRect().height / innerHeight;
+            uiState.mobileSnap = [0.4, 0.7, 0.95].reduce((best, value) => Math.abs(value - ratio) < Math.abs(best - ratio) ? value : best, 0.7);
+            applyWindowGeometry();
+        }
+        pointerOperation = null;
+        saveUiState();
+    }
+
     function build() {
         root = create("div");
         root.id = "kiora-dock-root";
         root.hidden = true;
-
-        const scrim = create("button", "kiora-dock-scrim");
-        scrim.type = "button";
-        scrim.tabIndex = -1;
-        scrim.setAttribute("aria-label", "Close Kiora");
-        scrim.addEventListener("click", close);
 
         entry = create("button", "kiora-star-entry", "✦");
         entry.type = "button";
@@ -72,6 +178,7 @@
         panel.setAttribute("aria-hidden", "true");
 
         const header = create("header", "kiora-dock-header");
+        header.addEventListener("pointerdown", (event) => beginPanelPointer(event, "move"));
         const heading = create("div", "kiora-dock-heading");
         heading.append(create("strong", "", "✦ Kiora"), create("span", "", "LIFE / 01"));
         const actions = create("div", "kiora-dock-actions");
@@ -123,9 +230,19 @@
             }
         });
 
-        panel.append(header, meta, messages, composer);
-        root.append(scrim, entry, panel);
+        const resizeEast = create("div", "kiora-resize-handle kiora-resize-e");
+        const resizeSouth = create("div", "kiora-resize-handle kiora-resize-s");
+        const resizeCorner = create("div", "kiora-resize-handle kiora-resize-se");
+        resizeEast.addEventListener("pointerdown", (event) => beginPanelPointer(event, "e"));
+        resizeSouth.addEventListener("pointerdown", (event) => beginPanelPointer(event, "s"));
+        resizeCorner.addEventListener("pointerdown", (event) => beginPanelPointer(event, "es"));
+        panel.addEventListener("pointermove", movePanelPointer);
+        panel.addEventListener("pointerup", endPanelPointer);
+        panel.addEventListener("pointercancel", endPanelPointer);
+        panel.append(header, meta, messages, composer, resizeEast, resizeSouth, resizeCorner);
+        root.append(entry, panel);
         document.body.append(root);
+        applyWindowGeometry();
         updateContext();
     }
 
@@ -137,12 +254,19 @@
     }
 
     async function open() {
+        uiState.open = true;
+        uiState.minimized = false;
+        saveUiState();
+        applyWindowGeometry();
         setOpen(true);
         await load();
         if (state?.initialized && state?.chat_enabled) input.focus();
     }
 
     function close() {
+        uiState.open = false;
+        uiState.minimized = true;
+        saveUiState();
         setOpen(false);
         entry.focus();
     }
@@ -224,11 +348,8 @@
         if (!rows.length) messages.append(create("p", "kiora-empty", "这里还没有说过话。你可以只是叫她一声。"));
         else rows.forEach((message) => messages.append(messageNode(message)));
         const model = state.model;
-        const budget = state.budget || {};
-        const spent = Number(budget.spent);
-        const usage = Number.isFinite(spent) && budget.currency ? ` · ${spent.toFixed(4)} ${budget.currency}` : "";
         budgetLine.textContent = model
-            ? `BRAIN / ${String(model.model_key || model.provider).toUpperCase()} · ${String(model.status || "").toUpperCase()}${usage}`
+            ? `BRAIN / ${String(model.model_key || model.provider).toUpperCase()} · ${String(model.status || "").toUpperCase()}`
             : "BRAIN / UNCONFIGURED";
         setBusy(false);
         requestAnimationFrame(() => { messages.scrollTop = messages.scrollHeight; });
@@ -318,7 +439,9 @@
     function updateContext() {
         if (!contextLine) return;
         const context = contextBroker.snapshot();
-        contextLine.textContent = `CONTEXT / ${String(context.page).replaceAll("_", " ").toUpperCase()}`;
+        const visible = context.visible || {};
+        const entity = String(visible.title || visible.name || "").trim();
+        contextLine.textContent = `CONTEXT / ${String(context.page).replaceAll("_", " ").toUpperCase()}${entity ? ` / ${entity.slice(0, 48)}` : ""}`;
         const selection = contextBroker.selection();
         selectionRow.hidden = !selection;
         selectionRow.querySelector("span").textContent = selection ? `INCLUDE SELECTION / ${selection.slice(0, 54)}` : "INCLUDE SELECTED TEXT";
@@ -337,6 +460,9 @@
         try {
             state = await invoke("status");
             root.hidden = false;
+            applyWindowGeometry();
+            setOpen(uiState.open === true);
+            if (uiState.open) render();
         } catch (_) {
             setOpen(false);
             state = null;
@@ -348,5 +474,7 @@
     window.addEventListener("kiora:contextchange", updateContext);
     window.addEventListener("kiora:authchange", (event) => syncVisibility(event.detail));
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && root.classList.contains("kiora-dock-root-open")) close(); });
+    window.addEventListener("resize", () => { applyWindowGeometry(); saveUiState(); });
+    window.addEventListener("beforeunload", saveUiState);
     auth.initialize(client).then(syncVisibility).catch(() => syncVisibility({ role: "viewer" }));
 })();

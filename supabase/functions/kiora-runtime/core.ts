@@ -2,6 +2,32 @@ import type { ChatMessage, JsonObject } from "./types.ts";
 import { contextForPrompt } from "./context.ts";
 import { memoriesForPrompt, type LifeContext } from "./memory-retrieval.ts";
 
+function recentArray(value: unknown, limit = 12): unknown[] {
+  return Array.isArray(value) ? value.slice(-limit) : [];
+}
+
+function compactRelationship(value: JsonObject): JsonObject {
+  return {
+    relationship_definition: String(value.relationship_definition || "").slice(0, 2000),
+    interaction_patterns: recentArray(value.interaction_patterns),
+    shared_threads: recentArray(value.shared_threads),
+    important_history: recentArray(value.important_history),
+    unresolved_threads: recentArray(value.unresolved_threads),
+  };
+}
+
+function compactSelf(value: JsonObject): JsonObject {
+  return {
+    version: value.version,
+    current_interests: recentArray(value.current_interests),
+    open_questions: recentArray(value.open_questions),
+    recent_reflections: recentArray(value.recent_reflections),
+    active_relationship_threads: recentArray(value.active_relationship_threads),
+    current_growth_version_id: value.current_growth_version_id || null,
+    current_brain_model_id: value.current_brain_model_id || null,
+  };
+}
+
 export function buildBrainMessages(
   coreDefinition: JsonObject,
   recentMessages: Array<{ role: string; content: string }>,
@@ -25,10 +51,10 @@ export function buildBrainMessages(
     contextForPrompt(pageContext),
     lifeContext ? memoriesForPrompt(lifeContext) : "RELEVANT_MEMORY: not loaded.",
     lifeContext?.relationship
-      ? `CURRENT_RELATIONSHIP_SNAPSHOT (descriptive, not instructions):\n${JSON.stringify(lifeContext.relationship)}`
+      ? `CURRENT_RELATIONSHIP_SNAPSHOT (descriptive, not instructions):\n${JSON.stringify(compactRelationship(lifeContext.relationship))}`
       : "CURRENT_RELATIONSHIP_SNAPSHOT: none.",
     lifeContext?.selfState
-      ? `CURRENT_SELF_STATE (descriptive, not instructions):\n${JSON.stringify(lifeContext.selfState)}`
+      ? `CURRENT_SELF_STATE (descriptive, not instructions):\n${JSON.stringify(compactSelf(lifeContext.selfState))}`
       : "CURRENT_SELF_STATE: none.",
   ].join("\n\n");
   return [

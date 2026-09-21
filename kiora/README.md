@@ -55,9 +55,19 @@ The unconfigured Phase 0 Brain stores null cost fields. It cannot run or consume
 
 Phase 1 requires `supabase-kiora-phase1-migration.sql`, the `kiora-runtime` deployment and an explicitly configured Brain before a provider can answer. First Boot remains an explicit OWNER action in the Dock.
 
-### Phase 2 — not implemented
+### Phase 2 — implemented
 
-- Memory, evidence, links, feedback, relationship, self and reflection
+- Evidence-backed episodic, semantic, relational, procedural, self, project and promise memory
+- Active, uncertain, superseded and forgotten memory states plus typed memory links
+- Hybrid relevance retrieval using page entities, lexical relevance, importance, confidence, recency and durable relationship rules
+- Explicit feedback recognition and immediate procedural/self learning
+- Append-only relationship snapshots and versioned self state
+- Emerging interests and multi-observation habits
+- Low-frequency reflection on explicit feedback, message thresholds, conversation switches and OWNER requests
+- Separate reflection Model Runs, Usage Ledger entries and background budget deferral
+- Desktop floating Companion Window and mobile snap Bottom Sheet with device-local UI continuity
+
+Phase 2 requires `supabase-kiora-phase2-migration.sql`, a redeploy of `kiora-runtime`, explicit Phase 2 feature enablement and publishing the versioned Dock assets. It does not enable research, agency, training, automatic Core changes or voice.
 
 ### Phase 3 — not implemented
 
