@@ -40,6 +40,7 @@ class UnconfiguredAdapter implements BrainAdapter {
 class OpenAICompatibleAdapter implements BrainAdapter {
   async complete(request: BrainRequest): Promise<BrainResult> {
     const config = request.model.config || {};
+    const outputFormat = request.outputFormat || "text";
     const secretName = text(config.api_key_env || "KIORA_BRAIN_API_KEY", 120);
     if (!/^KIORA_(?:BRAIN|PROVIDER_[A-Z0-9_]+)_API_KEY$/.test(secretName)) {
       throw new KioraRuntimeError("MODEL_CONFIG_INVALID", 500);
@@ -59,25 +60,25 @@ class OpenAICompatibleAdapter implements BrainAdapter {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-  model: request.model.model_key,
-  messages: request.messages,
+          model: request.model.model_key,
+          messages: request.messages,
+          ...(outputFormat === "json_object"
+            ? { response_format: { type: "json_object" } }
+            : {}),
 
-  // DeepSeek Flash 默认开启 thinking。
-  // Daily Brain 主要用于普通陪伴聊天，因此默认关闭，
-  // 避免 reasoning 占用输出预算并导致 final content 为空。
-  ...(request.model.model_key.startsWith("deepseek-")
-    ? {
-        thinking: {
-          type: config.thinking === "enabled" ? "enabled" : "disabled",
-        },
-      }
-    : {}),
+          // DeepSeek Flash 默认开启 thinking。普通陪伴聊天默认关闭，避免
+          // reasoning 占用输出预算并导致 final content 为空。
+          ...(request.model.model_key.startsWith("deepseek-")
+            ? {
+              thinking: {
+                type: config.thinking === "enabled" ? "enabled" : "disabled",
+              },
+            }
+            : {}),
 
-  temperature: number(config.temperature, 0.8, 0, 2),
-  max_tokens: Math.round(
-    number(config.max_output_tokens, 800, 64, 4000)
-  ),
-}),
+          temperature: number(config.temperature, 0.8, 0, 2),
+          max_tokens: Math.round(number(config.max_output_tokens, 800, 64, 4000)),
+        }),
         signal: AbortSignal.timeout(Math.round(number(config.timeout_ms, 60000, 5000, 120000))),
       });
     } catch (error) {
@@ -98,37 +99,28 @@ class OpenAICompatibleAdapter implements BrainAdapter {
       throw new KioraRuntimeError("BRAIN_RESPONSE_INVALID", 502);
     }
     const choices = Array.isArray(payload.choices) ? payload.choices : [];
-const first = choices[0] as JsonObject | undefined;
-const message = first?.message as JsonObject | undefined;
+    const first = choices[0] as JsonObject | undefined;
+    const message = first?.message as JsonObject | undefined;
+    const content = responseText(payload);
+    const finishReason = typeof first?.finish_reason === "string"
+      ? text(first.finish_reason, 120) || null
+      : null;
 
-const content = responseText(payload);
-
-if (!content) {
-  const reasoningContent =
-    typeof message?.reasoning_content === "string"
-      ? message.reasoning_content
-      : "";
-
-  const toolCalls = Array.isArray(message?.tool_calls)
-    ? message.tool_calls
-    : [];
-
-  const finishReason =
-    typeof first?.finish_reason === "string"
-      ? first.finish_reason
-      : "unknown";
-
-  console.error("KIORA_PROVIDER_EMPTY_CONTENT", {
-    provider: request.model.provider,
-    model: request.model.model_key,
-    finishReason,
-    hasReasoning: Boolean(reasoningContent),
-    hasToolCalls: toolCalls.length > 0,
-    requestId: requestId || null,
-  });
-
-  throw new KioraRuntimeError("BRAIN_RESPONSE_INVALID", 502);
-}
+    if (!content && outputFormat === "text") {
+      const reasoningContent = typeof message?.reasoning_content === "string"
+        ? message.reasoning_content
+        : "";
+      const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
+      console.error("KIORA_PROVIDER_EMPTY_CONTENT", {
+        provider: request.model.provider,
+        model: request.model.model_key,
+        finishReason,
+        hasReasoning: Boolean(reasoningContent),
+        hasToolCalls: toolCalls.length > 0,
+        requestId: requestId || null,
+      });
+      throw new KioraRuntimeError("BRAIN_RESPONSE_INVALID", 502);
+    }
     const usage = payload.usage && typeof payload.usage === "object" ? payload.usage as JsonObject : {};
     const reportedInput = Number(usage.prompt_tokens);
     const reportedOutput = Number(usage.completion_tokens);
@@ -144,8 +136,11 @@ if (!content) {
       outputTokens,
       requestId: text(payload.id || requestId || "", 500) || null,
       providerModel: text(payload.model || request.model.model_key, 500),
+      finishReason,
       usageMetadata: {
         ...usage,
+        finish_reason: finishReason,
+        output_format: outputFormat,
         estimated: !(Number.isFinite(reportedInput) && reportedInput >= 0 && Number.isFinite(reportedOutput) && reportedOutput >= 0),
       },
     };

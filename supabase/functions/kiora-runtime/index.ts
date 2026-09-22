@@ -38,7 +38,7 @@ function runtimeError(error: unknown): KioraRuntimeError {
     "PHASE3_NOT_ENABLED", "RESEARCH_PROVIDER_NOT_CONFIGURED",
     "RESEARCH_PROVIDER_CONFIG_INVALID", "RESEARCH_PROVIDER_RATE_LIMITED",
     "RESEARCH_PROVIDER_FAILED", "RESEARCH_PROVIDER_RESPONSE_INVALID",
-    "RESEARCH_BUDGET_LIMIT", "RESEARCH_EXTRACTION_INVALID",
+    "RESEARCH_BUDGET_LIMIT", "RESEARCH_EXTRACTION_INVALID", "STRUCTURED_OUTPUT_TRUNCATED",
     "RESEARCH_RUN_NOT_FOUND", "KNOWLEDGE_NOT_FOUND", "OPEN_QUESTION_NOT_FOUND",
     "RESEARCH_URL_INVALID", "RESEARCH_URL_BLOCKED", "RESEARCH_DNS_VALIDATION_UNAVAILABLE",
     "RESEARCH_DNS_VALIDATION_FAILED", "RESEARCH_FETCH_FAILED", "RESEARCH_REDIRECT_REJECTED",
@@ -425,7 +425,9 @@ Deno.serve(async (request) => {
         try {
           const outcome = await runResearch(db, ownerId, conversationId, String(begunTurn.message_id), decision, settings, researchModel);
           researchSources = Array.isArray(outcome.sources) ? outcome.sources as JsonObject[] : [];
-          if (outcome.status === "no_reliable_sources") {
+          if (outcome.status === "no_readable_content") {
+            researchNotice = "External sources were discovered, but no readable page or provider fallback text was available. Explain that the pages could not provide readable material for verification; do not expose internal status codes or claim that web search is disconnected.";
+          } else if (outcome.status === "no_reliable_sources") {
             researchNotice = "External research ran, but no readable reliable source material was available. Explain that no reliable source could be read for this request; do not expose internal status codes or claim that web search is disconnected.";
           } else if (outcome.status === "no_grounded_claims") {
             researchNotice = "External sources were found and read, but no claim passed strict grounding. Say that sources were found but the requested fact could not yet be verified; do not expose internal status codes or claim that search is unavailable.";
@@ -435,6 +437,8 @@ Deno.serve(async (request) => {
           const normalizedResearch = runtimeError(researchError);
           researchNotice = normalizedResearch.code === "RESEARCH_PROVIDER_NOT_CONFIGURED"
             ? "External research is not configured for this request. Explain this briefly without exposing internal error codes."
+            : ["RESEARCH_EXTRACTION_INVALID", "STRUCTURED_OUTPUT_TRUNCATED"].includes(normalizedResearch.code)
+            ? "RESEARCH_STATUS: EXTRACTION_FAILED. Sources were found and read, but structured fact extraction failed. Explain this accurately without saying that zero sources were found."
             : "External research could not be completed during this request. Continue with available context, clearly mark uncertainty, and do not expose internal error codes or claim that search is permanently unavailable.";
           const { data: failedRun, error: failedRunReadError } = await db.from("kiora_research_runs").select("id").eq("owner_id", ownerId)
             .eq("request_message_id", String(begunTurn.message_id)).eq("status", "running").maybeSingle();
@@ -481,6 +485,7 @@ Deno.serve(async (request) => {
       brainResult = await adapterFor(model.adapter).complete({
         model,
         messages: brainMessages,
+        outputFormat: "text",
       });
       cost = calculateCost(model, brainResult.inputTokens, brainResult.outputTokens);
       const { data: completed, error: completeError } = await db.rpc("kiora_complete_turn", {
@@ -493,7 +498,11 @@ Deno.serve(async (request) => {
         used_input_cost: cost.inputCost,
         used_output_cost: cost.outputCost,
         used_currency: cost.currency,
-        used_metadata: { ...brainResult.usageMetadata, provider_model: brainResult.providerModel },
+        used_metadata: {
+          ...brainResult.usageMetadata,
+          provider_model: brainResult.providerModel,
+          finish_reason: brainResult.finishReason,
+        },
       });
       if (completeError) throw completeError;
       const feedbackTarget = await previousAssistantForMessage(db, ownerId, conversationId, String(begunTurn.message_id));

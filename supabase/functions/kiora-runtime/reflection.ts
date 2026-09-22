@@ -3,6 +3,7 @@ import { KioraRuntimeError } from "../_shared/kiora-owner.ts";
 import { adapterFor } from "./brain-adapters.ts";
 import { assertReflectionBudget, budgetSnapshot, calculateCost } from "./budget-manager.ts";
 import { explicitFeedback, requestsReflection, type FeedbackSignal } from "./feedback-signals.ts";
+import { parseStructuredJson, StructuredOutputError } from "./structured-output.ts";
 import type { BrainResult, ChatMessage, CostResult, JsonObject, ModelRecord } from "./types.ts";
 
 type ReflectionInput = {
@@ -38,16 +39,12 @@ function number(value: unknown, fallback: number, min = 0, max = 1): number {
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
 }
 
-function jsonFromModel(content: string): JsonObject {
-  const stripped = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+function reflectionJson(result: BrainResult): JsonObject {
   try {
-    const parsed = JSON.parse(stripped);
-    return object(parsed);
-  } catch {
-    const start = stripped.indexOf("{");
-    const end = stripped.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      try { return object(JSON.parse(stripped.slice(start, end + 1))); } catch { /* handled below */ }
+    return parseStructuredJson(result, "reflection");
+  } catch (error) {
+    if (error instanceof StructuredOutputError && error.code === "STRUCTURED_OUTPUT_TRUNCATED") {
+      throw new KioraRuntimeError("STRUCTURED_OUTPUT_TRUNCATED", 502);
     }
     throw new KioraRuntimeError("REFLECTION_RESPONSE_INVALID", 502);
   }
@@ -328,20 +325,29 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
       if (error) throw error;
       return { status: "completed", mode: "deterministic_feedback_fallback", result: data };
     }
-    result = await adapterFor(reflectionModel.adapter).complete({ model: reflectionModel, messages: brainMessages });
+    result = await adapterFor(reflectionModel.adapter).complete({
+      model: reflectionModel,
+      messages: brainMessages,
+      outputFormat: "json_object",
+    });
     cost = calculateCost(reflectionModel, result.inputTokens, result.outputTokens);
-    const payload = validatedPayload(jsonFromModel(result.content), trigger, input, feedback, allowedMessageIds, allowedMemoryIds, history, currentRelationship);
+    const payload = validatedPayload(reflectionJson(result), trigger, input, feedback, allowedMessageIds, allowedMemoryIds, history, currentRelationship);
     const { data, error } = await input.db.rpc("kiora_complete_reflection", {
       target_owner: input.ownerId, target_model_run_id: modelRunId, reflection_payload: payload,
       provider_request: result.requestId, used_input_tokens: result.inputTokens, used_output_tokens: result.outputTokens,
       used_input_cost: cost.inputCost, used_output_cost: cost.outputCost, used_currency: cost.currency,
-      used_metadata: { ...result.usageMetadata, provider_model: result.providerModel, trigger },
+      used_metadata: {
+        ...result.usageMetadata,
+        provider_model: result.providerModel,
+        finish_reason: result.finishReason,
+        trigger,
+      },
     });
     if (error) throw error;
     return { status: "completed", result: data };
   } catch (error) {
     const code = error instanceof KioraRuntimeError ? error.code : "REFLECTION_FAILED";
-    if (feedback && (result === null || code === "REFLECTION_RESPONSE_INVALID")) {
+    if (feedback && (result === null || ["REFLECTION_RESPONSE_INVALID", "STRUCTURED_OUTPUT_TRUNCATED"].includes(code))) {
       const payload = validatedPayload({}, trigger, input, feedback, allowedMessageIds, allowedMemoryIds, history, currentRelationship);
       const { data, error: fallbackError } = await input.db.rpc("kiora_complete_reflection", {
         target_owner: input.ownerId, target_model_run_id: modelRunId, reflection_payload: payload,
@@ -351,6 +357,7 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
         used_currency: cost?.currency || currency,
         used_metadata: {
           ...(result?.usageMetadata || {}), provider_model: result?.providerModel || null,
+          finish_reason: result?.finishReason || null,
           trigger, deterministic_feedback_fallback: true, reason: code,
         },
       });
@@ -365,7 +372,14 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
       used_input_cost: cost?.inputCost || 0,
       used_output_cost: cost?.outputCost || 0,
       used_currency: cost?.currency || null,
-      used_metadata: result ? { ...result.usageMetadata, provider_model: result.providerModel, trigger } : { trigger },
+      used_metadata: result
+        ? {
+          ...result.usageMetadata,
+          provider_model: result.providerModel,
+          finish_reason: result.finishReason,
+          trigger,
+        }
+        : { trigger },
     });
     if (failError) console.error("KIORA_FAIL_REFLECTION_RECORD_FAILED", failError.code || "RPC_ERROR");
     throw error;

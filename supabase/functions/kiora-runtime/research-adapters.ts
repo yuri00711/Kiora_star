@@ -3,7 +3,12 @@ import { validatePublicUrl } from "./safe-fetch.ts";
 import { sanitizePostgresText } from "./postgres-sanitize.ts";
 import type { JsonObject } from "./types.ts";
 
-export type SearchResult = { url: string; title: string; snippet: string };
+export type SearchResult = {
+  url: string;
+  title: string;
+  snippet: string;
+  rawContent: string;
+};
 export interface SearchAdapter {
   search(query: string, config: JsonObject, limit: number): Promise<{
     results: SearchResult[];
@@ -126,7 +131,9 @@ class GenericJson implements SearchAdapter {
         results.push({
           url: publicUrl.href,
           title: sanitizePostgresText(at(candidate, String(config.title_field || "title"))).slice(0, 1_000),
-          snippet: sanitizePostgresText(at(candidate, String(config.snippet_field || "snippet"))).slice(0, 1_000),
+          snippet: sanitizePostgresText(at(candidate, String(config.snippet_field || "snippet"))).slice(0, 6_000),
+          rawContent: sanitizePostgresText(at(candidate, String(config.raw_content_field || "raw_content")))
+            .slice(0, Math.min(80_000, Math.max(4_000, Number(config.max_source_chars) || 18_000))),
         });
       } catch {
         // Unsafe discoveries are discarded before Fetch.
@@ -172,7 +179,9 @@ class Tavily implements SearchAdapter {
           max_results: Math.min(20, Math.max(1, Math.round(limit))),
           topic: String(config.search_topic || "general"),
           include_answer: false,
-          include_raw_content: false,
+          // Tavily's current Search API contract accepts "text" here and returns
+          // result.raw_content as provider-extracted page text.
+          include_raw_content: "text",
           include_images: false,
           include_usage: true,
         }),
@@ -197,7 +206,10 @@ class Tavily implements SearchAdapter {
         results.push({
           url: publicUrl.href,
           title: sanitizePostgresText(candidate.title).slice(0, 1_000),
-          snippet: sanitizePostgresText(candidate.content).slice(0, 1_000),
+          // Tavily result.content is relevant provider text, not the full page.
+          snippet: sanitizePostgresText(candidate.content).slice(0, 6_000),
+          rawContent: sanitizePostgresText(candidate.raw_content)
+            .slice(0, Math.min(80_000, Math.max(4_000, Number(config.max_source_chars) || 18_000))),
         });
       } catch {
         // Unsafe discoveries are discarded before Fetch.

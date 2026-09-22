@@ -1,5 +1,6 @@
 import { KioraRuntimeError } from "../_shared/kiora-owner.ts";
 import { sanitizePostgresText } from "./postgres-sanitize.ts";
+import { normalizeReadableText, readableBodyIsUsable } from "./research-material.ts";
 import type { JsonObject } from "./types.ts";
 
 const BLOCKED_HOSTS = new Set(["localhost", "localhost.localdomain", "metadata.google.internal"]);
@@ -179,12 +180,26 @@ export async function fetchReadable(rawUrl: string, config: JsonObject): Promise
         canonicalUrl = url.href;
       }
     }
-    const cleaned = html
+    const readableHtml = contentType.includes("text/plain")
+      ? html
+      : (html.match(/<body(?:\s[^>]*)?>([\s\S]*?)<\/body>/i)?.[1] ?? html);
+    const cleaned = readableHtml
       .replace(/<(script|style|noscript|iframe|svg|nav|footer|form)[\s\S]*?<\/\1>/gi, " ")
       .replace(/<!--([\s\S]*?)-->/g, " ")
       .replace(/<[^>]+>/g, " ");
-    const text = decode(cleaned).replace(/\s+/g, " ").trim()
-      .slice(0, Math.min(80_000, Math.max(4_000, Number(config.max_source_chars) || 18_000)));
+    const maxSourceChars = Math.min(80_000, Math.max(4_000, Number(config.max_source_chars) || 18_000));
+    const text = normalizeReadableText(decode(cleaned), maxSourceChars);
+    const minimumReadableChars = Math.min(500, Math.max(1, Number(config.min_readable_chars) || 40));
+    if (!readableBodyIsUsable(text, minimumReadableChars)) {
+      const diagnostic = text ? "RESEARCH_READABLE_TEXT_INSUFFICIENT" : "RESEARCH_READABLE_TEXT_EMPTY";
+      console.warn(diagnostic, {
+        domain: url.hostname,
+        http_status: response.status,
+        readable_char_count: text.length,
+        minimum_readable_chars: minimumReadableChars,
+      });
+      throw new KioraRuntimeError(diagnostic, 422);
+    }
     return {
       url: url.href,
       canonical_url: canonicalUrl,
@@ -194,6 +209,7 @@ export async function fetchReadable(rawUrl: string, config: JsonObject): Promise
       published_at: meta(html, "article:published_time") || null,
       content_type: contentType,
       http_status: response.status,
+      readable_char_count: text.length,
       text,
     };
   }

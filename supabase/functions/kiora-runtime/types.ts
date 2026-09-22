@@ -21,6 +21,7 @@ export type ChatMessage = { role: "system" | "user" | "assistant"; content: stri
 export type BrainRequest = {
   model: ModelRecord;
   messages: ChatMessage[];
+  outputFormat?: "text" | "json_object";
 };
 
 export type BrainResult = {
@@ -29,6 +30,7 @@ export type BrainResult = {
   outputTokens: number;
   requestId: string | null;
   providerModel: string;
+  finishReason: string | null;
   usageMetadata: JsonObject;
 };
 
