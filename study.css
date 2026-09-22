@@ -411,3 +411,86 @@ button { font-family:inherit; }
 .study-dialog form > footer > button {
     flex-shrink: 0;
 }
+
+/* Mobile aptitude controls stay below the scrollable paper and reuse its answer state. */
+@media (max-width: 900px) {
+    .study-paper-reader {
+        padding-bottom: 0;
+    }
+
+    .study-mobile-dock {
+        position: relative;
+        z-index: auto;
+        inset: auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+        width: 100%;
+        margin-top: 18px;
+        padding: 18px 16px;
+        box-sizing: border-box;
+        border: 1px solid var(--study-line);
+        border-radius: 14px;
+        background: rgba(250, 247, 250, .86);
+        backdrop-filter: none;
+    }
+
+    .study-mobile-answer-center {
+        display: grid;
+        gap: 13px;
+        min-width: 0;
+    }
+
+    .study-mobile-answer-center .study-current-question {
+        margin: 0;
+        color: var(--study-ink);
+        font-size: 12px;
+        letter-spacing: .12em;
+    }
+
+    .study-mobile-dock .study-answer-options {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        width: 100%;
+    }
+
+    .study-mobile-dock .study-answer-options button {
+        width: 100%;
+        min-width: 0;
+        min-height: 46px;
+        aspect-ratio: auto;
+        border: 1px solid rgba(132, 102, 137, .24);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, .48);
+        color: var(--study-ink);
+        touch-action: manipulation;
+    }
+
+    .study-mobile-dock .study-answer-options button.active {
+        border-color: rgba(132, 92, 135, .62);
+        background: rgba(218, 197, 222, .68);
+        color: #57445f;
+    }
+
+    .study-mobile-answer-nav {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .study-mobile-answer-nav button {
+        width: 64px;
+        min-height: 44px;
+        border: 0;
+        border-top: 1px solid rgba(132, 102, 137, .2);
+        background: transparent;
+        color: var(--study-soft);
+        font-size: 24px;
+        touch-action: manipulation;
+    }
+
+    .study-mobile-answer-nav button:disabled,
+    .study-mobile-dock .study-answer-options button:disabled {
+        opacity: .38;
+    }
+}
