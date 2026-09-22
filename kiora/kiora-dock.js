@@ -29,6 +29,10 @@
     let selectionToggle;
     let state = null;
     let busy = false;
+    let historyBusy = false;
+    let loadedOwnerIdentity = null;
+    let bootstrapPromise = null;
+    let bootstrapOwnerIdentity = null;
     let uiState = readUiState();
     let pointerOperation = null;
 
@@ -259,7 +263,12 @@
         saveUiState();
         applyWindowGeometry();
         setOpen(true);
-        await load();
+        if (state && Array.isArray(state.messages)) {
+            const currentScrollTop = messages.scrollTop;
+            render({ scroll: "preserve", previousScrollTop: currentScrollTop });
+        } else {
+            await load();
+        }
         if (state?.initialized && state?.chat_enabled) input.focus();
     }
 
@@ -313,6 +322,31 @@
         return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(date);
     }
 
+    function messageCursor(message) {
+        if (!message?.id || !message?.created_at || String(message.id).startsWith("pending:")) return null;
+        return { id: String(message.id), created_at: String(message.created_at) };
+    }
+
+    function compareMessages(left, right) {
+        const timeDifference = new Date(left.created_at || 0).getTime() - new Date(right.created_at || 0).getTime();
+        if (timeDifference) return timeDifference;
+        return String(left.id || "").localeCompare(String(right.id || ""));
+    }
+
+    function mergeMessages(...groups) {
+        const byId = new Map();
+        groups.flat().filter(Boolean).forEach((message, index) => {
+            const key = message.id ? String(message.id) : `unkeyed:${index}:${message.role}:${message.created_at}`;
+            byId.set(key, { ...(byId.get(key) || {}), ...message });
+        });
+        return [...byId.values()].sort(compareMessages);
+    }
+
+    function updateLatestCursor(candidates) {
+        const latest = [...candidates].reverse().map(messageCursor).find(Boolean);
+        if (latest) state.latest_message_cursor = latest;
+    }
+
     function safeExternalUrl(value) {
         try {
             const url = new URL(String(value || ""));
@@ -345,7 +379,23 @@
         return node;
     }
 
-    function render() {
+    function restoreMessageScroll(mode, previousScrollTop, previousScrollHeight) {
+        requestAnimationFrame(() => {
+            messages.style.scrollBehavior = "auto";
+            if (mode === "preserve-prepend") {
+                messages.scrollTop = messages.scrollHeight - previousScrollHeight + previousScrollTop;
+            } else if (mode === "preserve") {
+                messages.scrollTop = previousScrollTop;
+            } else {
+                messages.scrollTop = messages.scrollHeight;
+            }
+            requestAnimationFrame(() => messages.style.removeProperty("scroll-behavior"));
+        });
+    }
+
+    function render(options = {}) {
+        const previousScrollTop = Number(options.previousScrollTop ?? messages.scrollTop) || 0;
+        const previousScrollHeight = Number(options.previousScrollHeight ?? messages.scrollHeight) || 0;
         messages.replaceChildren();
         const initialized = Boolean(state?.initialized);
         const chatReady = initialized && state?.chat_enabled === true;
@@ -368,6 +418,20 @@
         }
 
         const rows = Array.isArray(state.messages) ? state.messages : [];
+        const historyControls = create("div", "kiora-history-controls");
+        if (state.has_older_messages && state.oldest_message_cursor) {
+            const earlier = create("button", "kiora-load-earlier", historyBusy ? "LOADING…" : "LOAD EARLIER MESSAGES");
+            earlier.type = "button";
+            earlier.disabled = historyBusy || busy;
+            earlier.addEventListener("click", loadEarlierMessages);
+            historyControls.append(earlier);
+        }
+        const refresh = create("button", "kiora-refresh-latest", "REFRESH LATEST");
+        refresh.type = "button";
+        refresh.disabled = historyBusy || busy;
+        refresh.addEventListener("click", () => refreshLatestMessages());
+        historyControls.append(refresh);
+        messages.append(historyControls);
         if (!rows.length) messages.append(create("p", "kiora-empty", "这里还没有说过话。你可以只是叫她一声。"));
         else rows.forEach((message) => messages.append(messageNode(message)));
         const model = state.model;
@@ -375,11 +439,12 @@
             ? `BRAIN / ${String(model.model_key || model.provider).toUpperCase()} · ${String(model.status || "").toUpperCase()}`
             : "BRAIN / UNCONFIGURED";
         setBusy(false);
-        requestAnimationFrame(() => { messages.scrollTop = messages.scrollHeight; });
+        restoreMessageScroll(options.scroll || "bottom", previousScrollTop, previousScrollHeight);
     }
 
-    async function load() {
+    async function load(force = false) {
         if (busy) return;
+        if (!force && state && Array.isArray(state.messages)) return;
         setBusy(true);
         setStatus("READING THE CURRENT CONVERSATION…");
         try {
@@ -389,6 +454,61 @@
         } catch (error) {
             setStatus(errors[error.message] || errors.RUNTIME_ERROR);
             setBusy(false);
+        }
+    }
+
+    async function loadEarlierMessages() {
+        if (historyBusy || busy || !state?.conversation?.id || !state?.oldest_message_cursor) return;
+        historyBusy = true;
+        const previousScrollTop = messages.scrollTop;
+        const previousScrollHeight = messages.scrollHeight;
+        render({ scroll: "preserve", previousScrollTop });
+        try {
+            const cursor = state.oldest_message_cursor;
+            const result = await invoke("load_older_messages", {
+                conversation_id: state.conversation.id,
+                before_created_at: cursor.created_at,
+                before_id: cursor.id,
+                limit: 40
+            });
+            state.messages = mergeMessages(result.messages || [], state.messages || []);
+            state.has_older_messages = result.has_older_messages === true;
+            state.oldest_message_cursor = result.oldest_message_cursor || state.oldest_message_cursor;
+            historyBusy = false;
+            render({ scroll: "preserve-prepend", previousScrollTop, previousScrollHeight });
+        } catch (error) {
+            historyBusy = false;
+            setStatus(errors[error.message] || errors.RUNTIME_ERROR);
+            render({ scroll: "preserve", previousScrollTop });
+        }
+    }
+
+    async function refreshLatestMessages(options = {}) {
+        if (historyBusy || !state?.conversation?.id) return;
+        if (!state.latest_message_cursor) {
+            await load(true);
+            return;
+        }
+        historyBusy = true;
+        const previousScrollTop = messages.scrollTop;
+        const wasNearBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 72;
+        if (!options.silent) render({ scroll: "preserve", previousScrollTop });
+        try {
+            const cursor = state.latest_message_cursor;
+            const result = await invoke("load_messages_after", {
+                conversation_id: state.conversation.id,
+                after_created_at: cursor.created_at,
+                after_id: cursor.id,
+                limit: 60
+            });
+            state.messages = mergeMessages(state.messages || [], result.messages || []);
+            updateLatestCursor(result.messages || []);
+            historyBusy = false;
+            render({ scroll: wasNearBottom ? "bottom" : "preserve", previousScrollTop });
+        } catch (error) {
+            historyBusy = false;
+            if (!options.silent) setStatus(errors[error.message] || errors.RUNTIME_ERROR);
+            render({ scroll: "preserve", previousScrollTop });
         }
     }
 
@@ -428,33 +548,41 @@
         event.preventDefault();
         const content = input.value.trim();
         if (!content || busy || !state?.chat_enabled) return;
-        const optimistic = { role: "owner", content, created_at: new Date().toISOString() };
-        messages.querySelector(".kiora-empty")?.remove();
-        messages.append(messageNode(optimistic));
-        messages.scrollTop = messages.scrollHeight;
+        const clientMessageKey = crypto.randomUUID();
+        const optimistic = {
+            id: `pending:${clientMessageKey}`,
+            role: "owner",
+            content,
+            created_at: new Date().toISOString(),
+            pending: true
+        };
+        state.messages = mergeMessages(state.messages || [], [optimistic]);
+        render({ scroll: "bottom" });
         input.value = "";
         setBusy(true);
         setStatus(/查一下|帮我查|搜索|调查|研究一下|最新|最近|新消息|look up|search|research/i.test(content) ? "CHECKING SOURCES…" : "KIORA IS LISTENING…");
         try {
             const result = await invoke("send_message", {
                 content,
-                client_message_key: crypto.randomUUID(),
+                client_message_key: clientMessageKey,
                 page_context: contextBroker.snapshot({ includeSelection: selectionToggle.checked })
             });
-            if (result.reply) messages.append(messageNode({ role: "kiora", ...result.reply, sources: result.sources || [] }));
+            state.messages = (state.messages || []).filter((message) => message.id !== optimistic.id);
+            const persisted = [];
+            if (result.owner_message) persisted.push({ role: "owner", ...result.owner_message });
+            if (result.reply) persisted.push({ role: "kiora", ...result.reply, sources: result.sources || [] });
+            state.messages = mergeMessages(state.messages, persisted);
+            updateLatestCursor(persisted);
             selectionToggle.checked = false;
             contextBroker.clearSelection();
             setStatus("");
             setBusy(false);
-            messages.scrollTop = messages.scrollHeight;
+            render({ scroll: "bottom" });
         } catch (error) {
             const message = errors[error.message] || errors.RUNTIME_ERROR;
-            try {
-                state = await invoke("bootstrap");
-                render();
-            } catch (_) {
-                setBusy(false);
-            }
+            state.messages = (state.messages || []).filter((item) => item.id !== optimistic.id);
+            setBusy(false);
+            await refreshLatestMessages({ silent: true });
             setStatus(message);
         }
     }
@@ -477,18 +605,36 @@
         if (!ownerSession) {
             setOpen(false);
             state = null;
+            loadedOwnerIdentity = null;
+            bootstrapPromise = null;
+            bootstrapOwnerIdentity = null;
             messages.replaceChildren();
             return;
         }
+        const ownerIdentity = String(nextState?.identity?.id || "owner");
         try {
-            state = await invoke("status");
+            if (loadedOwnerIdentity !== ownerIdentity || !state) {
+                loadedOwnerIdentity = ownerIdentity;
+                if (!bootstrapPromise || bootstrapOwnerIdentity !== ownerIdentity) {
+                    bootstrapOwnerIdentity = ownerIdentity;
+                    bootstrapPromise = invoke("bootstrap");
+                }
+                const pendingBootstrap = bootstrapPromise;
+                const nextBootstrap = await pendingBootstrap;
+                if (loadedOwnerIdentity !== ownerIdentity || pendingBootstrap !== bootstrapPromise) return;
+                state = nextBootstrap;
+                bootstrapPromise = null;
+                bootstrapOwnerIdentity = null;
+            }
             root.hidden = false;
             applyWindowGeometry();
             setOpen(uiState.open === true);
-            if (uiState.open) render();
+            if (uiState.open) render({ scroll: "bottom" });
         } catch (_) {
             setOpen(false);
             state = null;
+            bootstrapPromise = null;
+            bootstrapOwnerIdentity = null;
             messages.replaceChildren();
         }
     }

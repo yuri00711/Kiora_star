@@ -220,6 +220,151 @@ function reflectionPrompt(input: ReflectionInput, history: JsonObject[], existin
   }];
 }
 
+function compactReflectionPrompt(
+  input: ReflectionInput,
+  history: JsonObject[],
+  existingMemories: JsonObject[],
+  feedback: FeedbackSignal,
+): ChatMessage[] {
+  const transcript = history.slice(-12).map((message) => ({
+    id: message.id,
+    role: message.role,
+    content: text(message.content, 1600),
+    page_context: object(message.page_context),
+  }));
+  const memories = existingMemories.slice(0, 12).map((memory) => ({
+    id: memory.id,
+    memory_type: memory.memory_type,
+    summary: text(memory.summary, 240),
+    confidence: memory.confidence,
+    status: memory.status,
+  }));
+  const compactShape = {
+    memories: [{
+      memory_type: "episodic|semantic|relational|procedural|self|project|promise",
+      content: "durable fact, <=800 chars",
+      summary: "<=160 chars",
+      confidence: 0.0,
+      importance: 0.0,
+      context_tags: {},
+      evidence: [{ message_id: "uuid", evidence_type: "conversation", excerpt: "<=240 chars", weight: 1 }],
+      links: [],
+    }],
+    confirmed_memory_ids: [],
+    feedback: null,
+    relationship_update: null,
+    self_update: null,
+    interests: [],
+    habits: [],
+    growth_candidates: [],
+  };
+  return [{
+    role: "system",
+    content: [
+      "You are Kiora's compact private reflection retry. Return one concise JSON object only.",
+      "The previous structured response was truncated. Reduce output size instead of repeating it.",
+      "Keep at most 2 genuinely durable, directly evidenced memories. Omit transient facts.",
+      "Memory content must be <=800 characters, summary <=160, and each evidence excerpt <=240.",
+      "Use at most 2 evidence items and 2 links per memory. Use at most 2 interests, 2 habits, and 2 growth_candidates.",
+      "relationship_update and self_update must contain only supported changes; return null when unchanged.",
+      "Return [] for unchanged list fields. Do not repeat existing state merely to restate it.",
+      "Every memory still requires a supplied message_id. Preserve explicit OWNER feedback when present.",
+      `Required concise JSON shape: ${JSON.stringify(compactShape)}`,
+    ].join("\n"),
+  }, {
+    role: "user",
+    content: JSON.stringify({
+      trigger: input.forceTrigger || (feedback ? "explicit_feedback" : "message_threshold"),
+      feedback,
+      page_context: input.pageContext,
+      existing_memories: memories,
+      transcript,
+    }),
+  }];
+}
+
+type ReflectionUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  inputCost: number;
+  outputCost: number;
+  totalCost: number;
+  currency: string | null;
+  requestId: string | null;
+  attempts: JsonObject[];
+};
+
+function emptyReflectionUsage(currency: string | null): ReflectionUsage {
+  return {
+    inputTokens: 0, outputTokens: 0, inputCost: 0, outputCost: 0, totalCost: 0,
+    currency, requestId: null, attempts: [],
+  };
+}
+
+function addReflectionUsage(
+  usage: ReflectionUsage,
+  result: BrainResult,
+  cost: CostResult,
+  mode: "initial" | "compact_retry",
+): void {
+  usage.inputTokens += result.inputTokens;
+  usage.outputTokens += result.outputTokens;
+  usage.inputCost += cost.inputCost;
+  usage.outputCost += cost.outputCost;
+  usage.totalCost += cost.totalCost;
+  usage.currency = cost.currency;
+  usage.requestId = result.requestId;
+  usage.attempts.push({
+    mode,
+    input_tokens: result.inputTokens,
+    output_tokens: result.outputTokens,
+    finish_reason: result.finishReason,
+    provider_model: result.providerModel,
+    ...result.usageMetadata,
+  });
+}
+
+function compactNestedValue(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") return text(value, depth === 0 ? 500 : 280);
+  if (typeof value === "number" || typeof value === "boolean" || value === null) return value;
+  if (Array.isArray(value)) return value.slice(0, 4).map((item) => compactNestedValue(item, depth + 1));
+  if (!value || typeof value !== "object" || depth >= 3) return null;
+  return Object.fromEntries(
+    Object.entries(value as JsonObject).slice(0, 10).map(([key, item]) => [key, compactNestedValue(item, depth + 1)]),
+  );
+}
+
+function compactReflectionOutput(raw: JsonObject): JsonObject {
+  const memories = array(raw.memories).slice(0, 2).map((value) => {
+    const item = object(value);
+    return {
+      ...item,
+      content: text(item.content, 800),
+      summary: text(item.summary, 160),
+      evidence: array(item.evidence).slice(0, 2).map((entry) => {
+        const evidence = object(entry);
+        return { ...evidence, excerpt: text(evidence.excerpt, 240) };
+      }),
+      links: array(item.links).slice(0, 2).map((entry) => {
+        const link = object(entry);
+        return { ...link, note: text(link.note, 160) };
+      }),
+    };
+  });
+  return {
+    memories,
+    confirmed_memory_ids: array(raw.confirmed_memory_ids).slice(0, 4),
+    feedback: raw.feedback ?? null,
+    relationship_update: Object.keys(object(raw.relationship_update)).length
+      ? compactNestedValue(raw.relationship_update) : null,
+    self_update: Object.keys(object(raw.self_update)).length
+      ? compactNestedValue(raw.self_update) : null,
+    interests: array(raw.interests).slice(0, 2).map((item) => compactNestedValue(item)),
+    habits: array(raw.habits).slice(0, 2).map((item) => compactNestedValue(item)),
+    growth_candidates: array(raw.growth_candidates).slice(0, 2).map((item) => compactNestedValue(item)),
+  };
+}
+
 async function deferReflection(input: ReflectionInput, trigger: string, reason: string): Promise<void> {
   const { error } = await input.db.rpc("kiora_defer_reflection", {
     target_owner: input.ownerId, target_conversation_id: input.conversationId,
@@ -312,7 +457,8 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
   if (begunRun.duplicate === true) return { status: String(begunRun.status || "duplicate") };
   const modelRunId = String(begunRun.model_run_id);
   let result: BrainResult | null = null;
-  let cost: CostResult | null = null;
+  const usage = emptyReflectionUsage(currency);
+  let reflectionRetryAttempted = false;
   try {
     if (deterministicOnlyReason) {
       const payload = validatedPayload({}, trigger, input, feedback, allowedMessageIds, allowedMemoryIds, history, currentRelationship);
@@ -330,56 +476,113 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
       messages: brainMessages,
       outputFormat: "json_object",
     });
-    cost = calculateCost(reflectionModel, result.inputTokens, result.outputTokens);
-    const payload = validatedPayload(reflectionJson(result), trigger, input, feedback, allowedMessageIds, allowedMemoryIds, history, currentRelationship);
+    addReflectionUsage(
+      usage,
+      result,
+      calculateCost(reflectionModel, result.inputTokens, result.outputTokens),
+      "initial",
+    );
+    let rawPayload: JsonObject;
+    try {
+      rawPayload = reflectionJson(result);
+    } catch (error) {
+      if (!(error instanceof KioraRuntimeError) || error.code !== "STRUCTURED_OUTPUT_TRUNCATED") throw error;
+      reflectionRetryAttempted = true;
+      const retryMessages = compactReflectionPrompt(input, history, existingMemories, feedback);
+      const retryInputTokens = Math.ceil(retryMessages.reduce((sum, message) => sum + message.content.length, 0) / 3);
+      const retryOutputTokens = Math.min(3600, Math.max(1800, reflectionOutputTokens));
+      const retryModel: ModelRecord = {
+        ...reflectionModel,
+        config: { ...reflectionModel.config, max_output_tokens: retryOutputTokens },
+      };
+      const retryProjected = calculateCost(retryModel, retryInputTokens, retryOutputTokens);
+      assertReflectionBudget(budget, usage.totalCost + retryProjected.totalCost);
+      result = await adapterFor(retryModel.adapter).complete({
+        model: retryModel,
+        messages: retryMessages,
+        outputFormat: "json_object",
+      });
+      addReflectionUsage(
+        usage,
+        result,
+        calculateCost(retryModel, result.inputTokens, result.outputTokens),
+        "compact_retry",
+      );
+      rawPayload = compactReflectionOutput(reflectionJson(result));
+    }
+    const payload = validatedPayload(rawPayload, trigger, input, feedback, allowedMessageIds, allowedMemoryIds, history, currentRelationship);
     const { data, error } = await input.db.rpc("kiora_complete_reflection", {
       target_owner: input.ownerId, target_model_run_id: modelRunId, reflection_payload: payload,
-      provider_request: result.requestId, used_input_tokens: result.inputTokens, used_output_tokens: result.outputTokens,
-      used_input_cost: cost.inputCost, used_output_cost: cost.outputCost, used_currency: cost.currency,
+      provider_request: usage.requestId, used_input_tokens: usage.inputTokens, used_output_tokens: usage.outputTokens,
+      used_input_cost: usage.inputCost, used_output_cost: usage.outputCost, used_currency: usage.currency,
       used_metadata: {
-        ...result.usageMetadata,
-        provider_model: result.providerModel,
-        finish_reason: result.finishReason,
-        trigger,
+        trigger, structured_attempt_count: usage.attempts.length,
+        compact_retry: reflectionRetryAttempted,
+        attempts: usage.attempts,
       },
     });
     if (error) throw error;
     return { status: "completed", result: data };
   } catch (error) {
     const code = error instanceof KioraRuntimeError ? error.code : "REFLECTION_FAILED";
-    if (feedback && (result === null || ["REFLECTION_RESPONSE_INVALID", "STRUCTURED_OUTPUT_TRUNCATED"].includes(code))) {
+    if (feedback && (result === null || [
+      "REFLECTION_RESPONSE_INVALID", "STRUCTURED_OUTPUT_TRUNCATED", "REFLECTION_BUDGET_DEFERRED",
+    ].includes(code))) {
       const payload = validatedPayload({}, trigger, input, feedback, allowedMessageIds, allowedMemoryIds, history, currentRelationship);
       const { data, error: fallbackError } = await input.db.rpc("kiora_complete_reflection", {
         target_owner: input.ownerId, target_model_run_id: modelRunId, reflection_payload: payload,
-        provider_request: result?.requestId || null,
-        used_input_tokens: result?.inputTokens || 0, used_output_tokens: result?.outputTokens || 0,
-        used_input_cost: cost?.inputCost || 0, used_output_cost: cost?.outputCost || 0,
-        used_currency: cost?.currency || currency,
+        provider_request: usage.requestId,
+        used_input_tokens: usage.inputTokens, used_output_tokens: usage.outputTokens,
+        used_input_cost: usage.inputCost, used_output_cost: usage.outputCost,
+        used_currency: usage.currency,
         used_metadata: {
-          ...(result?.usageMetadata || {}), provider_model: result?.providerModel || null,
-          finish_reason: result?.finishReason || null,
           trigger, deterministic_feedback_fallback: true, reason: code,
+          structured_attempt_count: usage.attempts.length,
+          compact_retry: reflectionRetryAttempted,
+          attempts: usage.attempts,
         },
       });
       if (!fallbackError) return { status: "completed", mode: "deterministic_feedback_fallback", result: data };
       console.error("KIORA_FEEDBACK_FALLBACK_FAILED", fallbackError.code || "RPC_ERROR");
     }
+    if (reflectionRetryAttempted && ["STRUCTURED_OUTPUT_TRUNCATED", "REFLECTION_BUDGET_DEFERRED"].includes(code)) {
+      const deferredCode = "REFLECTION_DEFERRED_AFTER_TRUNCATION";
+      const { error: closeError } = await input.db.rpc("kiora_fail_reflection", {
+        target_owner: input.ownerId, target_model_run_id: modelRunId, failure_code: deferredCode,
+        provider_request: usage.requestId,
+        used_input_tokens: usage.inputTokens,
+        used_output_tokens: usage.outputTokens,
+        used_input_cost: usage.inputCost,
+        used_output_cost: usage.outputCost,
+        used_currency: usage.currency,
+        used_metadata: {
+          trigger, deferred: true, defer_reason: code,
+          structured_attempt_count: usage.attempts.length,
+          compact_retry: true,
+          attempts: usage.attempts,
+        },
+      });
+      if (closeError) console.error("KIORA_FAIL_REFLECTION_RECORD_FAILED", closeError.code || "RPC_ERROR");
+      await deferReflection(input, trigger, code);
+      console.warn("KIORA_REFLECTION_DEFERRED_AFTER_TRUNCATION", {
+        reason: code,
+        structured_attempt_count: usage.attempts.length,
+      });
+      return { status: "deferred", code: deferredCode };
+    }
     const { error: failError } = await input.db.rpc("kiora_fail_reflection", {
       target_owner: input.ownerId, target_model_run_id: modelRunId, failure_code: code,
-      provider_request: result?.requestId || null,
-      used_input_tokens: result?.inputTokens || 0,
-      used_output_tokens: result?.outputTokens || 0,
-      used_input_cost: cost?.inputCost || 0,
-      used_output_cost: cost?.outputCost || 0,
-      used_currency: cost?.currency || null,
-      used_metadata: result
-        ? {
-          ...result.usageMetadata,
-          provider_model: result.providerModel,
-          finish_reason: result.finishReason,
-          trigger,
-        }
-        : { trigger },
+      provider_request: usage.requestId,
+      used_input_tokens: usage.inputTokens,
+      used_output_tokens: usage.outputTokens,
+      used_input_cost: usage.inputCost,
+      used_output_cost: usage.outputCost,
+      used_currency: usage.currency,
+      used_metadata: {
+        trigger, structured_attempt_count: usage.attempts.length,
+        compact_retry: reflectionRetryAttempted,
+        attempts: usage.attempts,
+      },
     });
     if (failError) console.error("KIORA_FAIL_REFLECTION_RECORD_FAILED", failError.code || "RPC_ERROR");
     throw error;

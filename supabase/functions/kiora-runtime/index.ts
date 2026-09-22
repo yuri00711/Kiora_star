@@ -12,10 +12,21 @@ import { routeResearch } from "./research-router.ts";
 import { runResearch } from "./research.ts";
 import { safeResearchErrorDetails } from "./research-diagnostics.ts";
 import { knowledgePrompt, loadKnowledge } from "./knowledge-retrieval.ts";
+import {
+  INITIAL_MESSAGE_LIMIT,
+  messageCursor,
+  messagePageLimit,
+  newerMessagePage,
+  newerMessagesFilter,
+  newestMessagePage,
+  olderMessagePage,
+  olderMessagesFilter,
+} from "./message-pagination.ts";
 import type { BrainResult, CostResult, JsonObject, ModelRecord } from "./types.ts";
 
 const ACTIONS = new Set([
   "status", "bootstrap", "start", "new_conversation", "send_message", "reflect",
+  "load_older_messages", "load_messages_after",
   "memory_evidence", "forget_memory", "delete_memory",
   "knowledge_evidence", "forget_knowledge", "delete_knowledge", "retract_knowledge", "research_details",
   "update_open_question",
@@ -45,7 +56,7 @@ function runtimeError(error: unknown): KioraRuntimeError {
     "RESEARCH_CONTENT_TYPE_REJECTED", "RESEARCH_RESPONSE_TOO_LARGE",
     "RESEARCH_PROVIDER_REDIRECT_REJECTED",
     "RESEARCH_SEARCH_RUNTIME_FAILED", "RESEARCH_SOURCE_STAGE_FAILED",
-    "RESEARCH_COMPLETE_FAILED",
+    "RESEARCH_COMPLETE_FAILED", "INVALID_CONVERSATION_ID", "INVALID_MESSAGE_CURSOR",
   ]);
   return known.has(message)
     ? new KioraRuntimeError(message, 400)
@@ -97,20 +108,37 @@ async function loadModel(db: SupabaseClient, ownerId: string, id: unknown): Prom
 
 async function bootstrap(db: SupabaseClient, ownerId: string): Promise<JsonObject> {
   const settings = await loadSettings(db, ownerId);
-  if (!settings) return { initialized: false, chat_enabled: false, conversation: null, messages: [], model: null };
+  if (!settings) return {
+    initialized: false, chat_enabled: false, conversation: null, messages: [], model: null,
+    has_older_messages: false, oldest_message_cursor: null, latest_message_cursor: null,
+  };
   const flags = object(settings.feature_flags || {});
   const activeId = typeof settings.active_conversation_id === "string" ? settings.active_conversation_id : null;
   const model = await loadModel(db, ownerId, settings.daily_brain_model_id);
   let conversation: JsonObject | null = null;
-  let messages: JsonObject[] = [];
+  let messagePage: JsonObject = {
+    messages: [], has_older_messages: false, oldest_message_cursor: null, latest_message_cursor: null,
+  };
   if (activeId) {
     const [conversationResult, messageResult] = await Promise.all([
       db.from("kiora_conversations").select("id,title,status,started_at,last_message_at").eq("owner_id", ownerId).eq("id", activeId).maybeSingle(),
-      db.from("kiora_messages").select("id,role,content,created_at,reply_to_message_id").eq("owner_id", ownerId).eq("conversation_id", activeId).order("created_at", { ascending: true }).limit(120),
+      db.from("kiora_messages").select("id,role,content,created_at,reply_to_message_id")
+        .eq("owner_id", ownerId).eq("conversation_id", activeId)
+        .order("created_at", { ascending: false }).order("id", { ascending: false })
+        .limit(INITIAL_MESSAGE_LIMIT),
     ]);
     if (conversationResult.error || messageResult.error) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
     conversation = conversationResult.data as JsonObject | null;
-    messages = (messageResult.data || []) as JsonObject[];
+    const messageRows = (messageResult.data || []) as JsonObject[];
+    messagePage = newestMessagePage(messageRows, INITIAL_MESSAGE_LIMIT);
+    if (messageRows.length === INITIAL_MESSAGE_LIMIT && messagePage.oldest_message_cursor) {
+      const oldest = messagePage.oldest_message_cursor as { created_at: string; id: string };
+      const { data: older, error: olderError } = await db.from("kiora_messages").select("id")
+        .eq("owner_id", ownerId).eq("conversation_id", activeId)
+        .or(olderMessagesFilter(oldest)).limit(1);
+      if (olderError) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
+      messagePage.has_older_messages = Boolean(older?.length);
+    }
   }
   const currency = model ? String(model.cost_config?.currency || "").toUpperCase() || null : null;
   const budget = await budgetSnapshot(db, ownerId, object(settings.budget_config || {}), currency);
@@ -118,11 +146,60 @@ async function bootstrap(db: SupabaseClient, ownerId: string): Promise<JsonObjec
     initialized: true,
     chat_enabled: flags.chat_enabled === true,
     conversation,
-    messages,
+    ...messagePage,
     model: safeModel(model),
     budget,
     feature_flags: flags,
   };
+}
+
+async function requireOwnedConversation(db: SupabaseClient, ownerId: string, conversationId: string): Promise<void> {
+  const { data, error } = await db.from("kiora_conversations").select("id")
+    .eq("owner_id", ownerId).eq("id", conversationId).maybeSingle();
+  if (error) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
+  if (!data) throw new KioraRuntimeError("ACTIVE_CONVERSATION_MISSING", 404);
+}
+
+async function loadOlderMessages(
+  db: SupabaseClient,
+  ownerId: string,
+  conversationId: string,
+  beforeCreatedAt: unknown,
+  beforeId: unknown,
+  requestedLimit: unknown,
+): Promise<JsonObject> {
+  await requireOwnedConversation(db, ownerId, conversationId);
+  const cursor = messageCursor(beforeCreatedAt, beforeId);
+  const limit = messagePageLimit(requestedLimit);
+  const { data, error } = await db.from("kiora_messages")
+    .select("id,role,content,created_at,reply_to_message_id")
+    .eq("owner_id", ownerId).eq("conversation_id", conversationId)
+    .or(olderMessagesFilter(cursor))
+    .order("created_at", { ascending: false }).order("id", { ascending: false })
+    .limit(limit + 1);
+  if (error) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
+  return { conversation_id: conversationId, ...olderMessagePage((data || []) as JsonObject[], limit) };
+}
+
+async function loadMessagesAfter(
+  db: SupabaseClient,
+  ownerId: string,
+  conversationId: string,
+  afterCreatedAt: unknown,
+  afterId: unknown,
+  requestedLimit: unknown,
+): Promise<JsonObject> {
+  await requireOwnedConversation(db, ownerId, conversationId);
+  const cursor = messageCursor(afterCreatedAt, afterId);
+  const limit = messagePageLimit(requestedLimit);
+  const { data, error } = await db.from("kiora_messages")
+    .select("id,role,content,created_at,reply_to_message_id")
+    .eq("owner_id", ownerId).eq("conversation_id", conversationId)
+    .or(newerMessagesFilter(cursor))
+    .order("created_at", { ascending: true }).order("id", { ascending: true })
+    .limit(limit + 1);
+  if (error) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
+  return { conversation_id: conversationId, ...newerMessagePage((data || []) as JsonObject[], limit) };
 }
 
 async function coreDefinition(db: SupabaseClient, ownerId: string, coreId: unknown): Promise<JsonObject> {
@@ -187,15 +264,17 @@ async function reflectSafely(args: Parameters<typeof maybeReflect>[0]): Promise<
 
 async function priorTurnResult(db: SupabaseClient, ownerId: string, modelRunId: string): Promise<JsonObject> {
   const { data: run, error } = await db.from("kiora_model_runs")
-    .select("status,response_message_id,error_code")
+    .select("status,request_message_id,response_message_id,error_code")
     .eq("owner_id", ownerId).eq("id", modelRunId).single();
   if (error) throw new KioraRuntimeError("MODEL_RUN_READ_FAILED", 500);
   if (run.status === "completed" && run.response_message_id) {
-    const { data: message, error: messageError } = await db.from("kiora_messages")
-      .select("id,content,created_at")
-      .eq("owner_id", ownerId).eq("id", run.response_message_id).single();
+    const { data: rows, error: messageError } = await db.from("kiora_messages")
+      .select("id,role,content,created_at,reply_to_message_id")
+      .eq("owner_id", ownerId).in("id", [run.request_message_id, run.response_message_id]);
     if (messageError) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
-    return { reply: message, duplicate: true };
+    const ownerMessage = (rows || []).find((message) => message.id === run.request_message_id) || null;
+    const reply = (rows || []).find((message) => message.id === run.response_message_id) || null;
+    return { owner_message: ownerMessage, reply, duplicate: true };
   }
   if (run.status === "failed") throw new KioraRuntimeError(String(run.error_code || "MODEL_RUN_FAILED"), 409);
   throw new KioraRuntimeError("TURN_IN_PROGRESS", 409);
@@ -241,6 +320,24 @@ Deno.serve(async (request) => {
     if (action === "status" || action === "bootstrap") {
       only(body, ["action"]);
       return jsonResponse(origin, { success: true, data: await bootstrap(db, ownerId) });
+    }
+
+    if (action === "load_older_messages") {
+      only(body, ["action", "conversation_id", "before_created_at", "before_id", "limit"]);
+      const conversationId = uuid(body.conversation_id, "INVALID_CONVERSATION_ID");
+      const data = await loadOlderMessages(
+        db, ownerId, conversationId, body.before_created_at, body.before_id, body.limit,
+      );
+      return jsonResponse(origin, { success: true, data });
+    }
+
+    if (action === "load_messages_after") {
+      only(body, ["action", "conversation_id", "after_created_at", "after_id", "limit"]);
+      const conversationId = uuid(body.conversation_id, "INVALID_CONVERSATION_ID");
+      const data = await loadMessagesAfter(
+        db, ownerId, conversationId, body.after_created_at, body.after_id, body.limit,
+      );
+      return jsonResponse(origin, { success: true, data });
     }
 
     if (action === "start") {
@@ -505,6 +602,11 @@ Deno.serve(async (request) => {
         },
       });
       if (completeError) throw completeError;
+      const completedReply = object(completed);
+      const { data: ownerMessage, error: ownerMessageError } = await db.from("kiora_messages")
+        .select("id,role,content,created_at,reply_to_message_id")
+        .eq("owner_id", ownerId).eq("id", String(begunTurn.message_id)).single();
+      if (ownerMessageError) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
       const feedbackTarget = await previousAssistantForMessage(db, ownerId, conversationId, String(begunTurn.message_id));
       await reflectSafely({
         db, ownerId, conversationId, sourceMessageId: String(begunTurn.message_id), ownerMessage: content,
@@ -514,7 +616,12 @@ Deno.serve(async (request) => {
       return jsonResponse(origin, {
         success: true,
         data: {
-          reply: completed,
+          owner_message: ownerMessage,
+          reply: {
+            ...completedReply,
+            id: String(completedReply.id || completedReply.message_id || ""),
+            role: "kiora",
+          },
           conversation_id: conversationId,
           sources: researchSources,
         },
