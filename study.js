@@ -20,7 +20,7 @@
         view: "home", practices: [], mistakes: [], revisions: [], notes: [], activities: [],
         calendarDate: new Date(), selectedDay: new Date(), practiceFilter: "all", mistakeSubject: "all",
         mistakeStatus: "all", mistakeMode: "index", currentMistake: 0, writable: false, activePractice: null,
-        signedUrls: new Map()
+        activeRevision: null, practiceListScrollY: 0, revisionListScrollY: 0, signedUrls: new Map()
     };
 
     function isoDate(value = new Date()) {
@@ -139,17 +139,41 @@
         $("#study-practice-list").innerHTML = listItems.length ? listItems.map((item,index) => `<button type="button" class="study-record" data-practice-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.practice_type === "aptitude" ? "APTITUDE / 行测" : "SHENLUN / 申论") + (item.subject ? ` · ${item.subject}` : ""))}</p></span><p class="study-record-meta">${displayDate(item.practice_date)}<br>${esc(item.status.toUpperCase())}</p></button>`).join("") : empty("No practice recorded yet.", state.writable ? '<button class="study-text-button" data-action="new-practice">＋ NEW PRACTICE</button>' : "");
     }
 
+    function setPracticeDetailMode(showDetail) {
+        const section = $("#study-view-practice");
+        $(".study-view-heading", section).hidden = showDetail;
+        $(".study-filter-row", section).hidden = showDetail;
+        $("#study-practice-list").hidden = showDetail;
+        $("#study-practice-detail").hidden = !showDetail;
+    }
+
+    function closePractice() {
+        disconnectStudyPdfResizeObservers();
+        setPracticeDetailMode(false);
+        state.activePractice = null;
+        requestAnimationFrame(() => window.scrollTo({ top: state.practiceListScrollY, behavior: "auto" }));
+    }
+
     async function openPractice(id) {
         const practice = state.practices.find((item) => item.id === id); if (!practice) return;
+        if (!state.activePractice) state.practiceListScrollY = window.scrollY;
         disconnectStudyPdfResizeObservers();
-        state.activePractice = practice; status("Opening practice…");
+        state.activePractice = practice;
+        const detail = $("#study-practice-detail");
+        setPracticeDetailMode(true);
+        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← BACK TO PRACTICE</button>${empty("Opening practice…")}`;
+        window.scrollTo({ top: Math.max($("#study-view-practice").offsetTop - 84, 0), behavior: "auto" });
+        status("Opening practice…");
         const entities = practice.practice_type === "aptitude" ? ["files","aptitude_answers","answer_keys"] : ["files","shenlun_questions"];
         const results = await Promise.all(entities.map((entity) => list(entity, { filters:{ practice_id:id }, limit:500 })));
-        if (results.some((result) => result.error)) { status("Could not open this practice.", true); return; }
-        status(""); const detail = $("#study-practice-detail"); detail.hidden = false;
+        if (results.some((result) => result.error)) {
+            status("Could not open this practice.", true);
+            detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← BACK TO PRACTICE</button>${empty("Could not open this practice.")}`;
+            return;
+        }
+        status("");
         const data = Object.fromEntries(entities.map((entity,index)=>[entity,results[index].data||[]]));
         if (practice.practice_type === "aptitude") await renderAptitude(practice, data); else await renderShenlun(practice, data);
-        detail.scrollIntoView({ behavior:"smooth", block:"start" });
     }
 
     async function paperMarkup(files) {
@@ -285,7 +309,7 @@
         const answers = new Map(data.aptitude_answers.map((item)=>[item.question_number,item])); const answer = answers.get(current);
         detail._studyData = data;
         const writable = state.writable;
-        detail.innerHTML = `<div class="study-detail-toolbar"><div><p class="study-kicker">APTITUDE / ${esc(practice.status.toUpperCase())}</p><h3>${esc(practice.title)}</h3></div><div class="study-action-row">${writable ? '<button class="study-secondary" data-action="upload-paper">UPLOAD PAPER</button><button class="study-secondary" data-action="import-key">IMPORT ANSWER KEY</button><button class="study-primary" data-action="finish-practice">RESULT</button>' : ""}<button class="study-secondary" data-action="close-practice">CLOSE</button></div></div><div class="study-paper-workspace"><div class="study-paper-reader">${await paperMarkup(data.files)}</div><aside class="study-answer-panel">${answerPanel(current,total,answer,writable)}</aside></div><div class="study-mobile-dock">${mobileAnswerControls(current,total,answer,writable)}</div>`;
+        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← BACK TO PRACTICE</button><div class="study-detail-toolbar"><div><p class="study-kicker">APTITUDE / ${esc(practice.status.toUpperCase())}</p><h3>${esc(practice.title)}</h3></div><div class="study-action-row">${writable ? '<button class="study-secondary" data-action="upload-paper">UPLOAD PAPER</button><button class="study-secondary" data-action="import-key">IMPORT ANSWER KEY</button><button class="study-primary" data-action="finish-practice">RESULT</button>' : ""}</div></div><div class="study-paper-workspace"><div class="study-paper-reader">${await paperMarkup(data.files)}</div><aside class="study-answer-panel">${answerPanel(current,total,answer,writable)}</aside></div><div class="study-mobile-dock">${mobileAnswerControls(current,total,answer,writable)}</div>`;
         await renderPdfDocuments(detail);
     }
 
@@ -473,6 +497,14 @@ async function renderShenlun(practice, data) {
     );
 
     detail.innerHTML = `
+        <button
+            class="study-text-button study-back-button"
+            type="button"
+            data-action="close-practice"
+        >
+            ← BACK TO PRACTICE
+        </button>
+
         <div class="study-detail-toolbar">
 
             <div>
@@ -507,13 +539,6 @@ async function renderShenlun(practice, data) {
                         `
                         : ""
                 }
-
-                <button
-                    class="study-secondary"
-                    data-action="close-practice"
-                >
-                    CLOSE
-                </button>
 
             </div>
         </div>
@@ -906,10 +931,27 @@ async function renderShenlun(practice, data) {
                             </div>
                         </div>
 
-                        <p>
-                            <span class="study-kicker">REASON</span><br>
-                            ${esc(item.reason || "—")}
-                        </p>
+                        ${state.writable
+                            ? `
+                                <section class="study-mistake-reason" data-mistake-reason-editor="${item.id}">
+                                    <label class="study-kicker" for="study-mistake-reason-${item.id}">WHY I GOT IT WRONG</label>
+                                    <div class="study-reason-presets" aria-label="Quick reason choices">
+                                        ${["知识点不会", "概念混淆", "审题", "粗心", "时间不足", "做题策略"].map((reason) => `<button type="button" data-reason-preset="${esc(reason)}">${esc(reason)}</button>`).join("")}
+                                    </div>
+                                    <textarea id="study-mistake-reason-${item.id}" data-mistake-reason-input placeholder="写下这道题为什么做错……">${esc(item.reason || "")}</textarea>
+                                    <div class="study-reason-save-row">
+                                        <span data-mistake-reason-status role="status"></span>
+                                        <button class="study-primary" type="button" data-action="save-mistake-reason" data-id="${item.id}">SAVE</button>
+                                    </div>
+                                </section>
+                            `
+                            : `
+                                <p class="study-mistake-reason-readonly">
+                                    <span class="study-kicker">WHY I GOT IT WRONG</span><br>
+                                    ${esc(item.reason || "—")}
+                                </p>
+                            `
+                        }
 
                         ${state.writable
                             ? `
@@ -937,8 +979,99 @@ async function renderShenlun(practice, data) {
         `;
     }
 
+    async function saveMistakeReason(button) {
+        const item = state.mistakes.find((entry) => entry.id === button.dataset.id);
+        const editor = button.closest("[data-mistake-reason-editor]");
+        const input = $("[data-mistake-reason-input]", editor);
+        const message = $("[data-mistake-reason-status]", editor);
+        if (!item || !input) return;
+
+        button.disabled = true;
+        message.textContent = "Saving…";
+        const reason = input.value.trim();
+        const result = await upsert("mistakes", mistakeData(item, { reason: reason || null }), item.id);
+        button.disabled = false;
+
+        if (result.error) {
+            message.textContent = "Save failed.";
+            return;
+        }
+
+        Object.assign(item, result.data);
+        input.value = item.reason || "";
+        message.textContent = "Saved.";
+    }
+
     function renderRevisions(){const container=$("#study-revision-list");container.innerHTML=state.revisions.length?state.revisions.map((item,index)=>`<button class="study-record" data-revision-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.issue_tags||[]).join(" · ")||item.category||"")}</p></span><p class="study-record-meta">${displayDate(item.created_at)}<br>${esc(item.status.toUpperCase())}</p></button>`).join(""):empty("No revisions archived yet.");}
-    async function openRevision(id){const item=state.revisions.find(x=>x.id===id);if(!item)return;const [attempts,reviews]=item.question_id?await Promise.all([list("shenlun_answers",{filters:{question_id:item.question_id}}),list("reviews",{filters:{question_id:item.question_id}})]):[{data:[]},{data:[]}];const sorted=(attempts.data||[]).sort((a,b)=>a.attempt_number-b.attempt_number);$("#study-revision-detail").hidden=false;$("#study-revision-detail").innerHTML=`<div class="study-detail-toolbar"><div><p class="study-kicker">REVISION / ${esc(item.status.toUpperCase())}</p><h3>${esc(item.title)}</h3></div></div><p>${esc((item.issue_tags||[]).join(" · "))}</p>${sorted.length>1?comparisonMarkup(sorted,reviews.data||[]):""}${state.writable?'<button class="study-primary" data-action="rewrite-revision" data-id="'+item.id+'">REWRITE</button>':""}`;}
+
+    function setRevisionDetailMode(showDetail) {
+        const section = $("#study-view-revisions");
+        $(".study-view-heading", section).hidden = showDetail;
+        $("#study-revision-list").hidden = showDetail;
+        $("#study-revision-detail").hidden = !showDetail;
+    }
+
+    function closeRevision() {
+        setRevisionDetailMode(false);
+        state.activeRevision = null;
+        requestAnimationFrame(() => window.scrollTo({ top: state.revisionListScrollY, behavior: "auto" }));
+    }
+
+    async function openRevision(id) {
+        const item = state.revisions.find((entry) => entry.id === id);
+        if (!item) return;
+
+        if (!state.activeRevision) state.revisionListScrollY = window.scrollY;
+        state.activeRevision = item;
+        const detail = $("#study-revision-detail");
+        setRevisionDetailMode(true);
+        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-revision">← BACK TO REVISIONS</button>${empty("Opening revision…")}`;
+        window.scrollTo({ top: Math.max($("#study-view-revisions").offsetTop - 84, 0), behavior: "auto" });
+
+        const [attemptsResult, reviewsResult, questionResult] = item.question_id
+            ? await Promise.all([
+                list("shenlun_answers", { filters: { question_id: item.question_id } }),
+                list("reviews", { filters: { question_id: item.question_id } }),
+                getEntity("shenlun_questions", item.question_id)
+            ])
+            : [{ data: [] }, { data: [] }, { data: null }];
+
+        const attempts = (attemptsResult.data || []).sort((a, b) => a.attempt_number - b.attempt_number);
+        const reviews = reviewsResult.data || [];
+        const question = questionResult.data || null;
+        const snapshot = item.source_snapshot && typeof item.source_snapshot === "object" ? item.source_snapshot : {};
+        const prompt = String(snapshot.prompt || question?.prompt || "").trim();
+        const previousAnswer = attempts.find((answer) => answer.id === item.answer_id) || attempts[0] || null;
+        const review = reviews.find((entry) => entry.id === item.review_id)
+            || reviews.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0]
+            || null;
+        const mainIssue = String(review?.assessment?.main_issue || (item.issue_tags || []).join("；") || "").trim();
+        const priorities = Array.isArray(review?.assessment?.priorities) ? review.assessment.priorities.filter(Boolean) : [];
+        const hasQuestionRegions = Boolean(question?.source_file_id && Array.isArray(question.question_regions) && question.question_regions.length);
+        const questionImage = hasQuestionRegions ? await shenlunRegionMarkup(question, "question_regions") : "";
+        const questionNumber = question?.question_number ? `第 ${question.question_number} 题` : "原题";
+
+        detail.innerHTML = `
+            <button class="study-text-button study-back-button" type="button" data-action="close-revision">← BACK TO REVISIONS</button>
+            <p class="study-kicker">REVISION / ${esc(item.status.toUpperCase())}</p>
+            <section class="study-revision-section">
+                <p class="study-kicker">QUESTION</p>
+                <h4>${esc(questionNumber)}</h4>
+                <p class="study-revision-copy">${esc(prompt || "原题文字未保存。")}</p>
+                ${questionImage}
+            </section>
+            <section class="study-revision-section">
+                <p class="study-kicker">MY PREVIOUS ANSWER</p>
+                <p class="study-revision-copy">${esc(previousAnswer?.body || "—")}</p>
+            </section>
+            <section class="study-revision-section">
+                <p class="study-kicker">WHAT WAS WRONG</p>
+                <p class="study-revision-copy">${esc(mainIssue || "—")}</p>
+                ${priorities.length ? `<ul class="study-revision-priorities">${priorities.map((priority) => `<li>${esc(priority)}</li>`).join("")}</ul>` : ""}
+            </section>
+            ${state.writable ? `<div class="study-action-row"><button class="study-primary" type="button" data-action="rewrite-revision" data-id="${item.id}">REWRITE</button></div>` : ""}
+        `;
+    }
     function reviewMetrics(review){const findings=[...(review?.content_coverage?.findings||[]),...(review?.structure_review?.findings||[]),...(review?.expression_review?.findings||[])];return{covered:findings.filter(x=>x.status==="covered"||x.status==="good").length,missing:findings.filter(x=>x.status==="missing").length,partial:findings.filter(x=>x.status==="partial").length,issues:findings.filter(x=>x.status==="issue").length,priorities:review?.assessment?.priorities||[]};}
     function comparisonMarkup(attempts,reviews){const first=attempts[0],last=attempts[attempts.length-1],firstReview=reviews.find(x=>x.answer_id===first.id),lastReview=reviews.find(x=>x.answer_id===last.id),a=reviewMetrics(firstReview),b=reviewMetrics(lastReview),improvements=[];if(b.covered>a.covered)improvements.push(`覆盖/良好项增加 ${b.covered-a.covered}`);if(b.missing<a.missing)improvements.push(`漏点减少 ${a.missing-b.missing}`);if(b.partial<a.partial)improvements.push(`部分覆盖减少 ${a.partial-b.partial}`);if(b.issues<a.issues)improvements.push(`结构与表达问题减少 ${a.issues-b.issues}`);return `<div class="study-result-summary"><div><strong>${a.covered} → ${b.covered}</strong>COVERED / GOOD</div><div><strong>${a.missing} → ${b.missing}</strong>MISSING</div><div><strong>${a.issues} → ${b.issues}</strong>ISSUES</div></div><section class="study-review-section"><h4>WHAT IMPROVED</h4><p>${esc(improvements.join("；")||"No confirmed improvement detected yet.")}</p><h4>WHAT STILL NEEDS WORK</h4><p>${esc(b.priorities.join("；")||"No major issue detected.")}</p><p>${first.body.length} → ${last.body.length} CHARACTERS</p></section><div class="study-answer-reveal"><div><span>ATTEMPT 01</span><p>${esc(first.body)}</p></div><div><span>ATTEMPT ${String(last.attempt_number).padStart(2,"0")}</span><p>${esc(last.body)}</p></div></div>`;}
 
@@ -958,181 +1091,93 @@ async function renderShenlun(practice, data) {
 
     async function attachPaper(){const input=document.createElement("input");input.type="file";input.accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";input.onchange=async()=>{const file=input.files[0];if(!file)return;status("Uploading paper…");const upload=await uploadFile(file,`practices/${state.activePractice.id}/paper/${uid()}-${safeName(file.name)}`);if(upload.error){status(upload.error.message,true);return;}const extracted=await extractText(file).catch(()=>"");const saved=await upsert("files",{practice_id:state.activePractice.id,file_kind:state.activePractice.practice_type==="shenlun"?"material":"paper",storage_path:upload.data.path,file_name:file.name,mime_type:file.type,file_size:file.size,extracted_text:extracted||null});if(saved.error){status(saved.error.message,true);return;}status("Paper uploaded.");openPractice(state.activePractice.id);};input.click();}
 
-   async function importAnswerKey() {
-    const input = document.createElement("input");
+    async function importAnswerKey() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";
 
-    input.type = "file";
-    input.accept =
-        "application/pdf," +
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document," +
-        "image/jpeg,image/png,image/webp";
+        input.onchange = async () => {
+            const file = input.files?.[0];
+            if (!file) return;
 
-    input.onchange = async () => {
-        const file = input.files?.[0];
+            const total = Number(state.activePractice?.total_questions) || 0;
+            status("Reading Answer Key…");
 
-        if (!file) return;
+            try {
+                const upload = await uploadFile(file, `practices/${state.activePractice.id}/answer-key/${uid()}-${safeName(file.name)}`);
+                if (upload.error) throw upload.error;
 
-        const total =
-            Number(state.activePractice?.total_questions) || 0;
+                let text = await extractAnswerKeyText(file, false).catch(() => "");
+                let parsed = parseAnswerKey(text, total);
+                const localResultIsIncomplete = () => total ? parsed.length < Math.ceil(total * 0.7) : parsed.length === 0;
 
-        status("Reading Answer Key…");
-
-        try {
-            /*
-             * 先上传原始答案文件。
-             */
-            const upload = await uploadFile(
-                file,
-                `practices/${state.activePractice.id}/answer-key/${uid()}-${safeName(file.name)}`
-            );
-
-            if (upload.error) {
-                throw upload.error;
-            }
-
-            /*
-             * 第一轮：
-             * 优先读取 PDF / Word 自己带的文字。
-             */
-            let text =
-                await extractAnswerKeyText(
-                    file,
-                    false
-                );
-
-            let parsed =
-                parseAnswerKey(
-                    text,
-                    total
-                );
-
-            /*
-             * 如果已经知道总题数，
-             * 就检查识别覆盖率。
-             *
-             * 例如 130 题只认出 20 题，
-             * 这显然不能算识别成功。
-             */
-            const nativeCoverage =
-                total
-                    ? parsed.length / total
-                    : parsed.length
-                        ? 1
-                        : 0;
-
-            /*
-             * 原生 PDF 提取明显不可靠时，
-             * 再使用 OCR。
-             *
-             * 不要像以前一样只判断
-             * “有没有超过 20 个字符”。
-             */
-            if (
-                (
-                    file.type === "application/pdf" ||
-                    file.type.startsWith("image/")
-                ) &&
-                (
-                    !parsed.length ||
-                    (
-                        total &&
-                        nativeCoverage < 0.7
-                    )
-                )
-            ) {
-                status(
-                    total
-                        ? `Native text recognized ${parsed.length}/${total}. Trying OCR…`
-                        : "Native text was unreliable. Trying OCR…"
-                );
-
-                const ocrText =
-                    await extractAnswerKeyText(
-                        file,
-                        true
-                    );
-
-                const ocrParsed =
-                    parseAnswerKey(
-                        ocrText,
-                        total
-                    );
-
-                /*
-                 * 哪一种认得更多，
-                 * 就用哪一种。
-                 */
-                if (
-                    ocrParsed.length >
-                    parsed.length
-                ) {
-                    text = ocrText;
-                    parsed = ocrParsed;
+                if (localResultIsIncomplete() && (file.type === "application/pdf" || file.type.startsWith("image/"))) {
+                    status("The embedded text was incomplete. Reading the answer marks…");
+                    const ocrText = await extractAnswerKeyText(file, true).catch(() => "");
+                    const ocrParsed = parseAnswerKey(ocrText, total);
+                    if (ocrParsed.length > parsed.length) parsed = ocrParsed;
+                    if (ocrText.trim() && !text.includes(ocrText)) text = [text, ocrText].filter(Boolean).join("\n");
                 }
-            }
 
-            /*
-             * 保存原始识别文本。
-             */
-            const fileRecord =
-                await upsert(
-                    "files",
-                    {
-                        practice_id:
-                            state.activePractice.id,
+                if (localResultIsIncomplete() && text.trim()) {
+                    status("Completing unclear answer marks…");
+                    const aiResult = await auth.requestAnswerKeyExtraction(text, total);
+                    if (!aiResult.error) parsed = mergeAnswerKeyResults(parsed, aiResult.data?.answers, total);
+                }
 
-                        file_kind:
-                            "answer_key",
+                const fileRecord = await upsert("files", {
+                    practice_id: state.activePractice.id,
+                    file_kind: "answer_key",
+                    storage_path: upload.data.path,
+                    file_name: file.name,
+                    mime_type: file.type,
+                    file_size: file.size,
+                    extracted_text: text || null
+                });
+                if (fileRecord.error) throw fileRecord.error;
 
-                        storage_path:
-                            upload.data.path,
-
-                        file_name:
-                            file.name,
-
-                        mime_type:
-                            file.type,
-
-                        file_size:
-                            file.size,
-
-                        extracted_text:
-                            text
-                    }
+                status(total
+                    ? `Recognized ${parsed.length}/${total} answers. Please review them before confirming.`
+                    : `Recognized ${parsed.length} answers. Please review them before confirming.`
                 );
-
-            if (fileRecord.error) {
-                throw fileRecord.error;
+                showKeyReview(parsed, fileRecord.data.id);
+            } catch (error) {
+                status(`Answer Key import failed: ${error.message}`, true);
             }
+        };
 
-            if (!parsed.length) {
-                status(
-                    "No answer numbers could be recognized. Please check the file format.",
-                    true
-                );
-            } else {
-                status(
-                    total
-                        ? `Recognized ${parsed.length}/${total} answers. Please review them before confirming.`
-                        : `Recognized ${parsed.length} answers. Please review them before confirming.`
-                );
-            }
+        input.click();
+    }
 
-            showKeyReview(
-                parsed,
-                fileRecord.data.id
-            );
-
-        } catch (error) {
-            status(
-                `Answer Key import failed: ${error.message}`,
-                true
-            );
+    function mergeAnswerKeyResults(primary, fallback, expectedTotal = 0) {
+        const answers = new Map();
+        for (const item of [...(primary || []), ...(Array.isArray(fallback) ? fallback : [])]) {
+            const questionNumber = Number(item?.question_number);
+            const correctAnswer = String(item?.correct_answer || "").trim().toUpperCase();
+            if (!Number.isInteger(questionNumber) || questionNumber < 1 || (expectedTotal && questionNumber > expectedTotal)) continue;
+            if (!/^[A-D]$/.test(correctAnswer) || answers.has(questionNumber)) continue;
+            answers.set(questionNumber, correctAnswer);
         }
-    };
+        return Array.from(answers, ([question_number, correct_answer]) => ({ question_number, correct_answer }))
+            .sort((a, b) => a.question_number - b.question_number);
+    }
 
-    input.click();
-}
+    function showKeyReview(parsed, fileId) {
+        const answerMap = new Map((parsed || []).map((item) => [Number(item.question_number), item.correct_answer]));
+        const inferredTotal = Math.max(0, ...answerMap.keys());
+        const total = Number(state.activePractice?.total_questions) || inferredTotal;
+        const rows = total
+            ? Array.from({ length: total }, (_, index) => {
+                const number = index + 1;
+                const answer = answerMap.get(number) || "";
+                return `<label><span>${String(number).padStart(3, "0")}</span><select name="key-${number}" data-key-question="${number}"><option value="">—</option>${["A", "B", "C", "D"].map((option) => `<option value="${option}" ${answer === option ? "selected" : ""}>${option}</option>`).join("")}</select></label>`;
+            }).join("")
+            : `<p class="study-empty">No answer numbers were recognized. Set TOTAL QUESTIONS on the practice and import again.</p>`;
+
+        openSheet(`<header><div><p class="study-kicker">ANSWER KEY</p><h2>Review</h2></div><button class="study-dialog-close" type="button" data-close-sheet>×</button></header><div class="study-sheet-content"><form id="answer-key-review-form"><div class="study-answer-grid">${rows}</div>${total && state.writable ? '<button class="study-primary" type="submit">SAVE ANSWER KEY</button>' : ""}</form></div>`);
+        const form = $("#answer-key-review-form");
+        if (form) form._fileId = fileId;
+    }
 
 
 function normalizeAnswerKeyText(text) {
@@ -1175,6 +1220,18 @@ function parseAnswerKey(
     const answers =
         new Map();
 
+    const rangePattern = /(?:^|\s)(\d{1,3})\s*[-–—~至]\s*(\d{1,3})\s*[.:、：]?\s*([A-D](?:\s*[A-D])*)/g;
+    let rangeMatch;
+    while ((rangeMatch = rangePattern.exec(source))) {
+        const start = Number(rangeMatch[1]);
+        const end = Number(rangeMatch[2]);
+        const sequence = rangeMatch[3].replace(/\s+/g, "");
+        if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) continue;
+        if (expectedTotal && end > expectedTotal) continue;
+        if (sequence.length !== end - start + 1) continue;
+        for (let offset = 0; offset < sequence.length; offset += 1) answers.set(start + offset, sequence[offset]);
+    }
+
 
     /*
      * 你的主要格式：
@@ -1196,7 +1253,7 @@ function parseAnswerKey(
          * 这是最安全的规则，
          * 可以避免解析正文里的数字干扰。
          */
-        /(?:^|\n)\s*(\d{1,3})\s*[.、,:：\-]?\s*[（(【\[]?\s*([A-D])\s*[）)】\]]?/g,
+        /(?:^|\n)[ \t]*(\d{1,3})[ \t]*[.、,:：\-]?[ \t]*[（(【\[]?[ \t]*([A-D])[）)】\]]?/g,
 
 
         /*
@@ -1206,7 +1263,7 @@ function parseAnswerKey(
          * 比如：
          * 1.A 解析…… 2.C 解析……
          */
-        /(?:^|\s)(\d{1,3})\s*[.、,:：\-]\s*[（(【\[]?\s*([A-D])\s*[）)】\]]?/g
+        /(?:^|[ \t])(\d{1,3})[ \t]*[.、,:：\-][ \t]*[（(【\[]?[ \t]*([A-D])[）)】\]]?/g
     ];
 
 
@@ -1318,10 +1375,11 @@ function parseAnswerKey(
         );
 }
 
-    async function confirmAnswerKey(form){status("Saving confirmed Answer Key…");const total=state.activePractice.total_questions||0;for(let number=1;number<=total;number++){const answer=form.elements[`key-${number}`].value.trim().toUpperCase();if(!answer)continue;const existing=$("#study-practice-detail")._studyData.answer_keys.find(item=>item.question_number===number);const result=await upsert("answer_keys",{practice_id:state.activePractice.id,question_number:number,correct_answer:answer,source_file_id:form._fileId,confirmed:true},existing?.id);if(result.error){status(`Answer ${number} failed to save.`,true);return;}}$("#study-sheet").close();status("Answer Key confirmed.");openPractice(state.activePractice.id);}
+    async function confirmAnswerKey(form){status("Saving confirmed Answer Key…");const fields=$$("[data-key-question]",form);for(const field of fields){const number=Number(field.dataset.keyQuestion),answer=field.value.trim().toUpperCase();if(!answer)continue;if(!/^[A-D]$/.test(answer))continue;const existing=$("#study-practice-detail")._studyData.answer_keys.find(item=>item.question_number===number);const result=await upsert("answer_keys",{practice_id:state.activePractice.id,question_number:number,correct_answer:answer,source_file_id:form._fileId,confirmed:true},existing?.id);if(result.error){status(`Answer ${number} failed to save.`,true);return;}}$("#study-sheet").close();status("Answer Key confirmed.");openPractice(state.activePractice.id);}
 
     
 
+    async function extractAnswerKeyText(file, allowOcr = false) { return extractText(file, allowOcr); }
     async function extractText(file,allowOcr=false){if(file.type.includes("wordprocessingml")){await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js","mammoth");return (await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value;}if(file.type==="application/pdf"){await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs","pdfjsLib",true);const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text="";for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(" ")+"\n";}if(text.trim().length>20)return text;if(!allowOcr)return text;await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),viewport=page.getViewport({scale:1.6}),canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:context,viewport}).promise;const result=await window.Tesseract.recognize(canvas,"chi_sim+eng",{logger:message=>status(`OCR page ${i}/${pdf.numPages} · ${Math.round((message.progress||0)*100)}%`)});text+=result.data.text+"\n";}return text;}if(file.type.startsWith("image/")&&allowOcr){await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");const result=await window.Tesseract.recognize(file,"chi_sim+eng",{logger:message=>status(`OCR ${Math.round((message.progress||0)*100)}%`)});return result.data.text;}throw new Error("This file contains no extractable text.");}
     function loadScript(src,global,module=false){if(window[global])return Promise.resolve();if(module)return import(src).then(value=>{window[global]=value;if(global==="pdfjsLib"&&value.GlobalWorkerOptions)value.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";});return new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error("Parser could not be loaded."));document.head.append(script);});}
 
@@ -3267,18 +3325,20 @@ async function addShenlunQuestion() {
         const sheetQuestion=event.target.closest("[data-sheet-question]");if(sheetQuestion){$("#study-practice-detail").dataset.question=sheetQuestion.dataset.sheetQuestion;$("#study-sheet").close();updateAptitudeControls();return;}
         const question=event.target.closest("[data-shenlun-question]");if(question){$("#study-practice-detail").dataset.questionId=question.dataset.shenlunQuestion;renderShenlun(state.activePractice,$("#study-practice-detail")._studyData);return;}
         const revisit=event.target.closest("[data-revisit-answer]");if(revisit){$$('[data-revisit-answer]').forEach(x=>x.classList.toggle("active",x===revisit));$("[data-action=submit-revisit]").disabled=false;return;}
+        const reasonPreset=event.target.closest("[data-reason-preset]");if(reasonPreset){const editor=reasonPreset.closest("[data-mistake-reason-editor]"),input=$("[data-mistake-reason-input]",editor);if(input){input.value=reasonPreset.dataset.reasonPreset;input.focus();}return;}
         const revision=event.target.closest("[data-revision-id]");if(revision){openRevision(revision.dataset.revisionId);return;}
         const noteFilter=event.target.closest("[data-note-subject]");if(noteFilter){$$('[data-note-subject]').forEach(x=>x.classList.toggle("active",x===noteFilter));renderNoteList(noteFilter.dataset.noteSubject);return;}
         const editNote=event.target.closest("[data-edit-note]");if(editNote){noteEditor(state.notes.find(x=>x.id===editNote.dataset.editNote));return;}
         const close=event.target.closest("[data-close-sheet]");if(close){$("#study-sheet").close();return;}
         const action=event.target.closest("[data-action]")?.dataset.action;if(!action)return;
         if(action==="new-practice")newPractice();if(action==="new-note")noteEditor();if(action==="quick-mistake")quickMistake();
-        if(action==="close-practice"){disconnectStudyPdfResizeObservers();$("#study-practice-detail").hidden=true;state.activePractice=null;}
+        if(action==="close-practice")closePractice();if(action==="close-revision")closeRevision();
         if(action==="upload-paper")attachPaper();if(action==="import-key")importAnswerKey();if(action==="finish-practice")finishPractice();if(action==="open-answer-sheet")showAnswerSheet();
         if(action==="clear-answer")saveAptitudeAnswer(null);if(action==="toggle-flag"){const detail=$("#study-practice-detail"),item=detail._studyData.aptitude_answers.find(x=>x.question_number===Number(detail.dataset.question));saveAptitudeAnswer(undefined,{flagged:!item?.flagged});}
         if(action==="add-shenlun-question")addShenlunQuestion();if(action==="save-shenlun-answer"){const detail=$("#study-practice-detail"),q=detail._studyData.shenlun_questions.find(x=>x.id===detail.dataset.questionId);saveShenlun(q,detail._answer);}
         if(action==="import-reference")importReference();if(action==="review-shenlun")runReview();if(action==="add-revision")addRevision();
         if(action==="start-revisit")renderMistakeCard(filteredMistakes()[state.currentMistake],filteredMistakes(),true);if(action==="submit-revisit")submitRevisit();if(action==="crop-mistake")openCropEditor(filteredMistakes()[state.currentMistake]);
+        if(action==="save-mistake-reason")await saveMistakeReason(event.target.closest("[data-id]"));
         if(action==="master-mistake"){const item=filteredMistakes()[state.currentMistake];const result=await upsert("mistakes",{...Object.fromEntries(Object.entries(item).filter(([key])=>!["id","owner_id","created_at","updated_at"].includes(key))),status:"mastered"},item.id);if(!result.error){Object.assign(item,result.data);renderMistakes();}}
         if(action==="delete-mistake"){const item=filteredMistakes()[state.currentMistake];if(confirm("Delete this mistake record?")){const result=await remove("mistakes",item.id);if(!result.error){state.mistakes=state.mistakes.filter(x=>x.id!==item.id);renderMistakes();}}}
         if(action==="rewrite-revision")rewriteRevision(event.target.closest("[data-id]").dataset.id);
