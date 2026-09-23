@@ -318,6 +318,25 @@
         }
     }
 
+    async function requestAnswerKeyExtraction(sourceText, totalQuestions = 0) {
+        if (!client || !can("study:review")) return { data: null, error: normalizedError("PERMISSION_DENIED") };
+        const editor = authState.role === "editor" ? storedEditorSession() : null;
+        try {
+            const result = await client.functions.invoke("study-review", {
+                body: {
+                    action: "extract_answer_key",
+                    source_text: String(sourceText || "").slice(0, 100000),
+                    total_questions: Math.max(0, Math.min(500, Number(totalQuestions) || 0))
+                },
+                headers: editor ? { Authorization: `Bearer ${editor.token}` } : undefined
+            });
+            if (result.error || !result.data?.success) return { data: null, error: normalizedError(await readFunctionError(result.error, result.data), "Answer Key extraction unavailable") };
+            return { data: result.data.data, error: null };
+        } catch (_) {
+            return { data: null, error: normalizedError("FUNCTION_ERROR", "Answer Key extraction unavailable") };
+        }
+    }
+
     window.KioraAuth = Object.freeze({
         can,
         getOwnerAccessToken,
@@ -326,6 +345,7 @@
         loginOwner,
         logout,
         readForEditor,
+        requestAnswerKeyExtraction,
         requestStudyReview,
         syncOwnerSession,
         studySignedUrl,

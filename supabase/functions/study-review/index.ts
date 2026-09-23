@@ -39,6 +39,40 @@ function validateReview(value: unknown): asserts value is JsonObject {
   if (JSON.stringify(value).length > 150_000) throw new Error("MODEL_OUTPUT_INVALID");
 }
 
+function answerKeySchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      answers: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            question_number: { type: "integer", minimum: 1, maximum: 500 },
+            correct_answer: { type: ["string", "null"], enum: ["A", "B", "C", "D", null] },
+          },
+          required: ["question_number", "correct_answer"],
+        },
+      },
+    },
+    required: ["answers"],
+  };
+}
+
+function responseText(generated: JsonObject): string {
+  if (typeof generated.output_text === "string") return generated.output_text;
+  const output = Array.isArray(generated.output) ? generated.output : [];
+  for (const item of output) {
+    if (!item || typeof item !== "object") continue;
+    const content = Array.isArray((item as JsonObject).content) ? (item as JsonObject).content as JsonObject[] : [];
+    const textItem = content.find((entry) => entry?.type === "output_text");
+    if (typeof textItem?.text === "string") return textItem.text;
+  }
+  return "";
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin") ?? "";
   const headers = corsHeaders(origin);
@@ -70,6 +104,44 @@ Deno.serve(async (request) => {
 
   try {
     const body = await request.json();
+    if (body.action === "extract_answer_key") {
+      const sourceText = String(body.source_text || "").trim().slice(0, 100_000);
+      const totalQuestions = Math.max(0, Math.min(500, Number(body.total_questions) || 0));
+      if (!sourceText) throw new Error("INVALID_PAYLOAD");
+
+      const model = Deno.env.get("STUDY_ANSWER_KEY_MODEL") || Deno.env.get("STUDY_REVIEW_MODEL") || "gpt-5-mini";
+      const response = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model,
+          instructions: "Extract only the explicitly printed multiple-choice answer key from the supplied text. Never solve questions, infer missing answers, explain, score, or add confidence. Return one entry per recognized question. correct_answer must be A, B, C, D, or null. Return only the requested JSON.",
+          input: JSON.stringify({ total_questions: totalQuestions || null, source_text: sourceText }),
+          text: { format: { type: "json_schema", name: "study_answer_key", strict: true, schema: answerKeySchema() } },
+        }),
+      });
+      if (!response.ok) {
+        console.warn("STUDY_ANSWER_KEY_PROVIDER_FAILED", response.status);
+        throw new Error("ANSWER_KEY_EXTRACTION_FAILED");
+      }
+
+      const generated = await response.json() as JsonObject;
+      const parsed = JSON.parse(responseText(generated) || "{}");
+      if (!Array.isArray(parsed?.answers)) throw new Error("MODEL_OUTPUT_INVALID");
+      const seen = new Set<number>();
+      const answers = parsed.answers.flatMap((item: JsonObject) => {
+        const questionNumber = Number(item?.question_number);
+        const correctAnswer = item?.correct_answer === null ? null : String(item?.correct_answer || "").trim().toUpperCase();
+        if (!Number.isInteger(questionNumber) || questionNumber < 1 || questionNumber > 500) return [];
+        if (totalQuestions && questionNumber > totalQuestions) return [];
+        if (seen.has(questionNumber) || (correctAnswer !== null && !/^[A-D]$/.test(correctAnswer))) return [];
+        seen.add(questionNumber);
+        return [{ question_number: questionNumber, correct_answer: correctAnswer }];
+      }).sort((left: JsonObject, right: JsonObject) => Number(left.question_number) - Number(right.question_number));
+
+      return jsonResponse(origin, { success: true, data: { answers } });
+    }
+
     const answerId = uuid(body.answer_id);
     const { data: answer, error: answerError } = await db.from("study_shenlun_answers").select("*").eq("id", answerId).eq("owner_id", ownerId).single();
     if (answerError || !answer) throw new Error("NOT_FOUND");
@@ -90,7 +162,7 @@ Deno.serve(async (request) => {
     });
     if (!response.ok) { console.error("STUDY_REVIEW_PROVIDER_FAILED", response.status); throw new Error("REVIEW_UNAVAILABLE"); }
     const generated = await response.json();
-    const text = generated.output_text || generated.output?.flatMap((item: JsonObject) => Array.isArray(item.content) ? item.content : []).find((item: JsonObject) => item.type === "output_text")?.text;
+    const text = responseText(generated);
     const review = JSON.parse(String(text || ""));
     validateReview(review);
     const record = { owner_id: ownerId, practice_id: answer.practice_id, question_id: answer.question_id, answer_id: answer.id, content_coverage: review.content_coverage, material_evidence: review.material_evidence, task_analysis: review.task_analysis, expression_review: review.expression_review, structure_review: review.structure_review, assessment: review.assessment, model, model_version: generated.model || model };
@@ -98,7 +170,7 @@ Deno.serve(async (request) => {
     if (saved.error) throw saved.error;
     return jsonResponse(origin, { success: true, data: saved.data });
   } catch (error) {
-    const code = error instanceof Error && ["INVALID_PAYLOAD","NOT_FOUND","MODEL_OUTPUT_INVALID","REVIEW_UNAVAILABLE"].includes(error.message) ? error.message : "REVIEW_FAILED";
+    const code = error instanceof Error && ["INVALID_PAYLOAD","NOT_FOUND","MODEL_OUTPUT_INVALID","REVIEW_UNAVAILABLE","ANSWER_KEY_EXTRACTION_FAILED"].includes(error.message) ? error.message : "REVIEW_FAILED";
     console.error("STUDY_REVIEW_FAILED", code);
     return jsonResponse(origin, { success: false, code }, code === "NOT_FOUND" ? 404 : 500);
   }

@@ -12,6 +12,7 @@ import { routeResearch } from "./research-router.ts";
 import { runResearch } from "./research.ts";
 import { safeResearchErrorDetails } from "./research-diagnostics.ts";
 import { knowledgePrompt, loadKnowledge } from "./knowledge-retrieval.ts";
+import { composeResearchWorldContext, researchCurrentTurnPrompt } from "./research-current-turn.ts";
 import {
   INITIAL_MESSAGE_LIMIT,
   messageCursor,
@@ -517,11 +518,17 @@ Deno.serve(async (request) => {
       const decision = routeResearch(content, pageContext);
       let researchSources: JsonObject[] = [];
       let researchNotice = "";
+      let currentTurnResearchContext = "";
       if (decision.needed && object(settings.feature_flags || {}).research_enabled === true) {
         const researchModel = await loadModel(db, ownerId, settings.research_brain_model_id || settings.daily_brain_model_id) || model;
         try {
           const outcome = await runResearch(db, ownerId, conversationId, String(begunTurn.message_id), decision, settings, researchModel);
           researchSources = Array.isArray(outcome.sources) ? outcome.sources as JsonObject[] : [];
+          currentTurnResearchContext = researchCurrentTurnPrompt({
+            status: outcome.status,
+            requestedUrls: decision.urls,
+            groundedClaims: outcome.groundedClaims,
+          });
           if (outcome.status === "no_readable_content") {
             researchNotice = "External sources were discovered, but no readable page or provider fallback text was available. Explain that the pages could not provide readable material for verification; do not expose internal status codes or claim that web search is disconnected.";
           } else if (outcome.status === "no_reliable_sources") {
@@ -573,7 +580,11 @@ Deno.serve(async (request) => {
           }
         }
       }
-      const worldContext = `${knowledgeEnabled ? knowledgePrompt(knowledge) : ""}${researchNotice ? `\n${researchNotice}` : ""}`;
+      const worldContext = composeResearchWorldContext({
+        historicalKnowledge: knowledgeEnabled ? knowledgePrompt(knowledge) : "",
+        currentTurnResearch: currentTurnResearchContext,
+        researchNotice,
+      });
       const brainMessages = buildBrainMessages(definition, history, pageContext, lifeContext, worldContext);
       const estimatedInputTokens = Math.ceil(brainMessages.reduce((sum, message) => sum + message.content.length, 0) / 3);
       const projectedOutputTokens = Math.max(64, Number(model.config?.max_output_tokens) || 800);

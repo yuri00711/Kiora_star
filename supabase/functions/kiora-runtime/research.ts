@@ -21,6 +21,11 @@ import {
 } from "./research-diagnostics.ts";
 import type { ResearchDecision } from "./research-router.ts";
 import type { BrainResult, JsonObject, ModelRecord } from "./types.ts";
+import {
+  buildResearchOutcome,
+  successfulFallbackSource,
+  type ResearchOutcome,
+} from "./research-current-turn.ts";
 
 function object(value: unknown): JsonObject {
   return value && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : {};
@@ -64,7 +69,7 @@ export async function runResearch(
   decision: ResearchDecision,
   settings: JsonObject,
   model: ModelRecord,
-) {
+): Promise<ResearchOutcome> {
   const config = object(settings.research_config);
   const maxSources = decision.depth === "deep"
     ? Math.min(10, Number(config.max_sources) || 5)
@@ -87,7 +92,9 @@ export async function runResearch(
   });
   if (begun.error) throw begun.error;
   const ids = object(begun.data);
-  if (ids.duplicate === true) return { status: String(ids.status), sources: [] };
+  if (ids.duplicate === true) {
+    return buildResearchOutcome(ids.status, [], [], begun.data);
+  }
   const currency = calculateCost(model, 0, 0).currency;
   const searchCurrency = String(config.search_currency || currency).toUpperCase();
   if (searchCurrency !== currency) throw new KioraRuntimeError("RESEARCH_PROVIDER_CONFIG_INVALID", 500);
@@ -192,7 +199,7 @@ export async function runResearch(
           providerExtractSucceeded = true;
           providerExtractedChars = material.text.length;
           const returnedUrl = new URL(extracted.returnedUrl);
-          providerExtractedSource = {
+          providerExtractedSource = successfulFallbackSource({
             ref: `S${index + 1}`,
             url: extracted.returnedUrl,
             canonical_url: extracted.returnedUrl,
@@ -228,12 +235,8 @@ export async function runResearch(
               returned_url: extracted.returnedUrl,
               provider_request_id: extracted.requestId,
               readable_char_count: material.text.length,
-              direct_fetch_status: "failed",
-              direct_fetch_error: fetchError,
-              direct_block_reason: directBlockReason,
             },
-            fetch_error: fetchError,
-          };
+          }, fetchError, directBlockReason);
         } catch (extractError) {
           providerExtractFailure = extractError instanceof KioraRuntimeError
             ? extractError.code
@@ -270,7 +273,7 @@ export async function runResearch(
         maxChars: Number(config.max_source_chars) || 18_000,
       });
       if (fallback) {
-        fetched.push({
+        fetched.push(successfulFallbackSource({
           ref: `S${index + 1}`,
           url: candidate.url,
           canonical_url: candidate.url,
@@ -297,11 +300,8 @@ export async function runResearch(
             evidence_kind: fallback.evidenceKind,
             provider_extracted: true,
             readable_char_count: fallback.text.length,
-            direct_fetch_status: "failed",
-            direct_fetch_error: fetchError,
           },
-          fetch_error: fetchError,
-        });
+        }, fetchError, directBlockReason));
       } else {
         fetched.push({
           ref: `S${index + 1}`,
@@ -392,7 +392,7 @@ export async function runResearch(
       });
       throw new KioraRuntimeError("RESEARCH_COMPLETE_FAILED", 500);
     }
-    return { status: noContentStatus, sources: [], result: completed.data };
+    return buildResearchOutcome(noContentStatus, [], [], completed.data);
   }
 
   const messages = [
@@ -752,18 +752,6 @@ ${JSON.stringify(sourceMaterial)}`,
     });
     throw new KioraRuntimeError("RESEARCH_COMPLETE_FAILED", 500);
   }
-  return {
-    status: researchOutcomeStatus(materialDiagnostics.extraction_source_count, claims.length),
-    sources: fetched.filter((source) => source.fetch_status === "fetched").map((source) => ({
-      title: source.title,
-      domain: source.domain,
-      url: source.canonical_url || source.url,
-      retrieved_at: new Date().toISOString(),
-      why_relevant: object(source.reliability).claim_relevance,
-      source_type: source.source_type,
-      evidence_kind: source.evidence_kind,
-      snippet_only: object(source.metadata).snippet_only === true,
-    })),
-    result: completed.data,
-  };
+  const status = researchOutcomeStatus(materialDiagnostics.extraction_source_count, claims.length);
+  return buildResearchOutcome(status, fetched, claims, completed.data);
 }
