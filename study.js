@@ -7,7 +7,8 @@
     const $ = (selector, root = document) => root.querySelector(selector);
     const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
     const esc = (value) => common.escapeHtml(String(value ?? ""));
-    const STUDY_MOBILE_QUERY = "(max-width: 900px)";
+    const STUDY_PHONE_PDF_QUERY = "(max-width: 520px)";
+    const studyPdfResizeObservers = [];
     const tables = Object.freeze({
         practices: "study_practices", files: "study_files", aptitude_answers: "study_aptitude_answers",
         answer_keys: "study_answer_keys", mistakes: "study_mistakes", mistake_attempts: "study_mistake_attempts",
@@ -140,6 +141,7 @@
 
     async function openPractice(id) {
         const practice = state.practices.find((item) => item.id === id); if (!practice) return;
+        disconnectStudyPdfResizeObservers();
         state.activePractice = practice; status("Opening practice…");
         const entities = practice.practice_type === "aptitude" ? ["files","aptitude_answers","answer_keys"] : ["files","shenlun_questions"];
         const results = await Promise.all(entities.map((entity) => list(entity, { filters:{ practice_id:id }, limit:500 })));
@@ -158,47 +160,111 @@
         return paper.mime_type.startsWith("image/") ? `<img src="${esc(url)}" alt="Practice paper">` : `<iframe src="${esc(url)}#toolbar=1" title="Practice paper"></iframe>`;
     }
 
+    function disconnectStudyPdfResizeObservers() {
+        while (studyPdfResizeObservers.length) {
+            const cleanup = studyPdfResizeObservers.pop();
+            cleanup();
+        }
+    }
+
+    function studyPdfContentWidth(container) {
+        const containerStyle = window.getComputedStyle(container);
+        const horizontalPadding = (Number.parseFloat(containerStyle.paddingLeft) || 0)
+            + (Number.parseFloat(containerStyle.paddingRight) || 0);
+        return Math.max(container.clientWidth - horizontalPadding, 1);
+    }
+
+    async function renderPdfPages(container, pdf) {
+        const renderToken = {};
+        container._studyPdfRenderToken = renderToken;
+        container.replaceChildren();
+
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+            const page = await pdf.getPage(pageNumber);
+            if (container._studyPdfRenderToken !== renderToken) return;
+
+            const baseViewport = page.getViewport({ scale: 1 });
+            const phone = window.matchMedia(STUDY_PHONE_PDF_QUERY).matches;
+            const availableWidth = phone
+                ? studyPdfContentWidth(container)
+                : Math.max(container.clientWidth || baseViewport.width, 320);
+            const displayScale = phone
+                ? availableWidth / baseViewport.width
+                : Math.min(2, availableWidth / baseViewport.width);
+            const displayViewport = page.getViewport({ scale: displayScale });
+
+            // On phones DPR only increases backing-store resolution. The CSS size stays
+            // equal to displayViewport, so PDF.js and the visible canvas keep one ratio.
+            const dpr = phone ? Math.min(Math.max(window.devicePixelRatio || 1, 1), 2) : 1;
+            const renderViewport = phone
+                ? page.getViewport({ scale: displayScale * dpr })
+                : displayViewport;
+            const figure = document.createElement("figure");
+            const canvas = document.createElement("canvas");
+            const caption = document.createElement("figcaption");
+
+            canvas.width = Math.floor(renderViewport.width);
+            canvas.height = Math.floor(renderViewport.height);
+            if (phone) {
+                figure.style.width = `${displayViewport.width}px`;
+                canvas.style.width = `${displayViewport.width}px`;
+                canvas.style.height = "auto";
+            }
+
+            const pageRatio = baseViewport.width / baseViewport.height;
+            if (phone && (!Number.isFinite(pageRatio) || pageRatio < 0.2 || pageRatio > 5)) {
+                console.warn("STUDY_PDF_UNUSUAL_PAGE_BOX", {
+                    page: pageNumber,
+                    width: baseViewport.width,
+                    height: baseViewport.height
+                });
+            }
+
+            caption.textContent = `PAGE ${String(pageNumber).padStart(2, "0")} / ${String(pdf.numPages).padStart(2, "0")}`;
+            figure.append(canvas, caption);
+            container.append(figure);
+            await page.render({
+                canvasContext: canvas.getContext("2d"),
+                viewport: renderViewport
+            }).promise;
+            if (container._studyPdfRenderToken !== renderToken) return;
+        }
+    }
+
+    function observePhonePdfWidth(container, pdf) {
+        if (!window.matchMedia(STUDY_PHONE_PDF_QUERY).matches || typeof ResizeObserver === "undefined") return;
+
+        let lastWidth = studyPdfContentWidth(container);
+        let resizeTimer = 0;
+        const resizeObserver = new ResizeObserver(() => {
+            const nextWidth = studyPdfContentWidth(container);
+            if (Math.abs(nextWidth - lastWidth) < 1) return;
+            lastWidth = nextWidth;
+            window.clearTimeout(resizeTimer);
+            resizeTimer = window.setTimeout(() => {
+                renderPdfPages(container, pdf).catch((error) => {
+                    container.innerHTML = `<p class="study-empty study-error">PDF could not be loaded. ${esc(error.message || "")}</p>`;
+                });
+            }, 160);
+        });
+        resizeObserver.observe(container);
+        studyPdfResizeObservers.push(() => {
+            window.clearTimeout(resizeTimer);
+            resizeObserver.disconnect();
+            container._studyPdfRenderToken = null;
+        });
+    }
+
     async function renderPdfDocuments(root) {
         const documents = $$(".study-pdf-document[data-pdf-url]", root);
         if (!documents.length) return;
+        disconnectStudyPdfResizeObservers();
         try {
             await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs", "pdfjsLib", true);
             for (const container of documents) {
                 const pdf = await window.pdfjsLib.getDocument(container.dataset.pdfUrl).promise;
-                container.replaceChildren();
-                for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-                    const page = await pdf.getPage(pageNumber);
-                    const base = page.getViewport({ scale: 1 });
-                    const mobile = window.matchMedia(STUDY_MOBILE_QUERY).matches;
-                    const containerStyle = mobile ? window.getComputedStyle(container) : null;
-                    const horizontalPadding = containerStyle
-                        ? (Number.parseFloat(containerStyle.paddingLeft) || 0) + (Number.parseFloat(containerStyle.paddingRight) || 0)
-                        : 0;
-                    const available = mobile
-                        ? Math.max((container.clientWidth || base.width) - horizontalPadding, 1)
-                        : Math.max(container.clientWidth || base.width, 320);
-                    const viewport = page.getViewport({ scale: Math.min(2, available / base.width) });
-                    const outputScale = mobile
-                        ? Math.min(Math.max(window.devicePixelRatio || 1, 1), 2)
-                        : 1;
-                    const figure = document.createElement("figure");
-                    const canvas = document.createElement("canvas");
-                    const caption = document.createElement("figcaption");
-                    canvas.width = Math.ceil(viewport.width * outputScale);
-                    canvas.height = Math.ceil(viewport.height * outputScale);
-                    if (mobile) {
-                        canvas.style.width = `${viewport.width}px`;
-                        canvas.style.height = `${viewport.height}px`;
-                    }
-                    caption.textContent = `PAGE ${String(pageNumber).padStart(2, "0")} / ${String(pdf.numPages).padStart(2, "0")}`;
-                    figure.append(canvas, caption);
-                    container.append(figure);
-                    await page.render({
-                        canvasContext: canvas.getContext("2d"),
-                        viewport,
-                        transform: outputScale === 1 ? undefined : [outputScale, 0, 0, outputScale, 0, 0]
-                    }).promise;
-                }
+                await renderPdfPages(container, pdf);
+                observePhonePdfWidth(container, pdf);
             }
         } catch (error) {
             documents.forEach((container) => { container.innerHTML = `<p class="study-empty study-error">PDF could not be loaded. ${esc(error.message || "")}</p>`; });
@@ -3207,7 +3273,7 @@ async function addShenlunQuestion() {
         const close=event.target.closest("[data-close-sheet]");if(close){$("#study-sheet").close();return;}
         const action=event.target.closest("[data-action]")?.dataset.action;if(!action)return;
         if(action==="new-practice")newPractice();if(action==="new-note")noteEditor();if(action==="quick-mistake")quickMistake();
-        if(action==="close-practice"){$("#study-practice-detail").hidden=true;state.activePractice=null;}
+        if(action==="close-practice"){disconnectStudyPdfResizeObservers();$("#study-practice-detail").hidden=true;state.activePractice=null;}
         if(action==="upload-paper")attachPaper();if(action==="import-key")importAnswerKey();if(action==="finish-practice")finishPractice();if(action==="open-answer-sheet")showAnswerSheet();
         if(action==="clear-answer")saveAptitudeAnswer(null);if(action==="toggle-flag"){const detail=$("#study-practice-detail"),item=detail._studyData.aptitude_answers.find(x=>x.question_number===Number(detail.dataset.question));saveAptitudeAnswer(undefined,{flagged:!item?.flagged});}
         if(action==="add-shenlun-question")addShenlunQuestion();if(action==="save-shenlun-answer"){const detail=$("#study-practice-detail"),q=detail._studyData.shenlun_questions.find(x=>x.id===detail.dataset.questionId);saveShenlun(q,detail._answer);}

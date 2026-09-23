@@ -494,3 +494,27 @@ button { font-family:inherit; }
         opacity: .38;
     }
 }
+
+/* Phone-only PDF fit-width rules. Tablet and desktop keep the existing reader. */
+@media (max-width: 520px) {
+    .study-pdf-document {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .study-pdf-document figure {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .study-pdf-document canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin: 0 auto;
+    }
+}
