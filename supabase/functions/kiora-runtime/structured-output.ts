@@ -37,7 +37,9 @@ export function structuredOutputDiagnostics(result: BrainResult, scope: string):
 export function parseStructuredJson(result: BrainResult, scope: string): JsonObject {
   const diagnostics = structuredOutputDiagnostics(result, scope);
   if (result.finishReason === "length") {
-    console.error("STRUCTURED_OUTPUT_TRUNCATED", diagnostics);
+    // Parsing only classifies the provider response. The caller decides whether
+    // truncation is recoverable through retry/defer or is a final failure.
+    console.warn("STRUCTURED_OUTPUT_TRUNCATED", diagnostics);
     throw new StructuredOutputError("STRUCTURED_OUTPUT_TRUNCATED");
   }
 
@@ -47,7 +49,7 @@ export function parseStructuredJson(result: BrainResult, scope: string): JsonObj
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not-object");
     return parsed as JsonObject;
   } catch {
-    console.error("STRUCTURED_OUTPUT_INVALID", diagnostics);
+    console.warn("STRUCTURED_OUTPUT_INVALID", diagnostics);
     throw new StructuredOutputError("STRUCTURED_OUTPUT_INVALID");
   }
 }

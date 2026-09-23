@@ -1,6 +1,8 @@
 import { KioraRuntimeError } from "../_shared/kiora-owner.ts";
+import { parseTavilyExtractPayload } from "./provider-extract.ts";
 import { validatePublicUrl } from "./safe-fetch.ts";
 import { sanitizePostgresText } from "./postgres-sanitize.ts";
+import { staticUrlSafetyBlock } from "./research-url-policy.ts";
 import type { JsonObject } from "./types.ts";
 
 export type SearchResult = {
@@ -16,6 +18,14 @@ export interface SearchAdapter {
     cost: number;
   }>;
 }
+
+export type ProviderExtractResult = {
+  requestedUrl: string;
+  returnedUrl: string;
+  rawContent: string;
+  requestId: string | null;
+  cost: number;
+};
 
 function at(value: unknown, path: string): unknown {
   return path.split(".").filter(Boolean)
@@ -93,6 +103,75 @@ function providerError(response: Response): KioraRuntimeError {
     return new KioraRuntimeError("RESEARCH_PROVIDER_BUDGET_EXHAUSTED", 503);
   }
   return new KioraRuntimeError("RESEARCH_PROVIDER_FAILED", 503);
+}
+
+export function providerExtractCost(config: JsonObject): number {
+  return Math.max(0, Number(config.cost_per_extract ?? config.cost_per_query) || 0);
+}
+
+export async function extractWithTavily(
+  rawUrl: string,
+  config: JsonObject,
+): Promise<ProviderExtractResult> {
+  let requestedUrl: URL;
+  try {
+    requestedUrl = new URL(rawUrl);
+  } catch {
+    throw new KioraRuntimeError("RESEARCH_URL_INVALID", 400);
+  }
+  // Do not repeat DNS validation here: this method is specifically the safe
+  // fallback for normal hostnames that Edge DNS can misclassify. Static SSRF
+  // restrictions still run again before the URL reaches Tavily.
+  if (staticUrlSafetyBlock(requestedUrl, Deno.env.get("SUPABASE_URL") || "")) {
+    throw new KioraRuntimeError("RESEARCH_URL_BLOCKED", 400);
+  }
+
+  const apiKey = Deno.env.get("KIORA_PROVIDER_SEARCH_API_KEY");
+  if (!apiKey) throw new KioraRuntimeError("RESEARCH_PROVIDER_NOT_CONFIGURED", 503);
+  const extractDepth = String(config.extract_depth || "basic");
+  if (!new Set(["basic", "advanced"]).has(extractDepth)) {
+    throw new KioraRuntimeError("RESEARCH_PROVIDER_CONFIG_INVALID", 500);
+  }
+  const timeoutSeconds = Math.min(60, Math.max(1, Number(config.extract_timeout_seconds) || 20));
+  const endpoint = new URL("https://api.tavily.com/extract");
+  const response = await providerRequest(
+    endpoint,
+    {
+      Authorization: `Bearer ${apiKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    config,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        urls: requestedUrl.href,
+        extract_depth: extractDepth,
+        include_images: false,
+        include_favicon: false,
+        format: "text",
+        timeout: timeoutSeconds,
+        include_usage: true,
+      }),
+    },
+  );
+  if (!response.ok) throw providerError(response);
+  const payload = await limitedJson(
+    response,
+    Math.min(2_000_000, Math.max(20_000, Number(config.max_extract_bytes) || 750_000)),
+  ) as JsonObject;
+  const extracted = parseTavilyExtractPayload(
+    payload,
+    requestedUrl.href,
+    Number(config.max_source_chars) || 18_000,
+    Deno.env.get("SUPABASE_URL") || "",
+  );
+  if (!extracted) throw new KioraRuntimeError("RESEARCH_PROVIDER_EXTRACT_FAILED", 502);
+  return {
+    ...extracted,
+    requestId: String(payload.request_id || response.headers.get("x-request-id") || "") || null,
+    cost: providerExtractCost(config),
+  };
 }
 
 class Unconfigured implements SearchAdapter {

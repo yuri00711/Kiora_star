@@ -488,6 +488,14 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
     } catch (error) {
       if (!(error instanceof KioraRuntimeError) || error.code !== "STRUCTURED_OUTPUT_TRUNCATED") throw error;
       reflectionRetryAttempted = true;
+      console.warn("KIORA_REFLECTION_STRUCTURED_OUTPUT_RETRY", {
+        retrying: true,
+        reason: error.code,
+        finish_reason: result.finishReason,
+        output_tokens: result.outputTokens,
+        provider_model: result.providerModel,
+        request_id: result.requestId,
+      });
       const retryMessages = compactReflectionPrompt(input, history, existingMemories, feedback);
       const retryInputTokens = Math.ceil(retryMessages.reduce((sum, message) => sum + message.content.length, 0) / 3);
       const retryOutputTokens = Math.min(3600, Math.max(1800, reflectionOutputTokens));
@@ -509,6 +517,13 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
         "compact_retry",
       );
       rawPayload = compactReflectionOutput(reflectionJson(result));
+      console.info("KIORA_REFLECTION_STRUCTURED_OUTPUT_RETRY", {
+        succeeded: true,
+        finish_reason: result.finishReason,
+        output_tokens: result.outputTokens,
+        provider_model: result.providerModel,
+        request_id: result.requestId,
+      });
     }
     const payload = validatedPayload(rawPayload, trigger, input, feedback, allowedMessageIds, allowedMemoryIds, history, currentRelationship);
     const { data, error } = await input.db.rpc("kiora_complete_reflection", {

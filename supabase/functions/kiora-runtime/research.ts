@@ -2,8 +2,8 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { KioraRuntimeError } from "../_shared/kiora-owner.ts";
 import { adapterFor } from "./brain-adapters.ts";
 import { assertResearchBudget, budgetSnapshot, calculateCost } from "./budget-manager.ts";
-import { searchAdapter, type SearchResult } from "./research-adapters.ts";
-import { fetchReadable } from "./safe-fetch.ts";
+import { extractWithTavily, providerExtractCost, searchAdapter, type SearchResult } from "./research-adapters.ts";
+import { fetchReadable, researchUrlBlockReason } from "./safe-fetch.ts";
 import { sanitizeSourceRecordsForRpc } from "./postgres-sanitize.ts";
 import {
   chunkReadableMaterial,
@@ -12,6 +12,7 @@ import {
   selectResearchMaterial,
 } from "./research-material.ts";
 import { parseStructuredJson, StructuredOutputError } from "./structured-output.ts";
+import { shouldAttemptProviderExtract, urlUsesLiteralAddress } from "./research-url-policy.ts";
 import {
   evidenceIsGrounded,
   researchOutcomeStatus,
@@ -119,6 +120,7 @@ export async function runResearch(
   }
 
   const fetched: JsonObject[] = [];
+  const explicitUrlResearch = decision.urls.length > 0;
   for (let index = 0; index < discovered.slice(0, maxSources).length; index += 1) {
     const candidate = discovered[index];
     try {
@@ -153,13 +155,116 @@ export async function runResearch(
           snippet_only: false,
           evidence_kind: material.evidenceKind,
           provider_extracted: false,
+          retrieval_method: "direct_body",
+          requested_url: candidate.url,
+          returned_url: String(page.canonical_url || page.url || candidate.url),
           readable_char_count: material.text.length,
           direct_fetch_status: "readable",
         },
       });
     } catch (error) {
       const fetchError = error instanceof KioraRuntimeError ? error.code : "FETCH_FAILED";
-      const fallback = selectResearchMaterial({
+      const directBlockReason = researchUrlBlockReason(error);
+      let providerExtractAttempted = false;
+      let providerExtractSucceeded = false;
+      let providerExtractFailure = "";
+      let providerExtractedChars = 0;
+      let providerExtractedSource: JsonObject | null = null;
+      if (shouldAttemptProviderExtract({
+        explicitUrl: explicitUrlResearch,
+        directFailureCode: fetchError,
+        directBlockReason,
+        literalAddress: urlUsesLiteralAddress(candidate.url),
+      })) {
+        try {
+          const projectedExtractCost = providerExtractCost(config);
+          assertResearchBudget(budget, searchCost + projectedExtractCost);
+          providerExtractAttempted = true;
+          const extracted = await extractWithTavily(candidate.url, config);
+          searchCost += extracted.cost;
+          const material = selectResearchMaterial({
+            providerRawContent: extracted.rawContent,
+            maxChars: Number(config.max_source_chars) || 18_000,
+          });
+          if (!material || material.evidenceKind !== "provider_raw") {
+            throw new KioraRuntimeError("RESEARCH_PROVIDER_EXTRACT_FAILED", 502);
+          }
+          providerExtractSucceeded = true;
+          providerExtractedChars = material.text.length;
+          const returnedUrl = new URL(extracted.returnedUrl);
+          providerExtractedSource = {
+            ref: `S${index + 1}`,
+            url: extracted.returnedUrl,
+            canonical_url: extracted.returnedUrl,
+            title: candidate.title || returnedUrl.hostname,
+            domain: returnedUrl.hostname,
+            publisher: returnedUrl.hostname,
+            published_at: null,
+            content_type: "text/plain",
+            http_status: null,
+            source_type: "unknown",
+            fetch_status: "fetched",
+            text: material.text,
+            evidence_kind: material.evidenceKind,
+            content_hash: await sha256(material.text),
+            confidence: 0.45,
+            reliability: {
+              snippet_only: false,
+              evidence_kind: material.evidenceKind,
+              provider_extracted: true,
+              claim_relevance: "to be evaluated",
+              primary_or_secondary: "unknown",
+              corroboration_count: 0,
+              conflict_state: "none",
+            },
+            relevant_excerpt: material.text.slice(0, 3_000),
+            metadata: {
+              snippet_only: false,
+              evidence_kind: material.evidenceKind,
+              retrieval_method: "provider_extract",
+              provider: "tavily",
+              provider_extracted: true,
+              requested_url: extracted.requestedUrl,
+              returned_url: extracted.returnedUrl,
+              provider_request_id: extracted.requestId,
+              readable_char_count: material.text.length,
+              direct_fetch_status: "failed",
+              direct_fetch_error: fetchError,
+              direct_block_reason: directBlockReason,
+            },
+            fetch_error: fetchError,
+          };
+        } catch (extractError) {
+          providerExtractFailure = extractError instanceof KioraRuntimeError
+            ? extractError.code
+            : "RESEARCH_PROVIDER_EXTRACT_FAILED";
+        }
+      }
+
+      if (explicitUrlResearch) {
+        const fallbackDiagnostic = {
+          direct_failure_code: fetchError,
+          direct_block_reason: directBlockReason,
+          provider_extract_attempted: providerExtractAttempted,
+          provider_extract_succeeded: providerExtractSucceeded,
+          extracted_chars: providerExtractedChars,
+          provider_extract_failure: providerExtractFailure || null,
+        };
+        if (providerExtractAttempted && !providerExtractSucceeded) {
+          console.warn("KIORA_DIRECT_FETCH_FALLBACK", fallbackDiagnostic);
+        } else {
+          console.info("KIORA_DIRECT_FETCH_FALLBACK", fallbackDiagnostic);
+        }
+      }
+
+      if (providerExtractedSource) {
+        fetched.push(providerExtractedSource);
+        continue;
+      }
+
+      // Search-discovered sources may use their labelled raw/snippet material.
+      // An explicitly requested URL never substitutes search text for that page.
+      const fallback = explicitUrlResearch ? null : selectResearchMaterial({
         providerRawContent: candidate.rawContent,
         providerSnippet: candidate.snippet,
         maxChars: Number(config.max_source_chars) || 18_000,
@@ -216,6 +321,9 @@ export async function runResearch(
             readable_char_count: 0,
             direct_fetch_status: "failed",
             direct_fetch_error: fetchError,
+            direct_block_reason: directBlockReason,
+            provider_extract_attempted: providerExtractAttempted,
+            provider_extract_failure: providerExtractFailure || null,
           },
           fetch_error: fetchError,
         });
@@ -336,6 +444,14 @@ export async function runResearch(
     let finalError = error;
     if (error instanceof KioraRuntimeError && error.code === "STRUCTURED_OUTPUT_TRUNCATED") {
       structuredRetryAttempted = true;
+      console.warn("KIORA_RESEARCH_STRUCTURED_OUTPUT_RETRY", {
+        retrying: true,
+        reason: error.code,
+        finish_reason: result.finishReason,
+        output_tokens: result.outputTokens,
+        provider_model: result.providerModel,
+        request_id: result.requestId,
+      });
       const currentLimit = Math.min(4_000, Math.max(400, Number(researchModel.config.max_output_tokens) || 1_800));
       const retryLimit = Math.min(4_000, Math.max(currentLimit + 600, Math.ceil(currentLimit * 1.35)));
       const retryModel: ModelRecord = {
@@ -370,7 +486,7 @@ export async function runResearch(
         cost = retryCost;
         extraction = parseExtraction(retryResult);
         structuredRetrySucceeded = true;
-        console.warn("KIORA_RESEARCH_STRUCTURED_OUTPUT_RETRY", {
+        console.info("KIORA_RESEARCH_STRUCTURED_OUTPUT_RETRY", {
           succeeded: true,
           finish_reason: retryResult.finishReason,
           output_tokens: retryResult.outputTokens,

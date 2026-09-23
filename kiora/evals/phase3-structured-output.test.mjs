@@ -22,8 +22,11 @@ function result(content, finishReason = "stop") {
 }
 
 const originalError = console.error;
-const diagnosticLogs = [];
-console.error = (...args) => diagnosticLogs.push(args);
+const originalWarn = console.warn;
+const errorLogs = [];
+const warningLogs = [];
+console.error = (...args) => errorLogs.push(args);
+console.warn = (...args) => warningLogs.push(args);
 try {
   assert.deepEqual(
     structured.parseStructuredJson(result('{"claims":[],"open_questions":[]}'), "test"),
@@ -51,11 +54,13 @@ try {
   );
 } finally {
   console.error = originalError;
+  console.warn = originalWarn;
 }
 
-assert.ok(diagnosticLogs.some(([event]) => event === "STRUCTURED_OUTPUT_TRUNCATED"));
-assert.ok(diagnosticLogs.some(([event]) => event === "STRUCTURED_OUTPUT_INVALID"));
-for (const [, details] of diagnosticLogs) {
+assert.equal(errorLogs.length, 0, "the parser must not decide that a recoverable parse outcome is a final error");
+assert.ok(warningLogs.some(([event]) => event === "STRUCTURED_OUTPUT_TRUNCATED"));
+assert.ok(warningLogs.some(([event]) => event === "STRUCTURED_OUTPUT_INVALID"));
+for (const [, details] of warningLogs) {
   assert.equal(typeof details.content_length, "number");
   assert.ok("finish_reason" in details);
   assert.ok("leading_structure" in details);
@@ -83,6 +88,16 @@ assert.match(research, /error\.code === "STRUCTURED_OUTPUT_TRUNCATED"/);
 assert.match(research, /structuredRetryAttempted = true/);
 assert.match(research, /max_output_tokens:\s*retryLimit/);
 assert.match(research, /Return at most 6 claims and 2 open_questions/);
+assert.match(research, /console\.warn\("KIORA_RESEARCH_STRUCTURED_OUTPUT_RETRY"/,
+  "the first recoverable research truncation must be a warning");
+assert.match(research, /console\.info\("KIORA_RESEARCH_STRUCTURED_OUTPUT_RETRY"[\s\S]*succeeded: true/,
+  "a successful research retry must be an info outcome");
+assert.match(reflection, /console\.warn\("KIORA_REFLECTION_STRUCTURED_OUTPUT_RETRY"/,
+  "the first recoverable reflection truncation must be a warning");
+assert.match(reflection, /console\.info\("KIORA_REFLECTION_STRUCTURED_OUTPUT_RETRY"[\s\S]*succeeded: true/,
+  "a successful reflection retry must be an info outcome");
+assert.match(reflection, /console\.warn\("KIORA_REFLECTION_DEFERRED_AFTER_TRUNCATION"/,
+  "a second truncation must have an explicit deferred warning outcome");
 assert.match(index, /RESEARCH_STATUS: EXTRACTION_FAILED\. Sources were found and read/);
 
 console.log("Phase 3 structured JSON mode, diagnostics, and bounded truncation checks passed.");
