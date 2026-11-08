@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f3eef3">
     <title>Reading · Kiora</title>
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="read.css?v=20260917-3">
+    <link rel="stylesheet" href="read.css?v=20261108-1">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
 </head>
 <body>
@@ -40,6 +40,13 @@
                 <p id="article-reading-info" class="article-reading-info" hidden></p>
             </header>
             <img id="article-cover" class="article-cover" alt="" hidden>
+            <aside id="article-related-game" class="article-related-game" hidden>
+                <p>RELATED GAME / GAMES ARCHIVE</p>
+                <a id="article-related-game-link" href="game.html">
+                    <span id="article-related-game-cover-wrap" class="article-related-game-cover-wrap" hidden><img id="article-related-game-cover" alt=""></span>
+                    <span class="article-related-game-copy"><small>OPEN GAME RECORD</small><strong id="article-related-game-title"></strong><i>VIEW ARCHIVE →</i></span>
+                </a>
+            </aside>
             <div id="article-body" class="article-body"></div>
             <nav id="article-page-pager" class="article-page-pager" aria-label="文章页码" hidden>
                 <button id="previous-page" type="button"><span class="page-label-long">← PREVIOUS PAGE</span><span class="page-label-short">← PREV</span></button>
@@ -61,7 +68,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260920-1"></script>
     <script src="article-common.js?v=20260917-3"></script>
-    <script src="read.js?v=20260917-3"></script>
+    <script src="navigation-state.js?v=20261108-1"></script>
+    <script src="read.js?v=20261108-1"></script>
     <script src="kiora/context-broker.js?v=20260921-3"></script>
     <script src="kiora/page-adapters.js?v=20260921-3"></script>
     <script src="kiora/kiora-dock.js?v=20260922-1"></script>

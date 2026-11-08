@@ -14,6 +14,12 @@ import { safeResearchErrorDetails } from "./research-diagnostics.ts";
 import { knowledgePrompt, loadKnowledge } from "./knowledge-retrieval.ts";
 import { composeResearchWorldContext, researchCurrentTurnPrompt } from "./research-current-turn.ts";
 import {
+  createImmediateCorrectionOverlay,
+  loadGrowthRuntime,
+  recordGrowthRuntimeApplication,
+} from "./growth-runtime.ts";
+import type { GrowthRuntimeSelection } from "./growth-retrieval.ts";
+import {
   INITIAL_MESSAGE_LIMIT,
   messageCursor,
   messagePageLimit,
@@ -246,11 +252,51 @@ async function previousAssistantForMessage(
     .eq("owner_id", ownerId).eq("id", sourceMessageId).maybeSingle();
   if (sourceError) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
   if (!source?.created_at) return null;
-  const { data, error } = await db.from("kiora_messages").select("id,content,created_at")
+  const { data, error } = await db.from("kiora_messages").select("id,content,created_at,reply_to_message_id")
     .eq("owner_id", ownerId).eq("conversation_id", conversationId).eq("role", "kiora")
     .lt("created_at", source.created_at).order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (error) throw new KioraRuntimeError("CONVERSATION_READ_FAILED", 500);
   return data as JsonObject | null;
+}
+
+async function recordGrowthFeedbackEvidence(
+  db: SupabaseClient,
+  ownerId: string,
+  feedbackMessageId: string,
+  priorAssistant: JsonObject | null,
+): Promise<void> {
+  const priorRequestId = String(priorAssistant?.reply_to_message_id || "");
+  if (!priorRequestId) return;
+  const [feedbackResult, applicationResult] = await Promise.all([
+    db.from("kiora_feedback").select("id,feedback_type").eq("owner_id", ownerId)
+      .eq("message_id", feedbackMessageId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    db.from("kiora_events").select("payload").eq("owner_id", ownerId).eq("event_type", "GROWTH_CONTEXT_APPLIED")
+      .eq("message_id", priorRequestId).order("occurred_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  if (feedbackResult.error || applicationResult.error || !feedbackResult.data || !applicationResult.data) return;
+  const feedback = feedbackResult.data;
+  const evidenceType = feedback.feedback_type === "accepted" ? "praise"
+    : feedback.feedback_type === "correction" ? "correction"
+    : feedback.feedback_type === "rejected" ? "rejection" : "manual_note";
+  const payload = object(applicationResult.data.payload);
+  const ruleIds = Array.isArray(payload.applied_growth_rule_ids) ? payload.applied_growth_rule_ids.map(String) : [];
+  const overlayIds = Array.isArray(payload.temporary_overlay_ids) ? payload.temporary_overlay_ids.map(String) : [];
+  for (const ruleId of ruleIds) {
+    const { error } = await db.rpc("kiora_record_growth_feedback", {
+      target_owner: ownerId, target_growth_rule_id: ruleId, target_overlay_id: null,
+      target_source_message_id: feedbackMessageId, target_feedback_id: feedback.id,
+      target_evidence_type: evidenceType, target_note: "Feedback linked to an applied Growth Rule",
+    });
+    if (error) console.warn("KIORA_GROWTH_FEEDBACK_LINK_FAILED", error.code || "RPC_ERROR");
+  }
+  for (const overlayId of overlayIds) {
+    const { error } = await db.rpc("kiora_record_growth_feedback", {
+      target_owner: ownerId, target_growth_rule_id: null, target_overlay_id: overlayId,
+      target_source_message_id: feedbackMessageId, target_feedback_id: feedback.id,
+      target_evidence_type: evidenceType, target_note: "Feedback linked to an applied temporary Growth overlay",
+    });
+    if (error) console.warn("KIORA_GROWTH_FEEDBACK_LINK_FAILED", error.code || "RPC_ERROR");
+  }
 }
 
 async function reflectSafely(args: Parameters<typeof maybeReflect>[0]): Promise<JsonObject> {
@@ -514,6 +560,25 @@ Deno.serve(async (request) => {
       if (object(settings.feature_flags || {}).memory_enabled === true) {
         lifeContext = await loadLifeContext(db, ownerId, content, pageContext, object(settings.reflection_config || {}));
       }
+      let growthRuntime: GrowthRuntimeSelection | null = null;
+      try {
+        await createImmediateCorrectionOverlay({
+          db, ownerId, messageId: String(begunTurn.message_id), content, settings,
+        });
+        growthRuntime = await loadGrowthRuntime({
+          db, ownerId, settings, currentMessage: content, pageContext,
+          conversationState: {
+            recent_messages: history.slice(-6).map((message) => ({ role: message.role, content: String(message.content).slice(0, 1200) })),
+          },
+          relationshipState: lifeContext?.relationship || null,
+        });
+        await recordGrowthRuntimeApplication({
+          db, ownerId, messageId: String(begunTurn.message_id), selection: growthRuntime,
+        });
+      } catch (growthError) {
+        const code = growthError instanceof KioraRuntimeError ? growthError.code : "GROWTH_RUNTIME_ERROR";
+        console.warn("KIORA_GROWTH_RUNTIME_DEFERRED", code);
+      }
       const researchConfig = object(settings.research_config || {});
       const decision = routeResearch(content, pageContext);
       let researchSources: JsonObject[] = [];
@@ -585,7 +650,9 @@ Deno.serve(async (request) => {
         currentTurnResearch: currentTurnResearchContext,
         researchNotice,
       });
-      const brainMessages = buildBrainMessages(definition, history, pageContext, lifeContext, worldContext);
+      const brainMessages = buildBrainMessages(
+        definition, history, pageContext, lifeContext, worldContext, growthRuntime,
+      );
       const estimatedInputTokens = Math.ceil(brainMessages.reduce((sum, message) => sum + message.content.length, 0) / 3);
       const projectedOutputTokens = Math.max(64, Number(model.config?.max_output_tokens) || 800);
       const projectedCost = calculateCost(model, estimatedInputTokens, projectedOutputTokens);
@@ -624,6 +691,7 @@ Deno.serve(async (request) => {
         assistantMessageId: feedbackTarget ? String(feedbackTarget.id) : null,
         assistantMessage: feedbackTarget ? String(feedbackTarget.content) : "", pageContext, settings, model,
       });
+      await recordGrowthFeedbackEvidence(db, ownerId, String(begunTurn.message_id), feedbackTarget);
       return jsonResponse(origin, {
         success: true,
         data: {

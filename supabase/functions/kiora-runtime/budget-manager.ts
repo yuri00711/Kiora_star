@@ -60,18 +60,23 @@ export async function budgetSnapshot(
   const reflectionSpent = rows.filter((row) => row.category === "reflection").reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const researchCategories = new Set(["research", "search", "knowledge_extraction", "research_reflection"]);
   const researchSpent = rows.filter((row) => researchCategories.has(row.category)).reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const growthCategories = new Set(["training", "growth", "evaluation", "shadow_test"]);
+  const growthSpent = rows.filter((row) => growthCategories.has(row.category)).reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   return {
     currency: currency || budgetConfig.currency || null,
     spent,
     chat_spent: chatSpent,
     reflection_spent: reflectionSpent,
     research_spent: researchSpent,
+    growth_spent: growthSpent,
     monthly_budget: finite(budgetConfig.monthly_budget),
     soft_limit: finite(budgetConfig.soft_limit),
     hard_limit: finite(budgetConfig.hard_limit),
     chat_budget: finite(budgetConfig.chat_budget),
     background_budget: finite(budgetConfig.background_budget),
     research_budget: finite(budgetConfig.research_budget),
+    growth_budget: finite(budgetConfig.growth_budget),
+    training_reserve: finite(budgetConfig.training_reserve),
   };
 }
 
@@ -106,4 +111,20 @@ export function assertChatBudget(snapshot: JsonObject, projectedCost = 0): void 
   const chat = finite(snapshot.chat_budget);
   if (hard !== null && spent + Math.max(0, projectedCost) > hard) throw new KioraRuntimeError("BUDGET_HARD_LIMIT", 402);
   if (chat !== null && chatSpent + Math.max(0, projectedCost) > chat) throw new KioraRuntimeError("CHAT_BUDGET_LIMIT", 402);
+}
+
+export function assertGrowthBudget(snapshot: JsonObject, projectedCost = 0): void {
+  const spent = Number(snapshot.spent) || 0;
+  const growthSpent = Number(snapshot.growth_spent) || 0;
+  const projected = Math.max(0, projectedCost);
+  const hard = finite(snapshot.hard_limit) ?? finite(snapshot.monthly_budget);
+  const soft = finite(snapshot.soft_limit);
+  const growth = finite(snapshot.growth_budget)
+    ?? finite(snapshot.training_reserve)
+    ?? finite(snapshot.background_budget);
+  if (hard !== null && spent + projected > hard) throw new KioraRuntimeError("GROWTH_BUDGET_DEFERRED", 402);
+  if (soft !== null && spent + projected > soft) throw new KioraRuntimeError("GROWTH_BUDGET_DEFERRED", 402);
+  if (growth !== null && growthSpent + projected > growth) {
+    throw new KioraRuntimeError("GROWTH_BUDGET_DEFERRED", 402);
+  }
 }

@@ -4,13 +4,20 @@
     const common = window.yuriArticles;
     const db = common.getClient();
     const auth = window.KioraAuth;
+    const navigation = window.KioraNavigation;
     const id = new URLSearchParams(window.location.search).get("id");
     const status = document.getElementById("game-detail-status");
     const detail = document.getElementById("game-detail");
 
     document.getElementById("game-back").addEventListener("click", () => {
-        window.location.href = "games.html";
+        if (navigation) navigation.back("games.html");
+        else window.location.href = "games.html";
     });
+
+    const returnState = navigation?.peek();
+    if (returnState?.href.includes("/read.html")) {
+        document.getElementById("game-back").textContent = "← BACK TO WRITING";
+    }
 
     const setOptionalText = (elementId, value) => {
         const element = document.getElementById(elementId);
@@ -97,15 +104,67 @@
     if (note) {
         document.getElementById("game-note-preview").hidden = false;
         document.getElementById("game-note-preview-text").textContent = common.truncateText(common.plainText(note), 240);
-        document.getElementById("game-read-full-note").href = `game-record.html?id=${encodeURIComponent(game.id)}`;
+        const fullNoteLink = document.getElementById("game-read-full-note");
+        fullNoteLink.href = `game-record.html?id=${encodeURIComponent(game.id)}`;
+        fullNoteLink.addEventListener("click", () => navigation?.capture({ label: game.title }));
     }
 
     if (auth.can("game:edit") || auth.can("character:create")) {
         document.getElementById("game-edit-record").href = `games.html?editGame=${encodeURIComponent(game.id)}`;
         document.getElementById("game-add-character").href = `games.html?editGame=${encodeURIComponent(game.id)}&addCharacter=1`;
+        const writeAfterglow = document.getElementById("game-write-afterglow");
+        writeAfterglow.href = `write.html?type=game_review&gameId=${encodeURIComponent(game.id)}`;
+        writeAfterglow.hidden = !auth.can("writing:create");
+        writeAfterglow.addEventListener("click", () => navigation?.capture({ label: game.title }));
         document.getElementById("game-admin-actions").hidden = false;
+    }
+
+    let relatedWritings = [];
+    if (auth.role === "editor") {
+        const result = await auth.readForEditor("writing_list");
+        if (!result.error) {
+            relatedWritings = (result.data || []).filter((writing) =>
+                String(writing.game_id || "") === String(game.id) && writing.category === "game_review"
+            );
+        }
+    } else {
+        let relatedQuery = db.from("writings")
+            .select("id,title,subtitle,excerpt,published_at,is_public,game_id")
+            .eq("game_id", game.id)
+            .eq("category", "game_review")
+            .order("published_at", { ascending: false });
+        if (auth.role !== "owner") relatedQuery = relatedQuery.eq("is_public", true);
+        const result = await relatedQuery;
+        if (!result.error) relatedWritings = result.data || [];
+    }
+
+    if (relatedWritings.length) {
+        const list = document.getElementById("game-related-writing-list");
+        relatedWritings.forEach((writing) => {
+            const link = document.createElement("a");
+            link.href = `read.html?id=${encodeURIComponent(writing.id)}&from=game_review&gameId=${encodeURIComponent(game.id)}`;
+            link.addEventListener("click", () => navigation?.capture({ label: game.title }));
+            const copy = document.createElement("span");
+            const label = document.createElement("small");
+            label.textContent = common.formatDate(writing.published_at);
+            const title = document.createElement("strong");
+            title.textContent = writing.title || "UNTITLED";
+            copy.append(label, title);
+            if (writing.subtitle || writing.excerpt) {
+                const note = document.createElement("p");
+                note.textContent = writing.subtitle || common.truncateText(writing.excerpt, 120);
+                copy.append(note);
+            }
+            const arrow = document.createElement("i");
+            arrow.textContent = "READ →";
+            link.append(copy, arrow);
+            list.append(link);
+        });
+        document.getElementById("game-related-writing-count").textContent = `${String(relatedWritings.length).padStart(2, "0")} ${relatedWritings.length === 1 ? "STORY" : "STORIES"}`;
+        document.getElementById("game-related-writing-section").hidden = false;
     }
 
     status.hidden = true;
     detail.hidden = false;
+    navigation?.restore();
 })();

@@ -3,17 +3,36 @@
 
     const db = window.yuriArticles.getClient();
     const auth = window.KioraAuth;
+    const navigation = window.KioraNavigation;
+    const pageParams = new URLSearchParams(window.location.search);
     const STATES = ["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"];
     const PLATFORMS = ["SWITCH", "STEAM", "PC", "PSVITA", "PSP", "PS4", "PS5", "MOBILE", "OTHER"];
     const FAVORITES = ["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME", "UNFILED"];
-    const selection = { status: new Set(), platforms: new Set(), tags: new Set(), favorite: new Set() };
+    const selection = {
+        status: new Set(pageParams.getAll("status")),
+        platforms: new Set(pageParams.getAll("platform")),
+        tags: new Set(pageParams.getAll("tag")),
+        favorite: new Set(pageParams.getAll("favorite"))
+    };
     let games = [];
-    let query = "";
-    let view = localStorage.getItem("kiora:games-view") === "index" ? "index" : "grid";
+    let query = pageParams.get("q") || "";
+    let view = pageParams.get("view") === "index" || (!pageParams.has("view") && localStorage.getItem("kiora:games-view") === "index") ? "index" : "grid";
 
     const list = document.getElementById("games-list");
     const statusLine = document.getElementById("games-status");
     const sheet = document.getElementById("filter-sheet");
+
+    function updateUrl() {
+        const url = new URL(window.location.href);
+        ["status", "platform", "tag", "favorite", "q", "view"].forEach((key) => url.searchParams.delete(key));
+        selection.status.forEach((value) => url.searchParams.append("status", value));
+        selection.platforms.forEach((value) => url.searchParams.append("platform", value));
+        selection.tags.forEach((value) => url.searchParams.append("tag", value));
+        selection.favorite.forEach((value) => url.searchParams.append("favorite", value));
+        if (query.trim()) url.searchParams.set("q", query.trim());
+        if (view !== "grid") url.searchParams.set("view", view);
+        history.replaceState(history.state, "", url);
+    }
 
     const normalizeList = (value) => {
         if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
@@ -65,6 +84,7 @@
             button.setAttribute("aria-pressed", selection[key].has(option));
             button.addEventListener("click", () => {
                 selection[key].has(option) ? selection[key].delete(option) : selection[key].add(option);
+                updateUrl();
                 syncFilters();
                 render();
             });
@@ -153,6 +173,7 @@
         const card = document.createElement("a");
         card.className = "game-card";
         card.href = `game.html?id=${encodeURIComponent(game.id)}`;
+        card.addEventListener("click", () => navigation?.capture({ label: "Games Archive" }));
         card.append(createCover(game));
         const copy = document.createElement("div");
         copy.className = "game-card-copy";
@@ -186,6 +207,7 @@
         const row = document.createElement("a");
         row.className = "game-index-row";
         row.href = `game.html?id=${encodeURIComponent(game.id)}`;
+        row.addEventListener("click", () => navigation?.capture({ label: "Games Archive" }));
         const no = document.createElement("span"); no.textContent = String(index + 1).padStart(3, "0");
         row.append(no, createCover(game, true));
         const title = document.createElement("strong"); title.textContent = game.title || "UNTITLED";
@@ -213,6 +235,7 @@
 
     function clearFilters() {
         Object.values(selection).forEach((set) => set.clear());
+        updateUrl();
         syncFilters();
         render();
     }
@@ -223,12 +246,14 @@
     document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => {
         view = button.dataset.view;
         localStorage.setItem("kiora:games-view", view);
+        updateUrl();
         render();
     }));
     [document.getElementById("games-search"), document.getElementById("games-search-mobile")].forEach((input) => input.addEventListener("input", (event) => {
         query = event.target.value;
         document.getElementById("games-search").value = query;
         document.getElementById("games-search-mobile").value = query;
+        updateUrl();
         render();
     }));
     document.getElementById("desktop-clear").addEventListener("click", clearFilters);
@@ -248,9 +273,12 @@
         return;
     }
     games = data || [];
+    document.getElementById("games-search").value = query;
+    document.getElementById("games-search-mobile").value = query;
     renderFilterSets();
     syncFilters();
     render();
+    navigation?.restore();
 
     window.addEventListener("yuri:gameschange", (event) => {
         games = Array.isArray(event.detail?.games) ? event.detail.games : [];

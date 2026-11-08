@@ -17,18 +17,80 @@ function uuid(value: unknown): string {
 
 function reviewSchema() {
   const section = {
-    type: "object", additionalProperties: false,
-    properties: { summary: { type: "string" }, findings: { type: "array", items: { type: "object", additionalProperties: false, properties: { status: { type: "string", enum: ["covered","partial","missing","issue","good"] }, point: { type: "string" }, evidence: { type: "string" }, suggestion: { type: "string" } }, required: ["status","point","evidence","suggestion"] } },
-    required: ["summary","findings"]
-  };
-  return {
-    type: "object", additionalProperties: false,
+    type: "object",
+    additionalProperties: false,
     properties: {
-      content_coverage: section, material_evidence: section, task_analysis: section,
-      expression_review: section, structure_review: section,
-      assessment: { type: "object", additionalProperties: false, properties: { level: { type: "string", enum: ["STRONG","GOOD","NEEDS REVIEW","INCOMPLETE"] }, main_issue: { type: "string" }, priorities: { type: "array", items: { type: "string" } }, character_control: { type: "string" } }, required: ["level","main_issue","priorities","character_control"] }
+      summary: {
+        type: "string",
+      },
+      findings: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            status: {
+              type: "string",
+              enum: ["covered", "partial", "missing", "issue", "good"],
+            },
+            point: {
+              type: "string",
+            },
+            evidence: {
+              type: "string",
+            },
+            suggestion: {
+              type: "string",
+            },
+          },
+          required: ["status", "point", "evidence", "suggestion"],
+        },
+      },
     },
-    required: ["content_coverage","material_evidence","task_analysis","expression_review","structure_review","assessment"]
+    required: ["summary", "findings"],
+  };
+
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      content_coverage: section,
+      material_evidence: section,
+      task_analysis: section,
+      expression_review: section,
+      structure_review: section,
+      assessment: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          level: {
+            type: "string",
+            enum: ["STRONG", "GOOD", "NEEDS REVIEW", "INCOMPLETE"],
+          },
+          main_issue: {
+            type: "string",
+          },
+          priorities: {
+            type: "array",
+            items: {
+              type: "string",
+            },
+          },
+          character_control: {
+            type: "string",
+          },
+        },
+        required: ["level", "main_issue", "priorities", "character_control"],
+      },
+    },
+    required: [
+      "content_coverage",
+      "material_evidence",
+      "task_analysis",
+      "expression_review",
+      "structure_review",
+      "assessment",
+    ],
   };
 }
 

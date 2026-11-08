@@ -165,17 +165,47 @@ function validatedPayload(
       state: ["emerging", "active", "fading", "inactive"].includes(String(item.state)) ? String(item.state) : "emerging",
     };
   }).filter(Boolean);
+  const growthTypes = new Set([
+    "communication_preference", "correction", "failure_pattern", "relationship_pattern",
+    "behavioral_preference", "response_style",
+  ]);
   const growth = array(raw.growth_candidates).slice(0, 8).map((entry) => {
     const item = object(entry);
     if (!text(item.statement, 6000)) return null;
+    const evidenceMessageIds = [...new Set(array(item.evidence_message_ids)
+      .map((id) => validUuid(id, allowedMessageIds)).filter(Boolean))] as string[];
+    if (!feedback && evidenceMessageIds.length < 2) return null;
+    const candidateType = growthTypes.has(String(item.candidate_type))
+      ? String(item.candidate_type)
+      : "failure_pattern";
     return {
-      candidate_type: text(item.candidate_type || "interaction_pattern", 120),
-      statement: text(item.statement, 6000), priority: Math.round(number(item.priority, 0, -100, 100)),
+      candidate_type: candidateType,
+      title: text(item.title || "Reflection growth proposal", 500),
+      proposal: text(item.statement, 6000),
+      statement: text(item.statement, 6000),
+      rationale: text(item.rationale || "Supported by reflection evidence", 6000),
+      evidence_refs: evidenceMessageIds.map((id) => `message:${id}`),
+      evidence_message_ids: evidenceMessageIds,
+      confidence: number(item.confidence, feedback ? 0.9 : 0.65),
+      priority: Math.round(number(item.priority, 0, -100, 100)),
     };
   }).filter(Boolean) as JsonObject[];
-  if (feedback && !growth.some((item) => item.candidate_type === "explicit_feedback")) growth.push({
-    candidate_type: "explicit_feedback", statement: feedback.content, priority: feedback.type === "correction" ? 8 : 5,
-  });
+  if (feedback && !growth.some((item) => item.proposal === feedback.content)) {
+    const candidateType = feedback.type === "correction" ? "correction"
+      : feedback.type === "preference" ? "communication_preference"
+      : feedback.type === "rejected" ? "failure_pattern" : "response_style";
+    growth.push({
+      candidate_type: candidateType,
+      title: "Explicit OWNER feedback",
+      proposal: feedback.content,
+      statement: feedback.content,
+      rationale: "Explicit OWNER feedback retained as a reviewable growth candidate.",
+      evidence_refs: [`message:${input.sourceMessageId}`],
+      evidence_message_ids: [input.sourceMessageId],
+      confidence: feedback.type === "correction" ? 0.98 : 0.94,
+      priority: feedback.type === "correction" ? 8 : 5,
+    });
+  }
   return {
     trigger,
     feedback: feedbackPayload,
@@ -200,7 +230,11 @@ function reflectionPrompt(input: ReflectionInput, history: JsonObject[], existin
     self_update: { current_interests: [], open_questions: [], recent_reflections: [], active_relationship_threads: [] },
     interests: [{ name: "Kiora's own sustained interest", kiora_origin: true, observations: 2, state: "emerging", confidence: 0.5, origin: "", description: "" }],
     habits: [{ name: "repeated behavior only", description: "", confidence: 0.5, state: "emerging|active|fading|inactive" }],
-    growth_candidates: [{ candidate_type: "interaction_pattern", statement: "", priority: 0 }],
+    growth_candidates: [{
+      candidate_type: "communication_preference|correction|failure_pattern|relationship_pattern|behavioral_preference|response_style",
+      title: "review title", statement: "proposed change", rationale: "why evidence supports it",
+      evidence_message_ids: ["uuid", "uuid"], confidence: 0.0, priority: 0,
+    }],
   };
   return [{
     role: "system",
@@ -209,6 +243,8 @@ function reflectionPrompt(input: ReflectionInput, history: JsonObject[], existin
       "Extract only durable, useful information directly supported by supplied message IDs. Every new memory needs evidence.",
       "Do not infer private facts, hidden page content, personality, relationship intimacy, habits, or preferences without evidence.",
       "One occurrence is not a habit. Never convert the OWNER's interest into Kiora's own interest. Kiora interests require at least two observations supplied here.",
+      "A normal single chat must not become permanent growth. Non-explicit growth candidates require at least two distinct supplied message IDs showing a repeated pattern.",
+      "Growth candidates may use conversation/reflection evidence only. Never derive them from Research, Knowledge, webpages, or source material.",
       "Return relationship_update only for a meaningful relationship change, preserving shared history; return self_update only for a supported change in Kiora's continuing self-understanding.",
       "Contradictions should create a new supported memory that supersedes the old one; do not silently rewrite history.",
       "Uncertain claims must have confidence below 0.72. Do not request deletion or forgetting.",
@@ -373,6 +409,18 @@ async function deferReflection(input: ReflectionInput, trigger: string, reason: 
   if (error) console.error("KIORA_REFLECTION_DEFER_RECORD_FAILED", error.code || "RPC_ERROR");
 }
 
+async function enrichGrowthCandidates(input: ReflectionInput, modelRunId: string, payload: JsonObject): Promise<void> {
+  if (object(input.settings.feature_flags).growth_candidates_enabled !== true) return;
+  const candidates = array(payload.growth_candidates);
+  if (!candidates.length) return;
+  const { error } = await input.db.rpc("kiora_enrich_reflection_growth_candidates", {
+    target_owner: input.ownerId,
+    target_model_run_id: modelRunId,
+    candidate_records: candidates,
+  });
+  if (error) console.warn("KIORA_GROWTH_CANDIDATE_ENRICH_FAILED", error.code || "RPC_ERROR");
+}
+
 export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> {
   const flags = object(input.settings.feature_flags);
   if (flags.memory_enabled !== true) return { status: "disabled" };
@@ -469,6 +517,7 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
         used_metadata: { trigger, deterministic_feedback_fallback: true, reason: deterministicOnlyReason },
       });
       if (error) throw error;
+      await enrichGrowthCandidates(input, modelRunId, payload);
       return { status: "completed", mode: "deterministic_feedback_fallback", result: data };
     }
     result = await adapterFor(reflectionModel.adapter).complete({
@@ -537,6 +586,7 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
       },
     });
     if (error) throw error;
+    await enrichGrowthCandidates(input, modelRunId, payload);
     return { status: "completed", result: data };
   } catch (error) {
     const code = error instanceof KioraRuntimeError ? error.code : "REFLECTION_FAILED";
@@ -557,7 +607,10 @@ export async function maybeReflect(input: ReflectionInput): Promise<JsonObject> 
           attempts: usage.attempts,
         },
       });
-      if (!fallbackError) return { status: "completed", mode: "deterministic_feedback_fallback", result: data };
+      if (!fallbackError) {
+        await enrichGrowthCandidates(input, modelRunId, payload);
+        return { status: "completed", mode: "deterministic_feedback_fallback", result: data };
+      }
       console.error("KIORA_FEEDBACK_FALLBACK_FAILED", fallbackError.code || "RPC_ERROR");
     }
     if (reflectionRetryAttempted && ["STRUCTURED_OUTPUT_TRUNCATED", "REFLECTION_BUDGET_DEFERRED"].includes(code)) {

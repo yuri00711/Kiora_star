@@ -14,3 +14,9 @@ verify_jwt = false
 # kiora-runtime validates the real Supabase JWT itself, then calls
 # public.is_site_owner() with that same JWT before any service-role operation.
 verify_jwt = false
+
+[functions.kiora-growth]
+# kiora-growth uses the same server-side OWNER verification boundary as Runtime.
+# Gateway verification stays off so the function can return its own stable
+# AUTH_REQUIRED / OWNER_REQUIRED codes before using service-role writes.
+verify_jwt = false

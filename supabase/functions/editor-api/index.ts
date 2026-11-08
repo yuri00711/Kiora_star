@@ -62,7 +62,7 @@ const ACTION_PAYLOAD_FIELDS: Record<string, string[]> = {
 };
 
 const PROFILE_FIELDS = ["nickname", "avatar_url", "tagline", "summary", "about_text", "free_space_title", "free_space_content"];
-const WRITING_FIELDS = ["title", "subtitle", "body", "category", "published_at", "cover_url", "tags", "is_pinned", "is_public", "excerpt", "sort_order"];
+const WRITING_FIELDS = ["title", "subtitle", "body", "category", "published_at", "cover_url", "tags", "is_pinned", "is_public", "excerpt", "sort_order", "game_id"];
 const GAME_FIELDS = ["title", "review", "rating", "cover_url", "sort_order", "started_at", "completed_at", "status", "favorite_level", "platforms", "tags", "official_site_url", "store_links"];
 const CHARACTER_FIELDS = ["game_id", "name", "subtitle", "review", "rating", "image_url", "sort_order"];
 const MUSIC_FIELDS = ["title", "artist", "cover_url", "music_url", "provider", "note", "lyric_excerpt", "lrc_data", "sort_order"];
@@ -167,6 +167,9 @@ function normalizeWriting(data: JsonObject): JsonObject {
   if (!["game_review", "essay", "dream", "archive"].includes(category)) throw new Error("INVALID_PAYLOAD");
   const published = new Date(String(value.published_at ?? ""));
   if (!Number.isFinite(published.getTime())) throw new Error("INVALID_PAYLOAD");
+  const gameId = value.game_id === null || value.game_id === undefined || value.game_id === ""
+    ? null
+    : id(value.game_id);
   return {
     title: requiredText(value.title, 240),
     subtitle: nullableText(value.subtitle, 500),
@@ -179,6 +182,7 @@ function normalizeWriting(data: JsonObject): JsonObject {
     is_public: value.is_public !== false,
     excerpt: nullableText(value.excerpt, 2000),
     sort_order: optionalNumber(value.sort_order),
+    game_id: category === "game_review" ? gameId : null,
   };
 }
 

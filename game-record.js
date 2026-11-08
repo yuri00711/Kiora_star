@@ -3,6 +3,8 @@
 
     const common = window.yuriArticles;
     const db = common.getClient();
+    const auth = window.KioraAuth;
+    const navigation = window.KioraNavigation;
     const id = new URLSearchParams(window.location.search).get("id");
     const status = document.getElementById("record-status");
     const record = document.getElementById("full-game-record");
@@ -15,11 +17,18 @@
     const gamePath = `game.html?id=${encodeURIComponent(id)}`;
     document.getElementById("record-back").href = gamePath;
     document.getElementById("record-back-bottom").href = gamePath;
+    [document.getElementById("record-back"), document.getElementById("record-back-bottom")].forEach((link) => {
+        link.addEventListener("click", (event) => {
+            if (!navigation) return;
+            event.preventDefault();
+            navigation.back(gamePath);
+        });
+    });
 
     const [{ data: game, error }, { data: characters, error: characterError }] = await Promise.all([
         db.from("games").select("*").eq("id", id).maybeSingle(),
         db.from("characters").select("*").eq("game_id", id).order("sort_order", { ascending: true, nullsFirst: false }),
-        window.KioraAuth.initialize(db)
+        auth.initialize(db)
     ]);
     if (error || !game) {
         status.textContent = error?.message || "这条游戏档案不存在。";
@@ -80,6 +89,51 @@
             container.append(anchor);
         });
         document.getElementById("record-links-section").hidden = false;
+    }
+
+    let relatedWritings = [];
+    if (auth.role === "editor") {
+        const result = await auth.readForEditor("writing_list");
+        if (!result.error) {
+            relatedWritings = (result.data || []).filter((writing) =>
+                String(writing.game_id || "") === String(game.id) && writing.category === "game_review"
+            );
+        }
+    } else {
+        let relatedQuery = db.from("writings")
+            .select("id,title,subtitle,excerpt,published_at,is_public,game_id")
+            .eq("game_id", game.id)
+            .eq("category", "game_review")
+            .order("published_at", { ascending: false });
+        if (auth.role !== "owner") relatedQuery = relatedQuery.eq("is_public", true);
+        const result = await relatedQuery;
+        if (!result.error) relatedWritings = result.data || [];
+    }
+
+    if (relatedWritings.length) {
+        const list = document.getElementById("record-writing-list");
+        relatedWritings.forEach((writing) => {
+            const link = document.createElement("a");
+            link.href = `read.html?id=${encodeURIComponent(writing.id)}&from=game_review&gameId=${encodeURIComponent(game.id)}`;
+            link.addEventListener("click", () => navigation?.capture({ label: game.title }));
+            const copy = document.createElement("span");
+            const label = document.createElement("small");
+            label.textContent = common.formatDate(writing.published_at);
+            const title = document.createElement("strong");
+            title.textContent = writing.title || "UNTITLED";
+            copy.append(label, title);
+            if (writing.subtitle || writing.excerpt) {
+                const note = document.createElement("p");
+                note.textContent = writing.subtitle || common.truncateText(writing.excerpt, 120);
+                copy.append(note);
+            }
+            const arrow = document.createElement("i");
+            arrow.textContent = "READ →";
+            link.append(copy, arrow);
+            list.append(link);
+        });
+        document.getElementById("record-writing-count").textContent = `${String(relatedWritings.length).padStart(2, "0")} ${relatedWritings.length === 1 ? "STORY" : "STORIES"}`;
+        document.getElementById("record-writing-section").hidden = false;
     }
 
     const characterList = Array.isArray(characters) ? characters : [];
@@ -143,4 +197,5 @@
     record.hidden = false;
     window.KioraGameRecordData = { game, characters: characterList };
     window.dispatchEvent(new CustomEvent("kiora:game-record-ready", { detail: window.KioraGameRecordData }));
+    navigation?.restore();
 })();

@@ -30,6 +30,7 @@
         favorite: "profile_favorites",
         boundary: "profile_boundaries"
     };
+    const requestedWritingFilter = new URLSearchParams(window.location.search).get("category");
     const state = {
         profile: {},
         fandoms: [],
@@ -37,8 +38,9 @@
         boundaries: [],
         otome: { axes: [], play_styles: [], favorite_elements: [], not_my_type: [] },
         writings: [],
+        games: [],
         settings: {},
-        writingFilter: "all"
+        writingFilter: ["game_review", "essay", "dream"].includes(requestedWritingFilter) ? requestedWritingFilter : "all"
     };
 
     const byId = (id) => document.getElementById(id);
@@ -1117,6 +1119,7 @@
         showMessage("writing-page-status", "Reading the archive…");
         let data;
         let error;
+        const gamesPromise = db.from("games").select("id,title").order("title");
         if (auth.role === "editor") {
             const result = await bridge.readForEditor("writing_list");
             data = (result.data || []).filter((item) => item.category !== "archive");
@@ -1141,6 +1144,8 @@
             showMessage("writing-page-status", errorMessage(error), true);
             return;
         }
+        const gamesResult = await gamesPromise;
+        if (!gamesResult.error) state.games = gamesResult.data || [];
         state.writings = data || [];
         showMessage("home-writing-status", "");
         showMessage("writing-page-status", "");
@@ -1158,6 +1163,20 @@
 
     function writingDate(writing) {
         return formatCompactDate(writing.published_at || writing.created_at || writing.updated_at);
+    }
+
+    function relatedGameFor(writing) {
+        if (!writing?.game_id) return null;
+        return state.games.find((game) => String(game.id) === String(writing.game_id)) || null;
+    }
+
+    function relatedGameLink(writing, className = "writing-related-game") {
+        const game = relatedGameFor(writing);
+        if (!game) return null;
+        const link = create("a", className, `GAME / ${game.title || "UNTITLED"} →`);
+        link.href = `game.html?id=${encodeURIComponent(game.id)}`;
+        link.addEventListener("click", () => window.KioraNavigation?.capture({ label: writing.title }));
+        return link;
     }
 
     function featuredWriting(items) {
@@ -1179,6 +1198,8 @@
         }
 
         featuredHost.append(create("p", "home-writing-featured-label", `FEATURED / ${categoryLabels[featured.category] || "WRITING"}`));
+        const featuredGame = relatedGameLink(featured, "home-writing-related-game");
+        if (featuredGame) featuredHost.append(featuredGame);
         featuredHost.append(create("h3", "", featured.title || "UNTITLED"));
         if (featured.subtitle) featuredHost.append(create("p", "home-writing-featured-subtitle", featured.subtitle));
         if (featured.excerpt) featuredHost.append(create("p", "home-writing-featured-excerpt", featured.excerpt));
@@ -1191,6 +1212,8 @@
             row.append(create("time", "home-writing-recent-date", writingDate(writing)));
             const copy = create("div", "home-writing-recent-copy");
             copy.append(create("p", "home-writing-recent-category", categoryLabels[writing.category] || "WRITING"));
+            const relatedGame = relatedGameLink(writing, "home-writing-recent-game");
+            if (relatedGame) copy.append(relatedGame);
             copy.append(create("h3", "", writing.title || "UNTITLED"));
             row.append(copy, writingAction("READ →", "read", writing.id));
             recentHost.append(row);
@@ -1227,6 +1250,8 @@
             return;
         }
         featuredHost.append(create("p", "writing-featured-label", `FEATURED / ${categoryLabels[featured.category] || "WRITING"}`));
+        const featuredGame = relatedGameLink(featured);
+        if (featuredGame) featuredHost.append(featuredGame);
         featuredHost.append(create("h2", "", featured.title || "UNTITLED"));
         if (featured.subtitle) featuredHost.append(create("p", "writing-featured-subtitle", featured.subtitle));
         if (featured.excerpt) featuredHost.append(create("p", "writing-featured-excerpt", featured.excerpt));
@@ -1244,6 +1269,8 @@
             const row = create("article", "writing-flow-item");
             row.append(create("p", "writing-flow-index", `${String(index + 1).padStart(2, "0")} / ${categoryLabels[writing.category] || "WRITING"}`));
             const copy = create("div", "writing-flow-copy");
+            const relatedGame = relatedGameLink(writing);
+            if (relatedGame) copy.append(relatedGame);
             copy.append(create("h3", "", writing.title || "UNTITLED"));
             if (writing.subtitle) copy.append(create("p", "writing-flow-subtitle", writing.subtitle));
             if (writing.excerpt) copy.append(create("p", "writing-flow-excerpt", writing.excerpt));
@@ -1290,6 +1317,8 @@
         if (writing.is_pinned) meta.append(create("span", "writing-pin", "✦ PINNED"));
         if (!writing.is_public && isAdmin()) meta.append(create("span", "writing-draft", "PRIVATE"));
         copy.append(meta, create("h4", "", writing.title));
+        const relatedGame = relatedGameLink(writing);
+        if (relatedGame) copy.insertBefore(relatedGame, copy.querySelector("h4"));
         if (writing.subtitle) copy.append(create("p", "writing-entry-subtitle", writing.subtitle));
         if (writing.excerpt) copy.append(create("p", "writing-entry-excerpt", writing.excerpt));
 
@@ -1386,7 +1415,7 @@
 
     function openWritingEditor(category, writing = null) {
         if (!isAdmin()) return;
-        sessionStorage.setItem("yuri:return-scroll", String(window.scrollY));
+        window.KioraNavigation?.capture({ label: "Writing" });
         const query = writing?.id
             ? `id=${encodeURIComponent(writing.id)}`
             : `type=${encodeURIComponent(category || "essay")}`;
@@ -1394,15 +1423,22 @@
     }
 
     function openReading(writing) {
-        sessionStorage.setItem("yuri:return-scroll", String(window.scrollY));
-        sessionStorage.setItem("yuri:return-category", writing.category || "");
-        window.location.href = `read.html?id=${encodeURIComponent(writing.id)}&from=${encodeURIComponent(writing.category || "")}`;
+        window.KioraNavigation?.capture({ label: "Writing" });
+        const target = new URL("read.html", window.location.href);
+        target.searchParams.set("id", String(writing.id));
+        target.searchParams.set("from", writing.category || "");
+        if (writing.game_id) target.searchParams.set("gameId", String(writing.game_id));
+        window.location.href = `${target.pathname.split("/").pop()}${target.search}`;
     }
 
     document.addEventListener("click", async (event) => {
         const filter = event.target.closest("[data-writing-filter]");
         if (filter) {
             state.writingFilter = filter.dataset.writingFilter || "all";
+            const url = new URL(window.location.href);
+            if (state.writingFilter === "all") url.searchParams.delete("category");
+            else url.searchParams.set("category", state.writingFilter);
+            history.replaceState(history.state, "", url);
             renderWritingMagazine();
             return;
         }
@@ -1477,9 +1513,6 @@
 
     updateAdminControls();
     Promise.all([loadProfile(), loadWritings()]).then(() => {
-        const restore = Number(sessionStorage.getItem("yuri:restore-scroll"));
-        if (!Number.isFinite(restore) || restore < 0) return;
-        sessionStorage.removeItem("yuri:restore-scroll");
-        requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: restore, behavior: "auto" })));
+        window.KioraNavigation?.restore();
     });
 })();

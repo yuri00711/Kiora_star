@@ -398,6 +398,7 @@
 .writing-entry-subtitle, .writing-entry-excerpt { margin: 0 0 10px !important; color: rgba(79, 68, 81, 0.52) !important; font-size: 10px !important; line-height: 1.8 !important; letter-spacing: .7px !important; }
 .writing-entry-excerpt { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .writing-entry-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 11px 0; color: rgba(126, 98, 125, 0.46); font-size: 8px; }
+.writing-entry .writing-related-game { display: inline-flex; width: fit-content; margin: 10px 0 8px; color: rgba(119,84,117,.66); font-size: 8px; letter-spacing: 1.6px; text-decoration: none; }
 .writing-entry-footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; margin-top: 14px; }
 .writing-read-button { padding: 0; border: 0; background: none; color: rgba(83, 65, 88, 0.66); font-family: inherit; font-size: 8px; letter-spacing: 1.7px; cursor: pointer; }
 .writing-admin-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
