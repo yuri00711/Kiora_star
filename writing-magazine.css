@@ -13,6 +13,8 @@
 
 .writing-page-featured { min-height: 278px; margin-bottom: 72px; padding: clamp(38px,5vw,68px); border-block: 1px solid rgba(103,84,110,.15); background: rgba(255,253,251,.38); }
 .writing-featured-label,.writing-flow-index { margin: 0; color: rgba(143,108,143,.7); font-size: 8px; letter-spacing: 3.3px; }
+.writing-related-game { display: inline-flex; width: fit-content; margin: 13px 0 0; color: rgba(119,84,117,.68); font-size: 8px; letter-spacing: 1.8px; text-decoration: none; }
+.writing-related-game:hover { color: rgba(80,57,82,.92); }
 .writing-page-featured h2 { max-width: 840px; margin: 20px 0 10px; color: #4b424f; font-size: clamp(32px,4vw,56px); font-weight: 400; line-height: 1.2; }
 .writing-featured-subtitle { margin: 0 0 21px; color: rgba(75,65,80,.72); font-size: 15px; line-height: 1.8; }
 .writing-featured-excerpt { max-width: 780px; margin: 0; color: rgba(77,67,82,.61); font-size: 13px; line-height: 2; }

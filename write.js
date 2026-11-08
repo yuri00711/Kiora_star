@@ -7,6 +7,7 @@
     const params = new URLSearchParams(window.location.search);
     const writingId = params.get("id");
     const requestedType = params.get("type");
+    const requestedGameId = params.get("gameId");
     const allowedCategories = Object.keys(common.categories);
     const initialType = allowedCategories.includes(requestedType) ? requestedType : "essay";
     const draftKey = `yuri:writing-draft:${writingId ? `id:${writingId}` : `new:${initialType}`}`;
@@ -42,6 +43,7 @@
             excerpt: field("write-excerpt").value,
             date: field("write-date").value,
             category: field("write-category").value,
+            gameId: field("write-game").value,
             tags: field("write-tags").value,
             sortOrder: field("write-sort").value,
             cover: field("write-cover").value,
@@ -58,13 +60,38 @@
         field("write-excerpt").value = draft.excerpt || "";
         field("write-date").value = draft.date || localDate();
         field("write-category").value = allowedCategories.includes(draft.category) ? draft.category : initialType;
+        field("write-game").value = String(draft.gameId || "");
         field("write-tags").value = draft.tags || "";
         field("write-sort").value = draft.sortOrder ?? "";
         field("write-cover").value = draft.cover || "";
         field("write-pinned").checked = Boolean(draft.pinned);
         field("write-public").checked = draft.isPublic !== false;
         body.value = draft.body || "";
+        updateGameField();
         updateStats();
+    }
+
+    function updateGameField() {
+        const isGameReview = field("write-category").value === "game_review";
+        field("write-game-field").hidden = !isGameReview;
+        field("write-game").disabled = !isGameReview;
+    }
+
+    async function loadGameOptions() {
+        const result = auth.role === "editor"
+            ? await auth.readForEditor("game_list")
+            : await db.from("games").select("id,title,sort_order").order("sort_order", { ascending: true, nullsFirst: false }).order("title");
+        if (result.error) {
+            setMessage(`游戏档案读取失败：${result.error.message}`, true);
+            return;
+        }
+        const select = field("write-game");
+        const previous = select.value;
+        select.replaceChildren(new Option("NOT LINKED / 暂不关联", ""));
+        (result.data || []).forEach((game) => {
+            select.append(new Option(game.title || `GAME ${game.id}`, String(game.id)));
+        });
+        select.value = previous;
     }
 
     function saveDraft() {
@@ -158,6 +185,7 @@
         scheduleDraft();
         updateStats();
     });
+    field("write-category").addEventListener("change", updateGameField);
 
     window.addEventListener("beforeunload", (event) => {
         if (!dirty) return;
@@ -168,9 +196,11 @@
 
     function goBack() {
         if (dirty && !window.confirm("还有未保存的修改，确定离开写作页吗？草稿会保留在此设备。")) return;
-        const stored = sessionStorage.getItem("yuri:return-scroll");
-        if (stored) sessionStorage.setItem("yuri:restore-scroll", stored);
-        window.location.href = "writing.html";
+        const fallback = requestedGameId
+            ? `game.html?id=${encodeURIComponent(requestedGameId)}`
+            : "writing.html";
+        if (window.KioraNavigation) window.KioraNavigation.back(fallback);
+        else window.location.href = fallback;
     }
     field("write-back").addEventListener("click", goBack);
 
@@ -225,6 +255,9 @@
             excerpt: field("write-excerpt").value.trim() || null,
             body: body.value.trim(),
             category: field("write-category").value,
+            game_id: field("write-category").value === "game_review" && field("write-game").value
+                ? Number(field("write-game").value)
+                : null,
             published_at: new Date(`${field("write-date").value}T00:00:00+09:00`).toISOString(),
             cover_url: coverUrl,
             tags: field("write-tags").value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean),
@@ -258,7 +291,11 @@
         saveState.textContent = "SAVED";
         setMessage("Saved / 已保存");
         window.setTimeout(() => {
-            window.location.href = `read.html?id=${encodeURIComponent(result.data.id)}&from=${encodeURIComponent(payload.category)}`;
+            const target = new URL("read.html", window.location.href);
+            target.searchParams.set("id", String(result.data.id));
+            target.searchParams.set("from", payload.category);
+            if (payload.game_id) target.searchParams.set("gameId", String(payload.game_id));
+            window.location.href = `${target.pathname.split("/").pop()}${target.search}`;
         }, 450);
     });
 
@@ -291,6 +328,7 @@
         return;
     }
     adminUser = auth.state.identity || auth.role;
+    await loadGameOptions();
 
     if (writingId) {
         const { data, error } = auth.role === "editor"
@@ -307,6 +345,7 @@
             excerpt: data.excerpt,
             date: localDate(data.published_at),
             category: data.category,
+            gameId: data.game_id,
             tags: (data.tags || []).join(", "),
             sortOrder: data.sort_order,
             cover: data.cover_url,
@@ -319,7 +358,7 @@
         field("delete-writing").hidden = auth.role !== "owner";
         document.title = `Edit ${data.title} · Kiora`;
     } else {
-        applyDraft({ date: localDate(), category: initialType, isPublic: true });
+        applyDraft({ date: localDate(), category: initialType, gameId: requestedGameId, isPublic: true });
         field("write-mode").textContent = common.categories[initialType].label;
     }
 

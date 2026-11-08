@@ -6,6 +6,8 @@
     const auth = window.KioraAuth;
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
+    const sourceGameId = params.get("gameId");
+    const navigation = window.KioraNavigation;
     const status = document.getElementById("reader-status");
     const articleElement = document.getElementById("reader-article");
     const articleBody = document.getElementById("article-body");
@@ -80,13 +82,26 @@
     }
 
     function returnToJournal() {
-        const stored = sessionStorage.getItem("yuri:return-scroll");
-        if (stored) sessionStorage.setItem("yuri:restore-scroll", stored);
-        window.location.href = "writing.html";
+        const fallback = sourceGameId
+            ? `game.html?id=${encodeURIComponent(sourceGameId)}`
+            : "writing.html";
+        if (navigation) navigation.back(fallback);
+        else window.location.href = fallback;
     }
 
     document.getElementById("reader-back").addEventListener("click", returnToJournal);
     document.getElementById("back-to-category").addEventListener("click", returnToJournal);
+
+    const returnState = navigation?.peek();
+    const returningToGame = sourceGameId || returnState?.href.includes("/game.html");
+    const returningHome = returnState?.href === "/" || returnState?.href.endsWith("/index.html");
+    if (returningToGame) {
+        document.getElementById("reader-back").textContent = "← BACK TO GAME";
+        document.getElementById("back-to-category").textContent = "BACK TO GAME";
+    } else if (returningHome) {
+        document.getElementById("reader-back").textContent = "← BACK HOME";
+        document.getElementById("back-to-category").textContent = "BACK HOME";
+    }
 
     const settingsButton = document.getElementById("reader-settings-button");
     const settings = document.getElementById("reader-settings");
@@ -190,6 +205,30 @@
         cover.hidden = false;
     }
 
+    if (writing.game_id) {
+        const { data: relatedGame, error: relatedGameError } = await db.from("games")
+            .select("id,title,cover_url")
+            .eq("id", writing.game_id)
+            .maybeSingle();
+        if (!relatedGameError && relatedGame) {
+            const related = document.getElementById("article-related-game");
+            const relatedLink = document.getElementById("article-related-game-link");
+            const relatedCover = document.getElementById("article-related-game-cover");
+            const relatedCoverWrap = document.getElementById("article-related-game-cover-wrap");
+            document.getElementById("article-related-game-title").textContent = relatedGame.title || "GAME RECORD";
+            relatedLink.href = `game.html?id=${encodeURIComponent(relatedGame.id)}`;
+            relatedLink.addEventListener("click", () => navigation?.capture({ label: writing.title }));
+            const relatedCoverUrl = common.safeUrl(relatedGame.cover_url);
+            if (relatedCoverUrl) {
+                relatedCover.src = relatedCoverUrl;
+                relatedCover.alt = `${relatedGame.title || "Game"} cover`;
+                relatedCoverWrap.hidden = false;
+                relatedCover.addEventListener("error", () => { relatedCoverWrap.hidden = true; }, { once: true });
+            }
+            related.hidden = false;
+        }
+    }
+
     const { data: neighbours } = await db.from("writings")
         .select("id,title,published_at,category,is_public")
         .eq("category", writing.category)
@@ -217,4 +256,5 @@
 
     status.hidden = true;
     articleElement.hidden = false;
+    navigation?.restore();
 })();

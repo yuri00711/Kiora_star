@@ -37,6 +37,9 @@ button { cursor: pointer; }
 .write-form input, .write-form textarea, .write-form select { width: 100%; min-width: 0; padding: 12px 3px; border: 0; border-bottom: 1px solid var(--write-line); border-radius: 0; outline: 0; background: transparent; color: var(--write-ink); font-size: 16px; line-height: 1.7; }
 .write-form input:focus, .write-form textarea:focus, .write-form select:focus { border-color: var(--write-accent); }
 .write-form small { color: var(--write-soft); font-size: 10px; letter-spacing: 0; }
+#write-game-field { padding: 16px 18px; border: 1px solid rgba(144,105,139,.18); background: rgba(247,240,247,.46); }
+#write-game-field select { padding-inline: 0; }
+#write-game-field small { line-height: 1.7; }
 .write-check { grid-template-columns: auto 1fr; align-items: center; justify-content: start; }
 .write-check input { width: auto; }
 
