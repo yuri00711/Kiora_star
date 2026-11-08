@@ -3,6 +3,8 @@
 
     const common = window.yuriArticles;
     const db = common.getClient();
+    const auth = window.KioraAuth;
+    const navigation = window.KioraNavigation;
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
     const status = document.getElementById("character-status");
@@ -13,6 +15,7 @@
         return;
     }
 
+    await auth.initialize(db);
     const { data: character, error } = await db.from("characters").select("*").eq("id", id).maybeSingle();
     if (error || !character) {
         status.textContent = error?.message || "这条角色档案不存在。";
@@ -26,14 +29,31 @@
     const backPath = gameId ? `game-record.html?id=${encodeURIComponent(gameId)}` : "games.html";
     document.getElementById("character-back").href = backPath;
     document.getElementById("character-back-bottom").href = backPath;
+    [document.getElementById("character-back"), document.getElementById("character-back-bottom")].forEach((link) => {
+        link.addEventListener("click", (event) => {
+            if (!navigation?.peek()) return;
+            event.preventDefault();
+            navigation.back(backPath);
+        });
+    });
 
     document.title = `${character.name || "Character Record"} · Kiora`;
     document.getElementById("character-index").textContent = `CHARACTER ${String(character.sort_order ?? character.id).padStart(2, "0")}`;
     document.getElementById("character-name").textContent = character.name || "CHARACTER";
     document.getElementById("character-rating").textContent = character.rating !== null && character.rating !== undefined && character.rating !== ""
-        ? `✦ ${character.rating} / 10`
-        : "UNRATED";
+        ? `${character.rating} / 10`
+        : "—";
     document.getElementById("character-game-title").textContent = game?.title || "GAME ARCHIVE";
+    const gameLink = document.getElementById("character-game-link");
+    gameLink.href = gameId ? `game.html?id=${encodeURIComponent(gameId)}` : "games.html";
+    gameLink.addEventListener("click", () => navigation?.capture({ label: character.name || "Character" }));
+
+    if (gameId && auth.can("character:edit")) {
+        const edit = document.getElementById("character-edit");
+        edit.href = `games.html?editGame=${encodeURIComponent(gameId)}&gameSection=characters&editCharacter=${encodeURIComponent(character.id)}`;
+        edit.hidden = false;
+        edit.addEventListener("click", () => navigation?.capture({ label: character.name || "Character" }));
+    }
 
     if (character.subtitle) {
         document.getElementById("character-subtitle").textContent = character.subtitle;
@@ -62,4 +82,5 @@
 
     status.hidden = true;
     detail.hidden = false;
+    navigation?.restore();
 })();

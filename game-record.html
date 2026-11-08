@@ -6,7 +6,7 @@
     <title>Full Game Record · Kiora</title>
     <meta name="description" content="Kiora private game record and character archive.">
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="game.css?v=20261108-1">
+    <link rel="stylesheet" href="game.css?v=20261108-2">
     <link rel="stylesheet" href="game-repo.css?v=20260917-4">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
 </head>
@@ -36,6 +36,8 @@
                 </dl>
             </header>
 
+            <nav id="record-section-index" class="record-section-index" aria-label="Full record sections" hidden></nav>
+
             <section id="record-description-section" class="game-detail-section" hidden>
                 <p class="game-detail-label">INTRODUCTION</p>
                 <div id="record-description" class="game-detail-reading"></div>
@@ -48,11 +50,13 @@
                 <div id="record-note" class="game-detail-reading"></div>
             </section>
 
-            <section id="record-links-section" class="game-detail-section game-links-section" hidden>
+            <section id="record-characters-section" class="game-detail-section">
                 <div class="game-detail-section-heading">
-                    <div><p class="game-detail-label">LINKS</p><span>OFFICIAL / STORE</span></div>
+                    <div><p class="game-detail-label">CHARACTER ARCHIVE</p><span>ROUTES IN THIS CONSTELLATION</span></div>
+                    <span id="record-character-count">00 ROUTES</span>
                 </div>
-                <div id="record-links" class="game-detail-links"></div>
+                <div id="record-character-list" class="game-character-list"></div>
+                <p id="record-character-empty" class="game-record-empty" hidden>No character records in this constellation.</p>
             </section>
 
             <section id="record-writing-section" class="game-detail-section game-related-writing-section" hidden>
@@ -63,13 +67,11 @@
                 <div id="record-writing-list" class="game-related-writing-list"></div>
             </section>
 
-            <section id="record-characters-section" class="game-detail-section">
+            <section id="record-links-section" class="game-detail-section game-links-section" hidden>
                 <div class="game-detail-section-heading">
-                    <div><p class="game-detail-label">CHARACTER ARCHIVE</p><span>ROUTES IN THIS CONSTELLATION</span></div>
-                    <span id="record-character-count">00 ROUTES</span>
+                    <div><p class="game-detail-label">LINKS</p><span>OFFICIAL / STORE</span></div>
                 </div>
-                <div id="record-character-list" class="game-character-list"></div>
-                <p id="record-character-empty" class="game-record-empty" hidden>No character records in this constellation.</p>
+                <div id="record-links" class="game-detail-links"></div>
             </section>
 
             <footer class="game-detail-footer">
@@ -83,7 +85,7 @@
     <script src="auth.js?v=20260920-1"></script>
     <script src="article-common.js?v=20260916-3"></script>
     <script src="navigation-state.js?v=20261108-1"></script>
-    <script src="game-record.js?v=20261108-1"></script>
+    <script src="game-record.js?v=20261108-2"></script>
     <script src="game-repo.js?v=20260917-4"></script>
     <script src="kiora/context-broker.js?v=20260921-3"></script>
     <script src="kiora/page-adapters.js?v=20260921-3"></script>

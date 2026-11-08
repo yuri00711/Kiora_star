@@ -246,3 +246,219 @@ a { color: inherit; text-decoration: none; }
     .game-editor-actions .modal-primary-button { grid-column: 1 / -1; }
     .character-modal-card { width: 100%; max-height: 92dvh; }
 }
+
+/* Task-based game editor */
+.game-editor-card { width: min(1040px, 94vw); }
+
+.game-editor-tabs {
+    position: sticky;
+    top: -46px;
+    z-index: 4;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 0 -54px;
+    padding: 0 54px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(252, 248, 251, .94);
+    backdrop-filter: blur(18px);
+}
+
+.game-editor-tabs button {
+    min-height: 76px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 11px;
+    align-content: center;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    background: transparent;
+    padding: 12px 18px;
+    color: #9a8d9b;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: color .2s ease, border-color .2s ease, background .2s ease;
+}
+
+.game-editor-tabs button + button { border-left: 1px solid var(--line); }
+.game-editor-tabs button > span { grid-row: 1 / 3; align-self: center; color: #bba6bb; font-size: 8px; letter-spacing: 1px; }
+.game-editor-tabs button strong { font-size: 9px; font-weight: 400; letter-spacing: 2.8px; }
+.game-editor-tabs button small { margin-top: 5px; font-size: 9px; letter-spacing: .8px; }
+.game-editor-tabs button[aria-selected="true"] { border-bottom-color: rgba(129, 95, 132, .55); background: rgba(255,255,255,.38); color: #6f5a72; }
+.game-editor-tabs button:disabled { cursor: not-allowed; opacity: .38; }
+
+.game-editor-pane[hidden] { display: none !important; }
+
+.game-editor-pane .game-editor-section:last-child,
+.game-editor-pane .character-editor-section { border-bottom: 0; }
+
+.game-writing-focus {
+    position: relative;
+    padding: clamp(22px, 4vw, 42px);
+    border: 1px solid rgba(124, 96, 128, .16);
+    background:
+        radial-gradient(circle at 86% 12%, rgba(218, 198, 225, .34), transparent 27%),
+        linear-gradient(145deg, rgba(255,255,255,.54), rgba(248,241,248,.38));
+}
+
+.game-writing-focus > header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+    padding-bottom: 21px;
+    border-bottom: 1px solid var(--line);
+}
+
+.game-writing-focus > header p { max-width: 590px; margin: 0; color: #786b79; font-size: 11px; line-height: 1.9; letter-spacing: .6px; }
+.game-writing-focus > header span { color: #a48ea5; font-size: 8px; letter-spacing: 2px; white-space: nowrap; }
+
+.game-review-writing-field > span,
+.character-review-writing-field > span {
+    display: block;
+    margin-bottom: 13px;
+    color: #7d687f;
+    font-size: 8px;
+    letter-spacing: 3px;
+}
+
+.game-review-section .game-review-writing-field textarea,
+.character-review-writing-field textarea {
+    width: 100%;
+    min-height: 340px;
+    padding: clamp(20px, 3vw, 32px);
+    border: 1px solid rgba(125, 96, 128, .17);
+    background: rgba(255, 253, 255, .62);
+    color: #514852;
+    font-size: 15px;
+    line-height: 2.1;
+    letter-spacing: .45px;
+    resize: vertical;
+}
+
+.game-review-guide {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin-top: 18px;
+    color: #9e919f;
+    font-size: 9px;
+    line-height: 1.7;
+}
+
+.game-review-guide span { width: 100%; color: #b09caf; font-size: 7px; letter-spacing: 2px; }
+.game-review-guide p { margin: 0; }
+.game-review-guide p + p::before { content: "◇"; margin-right: 18px; color: rgba(144,108,145,.4); }
+
+.game-open-writing {
+    width: 100%;
+    min-height: 66px;
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    border: 1px solid rgba(126, 96, 129, .22);
+    background: rgba(255,255,255,.36);
+    padding: 14px 18px;
+    color: #735d76;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-align: left;
+}
+
+.game-open-writing small { color: #a092a1; font-size: 9px; letter-spacing: .4px; }
+.game-open-writing:disabled { cursor: default; opacity: .4; }
+
+.character-editor-intro { max-width: 520px; margin: 12px 0 0; color: #938695; font-size: 10px; line-height: 1.8; letter-spacing: .5px; }
+
+.character-editor-row {
+    min-height: 82px;
+    padding: 18px 16px;
+    border: 1px solid rgba(126,96,129,.14);
+    background: rgba(255,255,255,.28);
+}
+
+.character-modal-card { width: min(980px, 94vw); }
+.character-modal-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 25px; border-bottom: 1px solid var(--line); }
+.character-modal-heading h3 { margin: 8px 0 0; font-size: clamp(30px, 4vw, 47px); }
+.character-modal-heading > span { color: rgba(151,116,151,.45); }
+.character-modal-game { margin: 10px 0 0; color: #9a8d9b; font-size: 9px; letter-spacing: 1.7px; }
+
+.character-editor-layout {
+    display: grid;
+    grid-template-columns: minmax(170px, 230px) minmax(0, 1fr);
+    gap: clamp(28px, 5vw, 58px);
+    align-items: start;
+    margin-top: 33px;
+}
+
+.character-editor-preview {
+    position: sticky;
+    top: 20px;
+    min-width: 0;
+    padding: 14px 14px 22px;
+    border: 1px solid rgba(126,96,129,.16);
+    background: linear-gradient(155deg, rgba(255,255,255,.62), rgba(241,233,243,.5));
+}
+
+.character-preview-image {
+    aspect-ratio: 3 / 4;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: radial-gradient(circle at 62% 26%, rgba(206,187,218,.55), transparent 36%), rgba(250,246,250,.7);
+    color: #ad9bae;
+    font-size: 8px;
+    letter-spacing: 2px;
+}
+
+.character-preview-image img { width: 100%; height: 100%; object-fit: cover; }
+.character-editor-preview > p { margin: 20px 0 9px; color: #a28da3; font-size: 7px; letter-spacing: 2px; }
+.character-editor-preview > strong { display: block; overflow-wrap: anywhere; color: #574a59; font-size: 22px; font-weight: 400; line-height: 1.4; }
+.character-editor-preview > span { display: block; margin-top: 7px; color: #948796; font-size: 10px; line-height: 1.7; }
+.character-editor-preview > i { display: block; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); color: #8a718c; font-size: 10px; font-style: normal; letter-spacing: 1.5px; }
+.character-editor-fields { display: grid; gap: 24px; }
+
+.character-review-writing-field { margin-top: 34px; padding-top: 30px; border-top: 1px solid var(--line); }
+.character-review-writing-field small { display: block; margin-top: 10px; color: #a095a1; font-size: 9px; line-height: 1.7; letter-spacing: .4px; }
+
+.game-editor-actions {
+    position: sticky;
+    bottom: -38px;
+    z-index: 4;
+    margin: 0 -54px;
+    padding: 18px 54px 0;
+    background: linear-gradient(to top, rgba(251,247,250,.99) 74%, rgba(251,247,250,0));
+}
+
+@media (max-width: 760px) {
+    .game-editor-tabs {
+        top: -40px;
+        margin: 0 -20px;
+        padding: 0 20px;
+        overflow-x: auto;
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+        scrollbar-width: none;
+    }
+
+    .game-editor-tabs::-webkit-scrollbar { display: none; }
+    .game-editor-tabs button { min-height: 66px; padding: 10px 13px; }
+    .game-editor-tabs button small { font-size: 8px; }
+    .game-writing-focus { padding: 22px 16px; }
+    .game-writing-focus > header { display: grid; gap: 9px; }
+    .game-review-section .game-review-writing-field textarea,
+    .character-review-writing-field textarea { min-height: 300px; padding: 19px 16px; font-size: 16px; }
+    .game-review-guide { display: grid; gap: 5px; }
+    .game-review-guide p + p::before { display: none; }
+    .game-open-writing { align-items: flex-start; flex-direction: column; }
+    .character-editor-layout { grid-template-columns: 1fr; }
+    .character-editor-preview { position: static; display: grid; grid-template-columns: 108px minmax(0, 1fr); column-gap: 18px; align-items: start; }
+    .character-preview-image { grid-row: 1 / 6; }
+    .character-editor-preview > p { margin-top: 6px; }
+    .character-editor-preview > i { margin-top: 10px; }
+    .game-editor-actions { bottom: calc(-1 * max(24px, env(safe-area-inset-bottom))); margin: 0 -20px; padding-inline: 20px; }
+}

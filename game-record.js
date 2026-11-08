@@ -182,7 +182,8 @@
         const view = document.createElement("a");
         view.className = "game-character-view";
         view.href = `character.html?id=${encodeURIComponent(character.id)}&gameId=${encodeURIComponent(game.id)}`;
-        view.textContent = "VIEW RECORD →";
+        view.textContent = "VIEW IMPRESSION →";
+        view.addEventListener("click", () => navigation?.capture({ label: game.title }));
         copy.append(view);
         card.append(copy);
         list.append(card);
@@ -190,6 +191,25 @@
 
     document.getElementById("record-character-count").textContent = `${String(characterList.length).padStart(2, "0")} ROUTE${characterList.length === 1 ? "" : "S"}`;
     document.getElementById("record-character-empty").hidden = characterList.length !== 0;
+
+    const recordIndex = document.getElementById("record-section-index");
+    let visibleSectionNumber = 0;
+    [
+        ["record-description-section", "INTRODUCTION"],
+        ["record-note-section", "GAME NOTE"],
+        ["record-characters-section", `CHARACTERS · ${characterList.length}`],
+        ["record-writing-section", `WRITING · ${relatedWritings.length}`],
+        ["record-links-section", "LINKS"]
+    ].forEach(([sectionId, label]) => {
+        const section = document.getElementById(sectionId);
+        if (!section || section.hidden) return;
+        visibleSectionNumber += 1;
+        const link = document.createElement("a");
+        link.href = `#${sectionId}`;
+        link.innerHTML = `<span>${String(visibleSectionNumber).padStart(2, "0")}</span>${label}`;
+        recordIndex.append(link);
+    });
+    recordIndex.hidden = !recordIndex.childElementCount;
 
     const updatedAt = common.firstValue(game, ["updated_at", "created_at"]);
     document.getElementById("record-updated").textContent = updatedAt ? `UPDATED / ${common.formatDate(updatedAt)}` : "";

@@ -104,14 +104,17 @@
     if (note) {
         document.getElementById("game-note-preview").hidden = false;
         document.getElementById("game-note-preview-text").textContent = common.truncateText(common.plainText(note), 240);
-        const fullNoteLink = document.getElementById("game-read-full-note");
-        fullNoteLink.href = `game-record.html?id=${encodeURIComponent(game.id)}`;
-        fullNoteLink.addEventListener("click", () => navigation?.capture({ label: game.title }));
     }
 
+    const openRecord = document.getElementById("game-open-record");
+    openRecord.href = `game-record.html?id=${encodeURIComponent(game.id)}`;
+    openRecord.addEventListener("click", () => navigation?.capture({ label: game.title }));
+
     if (auth.can("game:edit") || auth.can("character:create")) {
-        document.getElementById("game-edit-record").href = `games.html?editGame=${encodeURIComponent(game.id)}`;
+        document.getElementById("game-edit-record").href = `games.html?editGame=${encodeURIComponent(game.id)}&gameSection=overview`;
         document.getElementById("game-add-character").href = `games.html?editGame=${encodeURIComponent(game.id)}&addCharacter=1`;
+        document.getElementById("game-edit-record").addEventListener("click", () => navigation?.capture({ label: game.title }));
+        document.getElementById("game-add-character").addEventListener("click", () => navigation?.capture({ label: game.title }));
         const writeAfterglow = document.getElementById("game-write-afterglow");
         writeAfterglow.href = `write.html?type=game_review&gameId=${encodeURIComponent(game.id)}`;
         writeAfterglow.hidden = !auth.can("writing:create");

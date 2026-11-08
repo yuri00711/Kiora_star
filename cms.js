@@ -657,10 +657,17 @@
         const setting = state.settings.currently_playing || {};
         const linked = games?.find((game) => String(game.id) === String(setting.game_id));
         const current = byId("profile-current-game");
+        const currentLink = byId("profile-current-game-link");
         const subtitle = byId("profile-current-subtitle");
         const status = byId("profile-current-status");
         const note = byId("profile-current-note");
         if (current) current.textContent = setting.title || linked?.title || games?.[0]?.title || "—";
+        if (currentLink) {
+            const targetGame = linked || null;
+            currentLink.href = targetGame?.id ? `game.html?id=${encodeURIComponent(targetGame.id)}` : "games.html";
+            currentLink.classList.toggle("is-linked", Boolean(targetGame?.id));
+            currentLink.onclick = () => window.KioraNavigation?.capture({ label: "About" });
+        }
         if (subtitle) {
             subtitle.textContent = setting.subtitle || "";
             subtitle.hidden = !setting.subtitle;

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="style.css?v=20260915-5">
     <link rel="stylesheet" href="cms.css?v=20261108-1">
-    <link rel="stylesheet" href="games.css?v=20260916-2">
+    <link rel="stylesheet" href="games.css?v=20261108-2">
     <link rel="stylesheet" href="site-nav.css?v=20260915-1">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
 </head>
@@ -99,7 +99,7 @@
         </section>
     </div>
 
-<div id="game-modal" class="archive-modal" role="dialog" aria-modal="true" aria-labelledby="game-modal-title">
+<div id="game-modal" class="archive-modal" role="dialog" aria-modal="true" aria-labelledby="game-modal-title" data-protect-draft>
         <div class="archive-modal-backdrop"></div>
 
         <div class="archive-modal-card game-editor-card">
@@ -121,6 +121,18 @@
                 <span class="game-editor-mark" aria-hidden="true">✦</span>
             </header>
 
+            <nav class="game-editor-tabs" aria-label="Game editor sections" role="tablist">
+                <button type="button" role="tab" aria-selected="true" data-game-editor-tab="overview">
+                    <span>01</span><strong>OVERVIEW</strong><small>基础资料</small>
+                </button>
+                <button type="button" role="tab" aria-selected="false" data-game-editor-tab="afterglow">
+                    <span>02</span><strong>AFTERGLOW</strong><small>游戏感想</small>
+                </button>
+                <button type="button" role="tab" aria-selected="false" data-game-editor-tab="characters">
+                    <span>03</span><strong>CHARACTERS</strong><small>角色印象</small>
+                </button>
+            </nav>
+
             <form id="game-form">
 
                 <input
@@ -128,6 +140,7 @@
                     type="hidden"
                 >
 
+                <div class="game-editor-pane" data-game-editor-pane="overview" role="tabpanel">
                 <section class="game-editor-section" aria-labelledby="game-basic-heading">
                     <div class="game-editor-section-heading"><span>01</span><h4 id="game-basic-heading">BASIC</h4></div>
                     <div class="game-basic-grid">
@@ -195,21 +208,45 @@
                         <label>STORE LINKS <span>ONE PER LINE: LABEL | URL</span><textarea id="game-store-links" rows="3" placeholder="NINTENDO | https://..."></textarea></label>
                     </div>
                 </section>
+                </div>
 
-                <section class="game-editor-section game-review-section" aria-labelledby="game-review-heading">
-                    <div class="game-editor-section-heading"><span>03</span><h4 id="game-review-heading">REVIEW</h4></div>
-                    <label>REVIEW<textarea id="game-review" rows="9" placeholder="Write a longer archive note..."></textarea></label>
-                </section>
+                <div class="game-editor-pane" data-game-editor-pane="afterglow" role="tabpanel" hidden>
+                    <section class="game-editor-section game-review-section" aria-labelledby="game-review-heading">
+                        <div class="game-editor-section-heading"><span>02</span><h4 id="game-review-heading">AFTERGLOW / PERSONAL NOTE</h4></div>
+                        <div class="game-writing-focus">
+                            <header>
+                                <p>不用填写完整资料，只写下游戏结束后仍然留下来的感觉。</p>
+                                <span id="game-review-count">0 字</span>
+                            </header>
+                            <label class="game-review-writing-field">
+                                <span>GAME IMPRESSION</span>
+                                <textarea id="game-review" rows="16" placeholder="最先浮现的场景、喜欢或不喜欢的地方、玩完以后仍然记得的感受……"></textarea>
+                            </label>
+                            <aside class="game-review-guide" aria-label="Writing prompts">
+                                <span>可以从这里开始</span>
+                                <p>为什么开始玩？</p>
+                                <p>最喜欢的瞬间是什么？</p>
+                                <p>玩完以后留下了什么？</p>
+                            </aside>
+                            <button id="game-open-writing" class="game-open-writing" type="button" disabled>
+                                WRITE A FULL AFTERGLOW ARTICLE →
+                                <small>在 Writing 中写一篇与本游戏关联的长文</small>
+                            </button>
+                        </div>
+                    </section>
+                </div>
 
                 <!-- =========================
                  CHARACTER ARCHIVE
                 ========================= -->
 
+                <div class="game-editor-pane" data-game-editor-pane="characters" role="tabpanel" hidden>
                 <section class="character-editor-section" aria-labelledby="game-character-heading">
 
                     <div class="character-editor-heading">
                         <div>
-                            <div class="game-editor-section-heading"><span>04</span><h4 id="game-character-heading">CHARACTER ARCHIVE</h4></div>
+                            <div class="game-editor-section-heading"><span>03</span><h4 id="game-character-heading">CHARACTER IMPRESSIONS</h4></div>
+                            <p class="character-editor-intro">每位角色单独保存。先选择一位角色，再进入只属于这条路线的记录。</p>
                         </div>
 
                         <button
@@ -228,6 +265,7 @@
                     </div>
 
                 </section>
+                </div>
 
                 <p id="game-form-message" class="form-message"></p>
 
@@ -256,7 +294,7 @@
 
         </div>
     </div>
-<div id="character-modal" class="archive-modal" role="dialog" aria-modal="true" aria-labelledby="character-modal-title">
+<div id="character-modal" class="archive-modal" role="dialog" aria-modal="true" aria-labelledby="character-modal-title" data-protect-draft>
 
         <div class="archive-modal-backdrop"></div>
 
@@ -270,73 +308,62 @@
                 ×
             </button>
 
-            <p class="modal-label">
-                CHARACTER RECORD
-            </p>
-
-            <h3 id="character-modal-title">
-                New character
-            </h3>
+            <header class="character-modal-heading">
+                <div>
+                    <p class="modal-label">CHARACTER IMPRESSION</p>
+                    <h3 id="character-modal-title">New character</h3>
+                    <p id="character-modal-game" class="character-modal-game"></p>
+                </div>
+                <span aria-hidden="true">✦</span>
+            </header>
 
             <form id="character-form">
 
                 <input id="character-id" type="hidden">
                 <input id="character-game-id" type="hidden">
 
-                <label>
-                    NAME
-                    <input
-                        id="character-name"
-                        type="text"
-                        required
-                    >
-                </label>
+                <div class="character-editor-layout">
+                    <aside class="character-editor-preview" aria-label="Character preview">
+                        <div id="character-preview-image" class="character-preview-image"><span>NO IMAGE</span></div>
+                        <p>CHARACTER IMPRESSION</p>
+                        <strong id="character-preview-name">UNTITLED</strong>
+                        <span id="character-preview-subtitle"></span>
+                        <i id="character-preview-rating">✦ —</i>
+                    </aside>
 
-                <label>
-                    SUBTITLE
-                    <input
-                        id="character-subtitle"
-                        type="text"
-                    >
-                </label>
+                    <div class="character-editor-fields">
+                        <label>
+                            NAME
+                            <input id="character-name" type="text" required autocomplete="off">
+                        </label>
 
-                <label>
-                    REVIEW
-                    <textarea
-                        id="character-review"
-                        rows="7"
-                    ></textarea>
-                </label>
+                        <label>
+                            SUBTITLE / ROUTE NOTE
+                            <input id="character-subtitle" type="text" placeholder="一句话记住这条路线">
+                        </label>
 
-                <div class="form-grid">
+                        <div class="form-grid">
+                            <label>
+                                RATING
+                                <input id="character-rating" type="number" min="0" max="10" step="0.1">
+                            </label>
+                            <label>
+                                SORT ORDER
+                                <input id="character-sort-order" type="number">
+                            </label>
+                        </div>
 
-                    <label>
-                        RATING
-                        <input
-                            id="character-rating"
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.1"
-                        >
-                    </label>
-
-                    <label>
-                        SORT ORDER
-                        <input
-                            id="character-sort-order"
-                            type="number"
-                        >
-                    </label>
-
+                        <label>
+                            IMAGE URL
+                            <input id="character-image-url" type="url" placeholder="https://...">
+                        </label>
+                    </div>
                 </div>
 
-                <label>
-                    IMAGE URL
-                    <input
-                        id="character-image-url"
-                        type="url"
-                    >
+                <label class="character-review-writing-field">
+                    <span>MY IMPRESSION</span>
+                    <textarea id="character-review" rows="14" placeholder="先写最强烈的感受，再写喜欢的瞬间、矛盾之处和路线结束后的余韵……"></textarea>
+                    <small><span id="character-review-count">0 字</span>　不需要写成资料卡，只记录你真正记住的东西。</small>
                 </label>
 
                 <p
@@ -375,7 +402,7 @@
     <script src="auth.js?v=20260920-1"></script>
     <script src="article-common.js?v=20260916-3"></script>
     <script src="navigation-state.js?v=20261108-1"></script>
-    <script src="script.js?v=20260916-3"></script>
+    <script src="script.js?v=20261108-2"></script>
     <script src="games.js?v=20261108-1"></script>
     <script src="site-nav.js?v=20261108-1"></script>
     <script src="kiora/context-broker.js?v=20260921-3"></script>

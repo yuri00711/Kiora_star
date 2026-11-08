@@ -192,6 +192,36 @@ button, a { font: inherit; }
 .game-record-summary dd { margin: 10px 0 0; color: var(--text-main); font-size: 13px; letter-spacing: 1px; }
 .game-record-empty { margin: 34px 0 0; padding: 30px 0; border-top: 1px solid var(--border-soft); color: var(--text-muted); font-size: 10px; line-height: 1.8; letter-spacing: 1.5px; }
 
+.record-section-index {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+    background: rgba(248, 244, 248, .9);
+    backdrop-filter: blur(16px);
+    scrollbar-width: none;
+}
+
+.record-section-index::-webkit-scrollbar { display: none; }
+.record-section-index a {
+    min-width: max-content;
+    min-height: 54px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+    color: var(--text-soft);
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-decoration: none;
+}
+.record-section-index a + a { border-left: 1px solid var(--border-soft); }
+.record-section-index a span { color: var(--accent); font-size: 7px; }
+.record-section-index a:hover { color: var(--text-main); background: rgba(255,255,255,.45); }
+.game-full-record > .game-detail-section { scroll-margin-top: 74px; }
+
 /* Character record */
 .character-detail-shell { max-width: 980px; }
 .character-detail-header { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(36px, 7vw, 76px); align-items: center; padding: clamp(34px, 6vw, 68px); border-block: 1px solid var(--border); background: linear-gradient(142deg, rgba(255,253,250,.78), rgba(242,235,245,.58)); box-shadow: var(--shadow-soft); }
@@ -210,4 +240,129 @@ button, a { font: inherit; }
     .character-detail-header, .character-detail-header.has-image { grid-template-columns: 1fr; gap: 30px; padding: 28px 21px 34px; }
     .character-detail-image-frame { width: min(100%, 420px); margin: auto; }
     .character-detail-heading h1 { font-size: clamp(36px, 12vw, 54px); }
+}
+
+/* Character impression reading hierarchy */
+.character-detail-shell { max-width: 1120px; }
+
+.character-detail-header {
+    align-items: stretch;
+    padding: clamp(28px, 5vw, 58px);
+}
+
+.character-detail-header.has-image { grid-template-columns: minmax(240px, 36%) minmax(0, 1fr); }
+
+.character-detail-image-frame {
+    display: grid;
+    place-items: center;
+    min-height: 420px;
+    padding: 12px;
+}
+
+.character-detail-image-frame img { max-height: 620px; }
+
+.character-detail-heading {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.character-game-context {
+    margin: 16px 0 0;
+    color: var(--text-muted);
+    font-size: 8px;
+    letter-spacing: 2.2px;
+}
+
+.character-game-context a {
+    margin-left: 8px;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.character-game-context a:hover { color: var(--text-main); }
+.character-detail-heading h1 { margin-top: 18px; }
+.character-detail-heading .game-detail-original { max-width: 640px; margin-top: 16px; font-size: 13px; line-height: 1.8; }
+
+.character-primary-actions {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 44px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.character-rating-focus span {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--text-muted);
+    font-size: 7px;
+    letter-spacing: 2.5px;
+}
+
+.character-rating-focus strong {
+    color: var(--accent);
+    font-size: clamp(26px, 4vw, 42px);
+    font-weight: 400;
+    letter-spacing: 1px;
+}
+
+.character-edit-record {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    padding: 0 16px;
+    color: var(--accent);
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-decoration: none;
+}
+
+.character-edit-record:hover { background: rgba(255,255,255,.52); }
+
+.character-record-page .game-note-section {
+    max-width: 900px;
+    margin-inline: auto;
+    padding: clamp(38px, 6vw, 70px);
+}
+
+.character-record-page .game-note-section .game-detail-reading {
+    max-width: 760px;
+    margin-top: 38px;
+    font-size: clamp(14px, 1.6vw, 17px);
+    line-height: 2.15;
+}
+
+.game-character-card h3 { margin-top: 15px; }
+.game-character-meta { padding-right: 32px; }
+.game-character-review { color: rgba(72, 61, 75, .72); }
+.game-character-view { width: 100%; }
+
+.game-open-record {
+    width: 100%;
+    min-height: 54px;
+    margin-top: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-block: 1px solid var(--border-soft);
+    color: var(--accent);
+    font-size: 8px;
+    letter-spacing: 2.4px;
+    text-decoration: none;
+}
+
+.game-open-record:hover { color: var(--text-main); }
+
+@media (max-width: 700px) {
+    .character-detail-header,
+    .character-detail-header.has-image { grid-template-columns: 1fr; }
+    .character-detail-image-frame { width: min(100%, 420px); min-height: 0; }
+    .character-primary-actions { align-items: flex-start; flex-direction: column; }
+    .character-edit-record { width: 100%; justify-content: center; }
+    .character-record-page .game-note-section { padding-inline: 22px; }
 }
