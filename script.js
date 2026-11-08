@@ -158,6 +158,8 @@ const kioraAuth = window.KioraAuth;
 let currentUser = null;
 let gamesCache = [];
 let requestedGameEditorOpened = false;
+let requestedCharacterEditorOpened = false;
+let pendingRequestedCharacterId = "";
 let lockedPageScrollY = 0;
 
 // Small public bridge used by the optional profile/writing CMS module.
@@ -642,7 +644,11 @@ function openRequestedGameEditor() {
     const game = gamesCache.find((item) => String(item.id) === requestedId);
     if (!game) return;
     requestedGameEditorOpened = true;
-    openGameEditor(game);
+    pendingRequestedCharacterId = editorParams.get("editCharacter") || "";
+    const requestedPane = pendingRequestedCharacterId || editorParams.get("addCharacter") === "1"
+        ? "characters"
+        : editorParams.get("gameSection") || "overview";
+    openGameEditor(game, { pane: requestedPane });
     if (new URLSearchParams(window.location.search).get("addCharacter") === "1") {
         window.setTimeout(() => openCharacterEditor(null), 0);
     }
@@ -658,6 +664,45 @@ const GAME_FAVORITES = new Set(["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL"
 let gameTagValues = [];
 let gameCoverPreviewObjectUrl = "";
 let gameSaveInProgress = false;
+let activeGameEditorPane = "overview";
+
+function setGameEditorPane(pane, updateUrl = false) {
+    const allowed = new Set(["overview", "afterglow", "characters"]);
+    activeGameEditorPane = allowed.has(pane) ? pane : "overview";
+    document.querySelectorAll("[data-game-editor-tab]").forEach((button) => {
+        const active = button.dataset.gameEditorTab === activeGameEditorPane;
+        button.setAttribute("aria-selected", String(active));
+        button.tabIndex = active ? 0 : -1;
+    });
+    document.querySelectorAll("[data-game-editor-pane]").forEach((panel) => {
+        panel.hidden = panel.dataset.gameEditorPane !== activeGameEditorPane;
+    });
+    if (updateUrl) {
+        const url = new URL(window.location.href);
+        if (activeGameEditorPane === "overview") url.searchParams.delete("gameSection");
+        else url.searchParams.set("gameSection", activeGameEditorPane);
+        history.replaceState(history.state, "", url);
+    }
+    gameModal?.querySelector(".game-editor-card")?.scrollTo({ top: 0, behavior: "auto" });
+}
+
+document.querySelectorAll("[data-game-editor-tab]").forEach((button) => {
+    button.addEventListener("click", () => setGameEditorPane(button.dataset.gameEditorTab, true));
+});
+
+function updateGameReviewStats() {
+    const review = document.getElementById("game-review");
+    const count = document.getElementById("game-review-count");
+    if (review && count) count.textContent = `${[...review.value.trim()].length} 字`;
+}
+
+document.getElementById("game-review")?.addEventListener("input", updateGameReviewStats);
+document.getElementById("game-open-writing")?.addEventListener("click", () => {
+    const gameId = document.getElementById("game-id")?.value;
+    if (!gameId) return;
+    window.KioraNavigation?.capture({ label: document.getElementById("game-title")?.value || "Game editor" });
+    window.location.href = `write.html?type=game_review&gameId=${encodeURIComponent(gameId)}`;
+});
 
 function normalizeGameList(value) {
     if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
@@ -771,6 +816,12 @@ function setGameEditorMode(game) {
         ? `Archive ${String(game.sort_order ?? game.id).padStart(3, "0")} / ${game.title || "UNTITLED"}`
         : "Create a new archive entry.";
     addCharacterButton.disabled = !editing;
+    const writingButton = document.getElementById("game-open-writing");
+    if (writingButton) writingButton.disabled = !editing;
+    document.querySelectorAll('[data-game-editor-tab="afterglow"], [data-game-editor-tab="characters"]').forEach((button) => {
+        button.disabled = !editing;
+        button.title = editing ? "" : "请先保存基础资料";
+    });
     deleteGameButton.classList.toggle("hidden", !editing || kioraAuth.role !== "owner");
 }
 
@@ -799,7 +850,7 @@ document.querySelectorAll("#game-started-at, #game-completed-at").forEach((input
     });
 });
 
-function openGameEditor(game) {
+function openGameEditor(game, options = {}) {
     if (!kioraAuth.can(game ? "game:edit" : "game:create")) return;
 
     currentGameForCharacters = game && game.id ? game : null;
@@ -893,6 +944,8 @@ function openGameEditor(game) {
     if (gameCoverPreviewObjectUrl) URL.revokeObjectURL(gameCoverPreviewObjectUrl);
     gameCoverPreviewObjectUrl = "";
     updateGameCoverPreview(game?.cover_url || "");
+    updateGameReviewStats();
+    setGameEditorPane(options.pane || "overview");
 
     if (game && game.id) {
 
@@ -1078,11 +1131,14 @@ if (gameForm) {
                 document.getElementById("game-cover-upload").value = "";
                 setGameEditorMode(savedGame);
                 renderCharacterEditorList([]);
-                message.textContent = "Record created. You can add characters now.";
+                gameModal.dataset.dirty = "false";
+                message.textContent = "Record created. Continue with your impression or character notes.";
+                setGameEditorPane("afterglow", true);
                 return;
             }
 
             message.textContent = "";
+            gameModal.dataset.dirty = "false";
             closeModal(gameModal);
 
         }
@@ -1146,6 +1202,7 @@ if (deleteGameButton) {
             }
 
 
+            gameModal.dataset.dirty = "false";
             closeModal(
                 gameModal
             );
@@ -1242,6 +1299,15 @@ async function loadCharactersForGame(gameId) {
     renderCharacterEditorList(
         charactersCache
     );
+
+    if (pendingRequestedCharacterId && !requestedCharacterEditorOpened) {
+        const requestedCharacter = charactersCache.find((item) => String(item.id) === String(pendingRequestedCharacterId));
+        if (requestedCharacter) {
+            requestedCharacterEditorOpened = true;
+            pendingRequestedCharacterId = "";
+            openCharacterEditor(requestedCharacter);
+        }
+    }
 
 }
 
@@ -1425,13 +1491,38 @@ window.addEventListener("beforeunload", (event) => {
 });
 }
 
-function openCharacterEditor(character) {
+function updateCharacterEditorPreview() {
+    const name = document.getElementById("character-name")?.value.trim() || "UNTITLED";
+    const subtitle = document.getElementById("character-subtitle")?.value.trim() || "";
+    const rating = document.getElementById("character-rating")?.value;
+    const imageUrl = safeImageUrl(document.getElementById("character-image-url")?.value.trim());
+    const review = document.getElementById("character-review")?.value.trim() || "";
+    const image = document.getElementById("character-preview-image");
 
-    console.log(
-        "openCharacterEditor:",
-        character,
-        currentGameForCharacters
-    );
+    document.getElementById("character-preview-name").textContent = name;
+    document.getElementById("character-preview-subtitle").textContent = subtitle;
+    document.getElementById("character-preview-rating").textContent = rating ? `✦ ${rating} / 10` : "✦ —";
+    document.getElementById("character-review-count").textContent = `${[...review].length} 字`;
+
+    image.replaceChildren();
+    if (imageUrl) {
+        const preview = document.createElement("img");
+        preview.src = imageUrl;
+        preview.alt = "";
+        preview.addEventListener("error", () => image.replaceChildren(Object.assign(document.createElement("span"), { textContent: "NO IMAGE" })), { once: true });
+        image.append(preview);
+    } else {
+        const empty = document.createElement("span");
+        empty.textContent = "NO IMAGE";
+        image.append(empty);
+    }
+}
+
+["character-name", "character-subtitle", "character-rating", "character-image-url", "character-review"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", updateCharacterEditorPreview);
+});
+
+function openCharacterEditor(character) {
 
     if (!kioraAuth.can(character ? "character:edit" : "character:create")) {
         console.warn("无法打开角色编辑器：未登录");
@@ -1497,6 +1588,7 @@ function openCharacterEditor(character) {
 
 
     message.textContent = "";
+    document.getElementById("character-modal-game").textContent = currentGameForCharacters.title || "GAME RECORD";
 
 
     gameId.value =
@@ -1560,6 +1652,7 @@ function openCharacterEditor(character) {
     openModal(
         characterModal
     );
+    updateCharacterEditorPreview();
 
 }
 
@@ -1697,6 +1790,7 @@ if (characterForm) {
                 message.textContent =
                     "";
 
+                characterModal.dataset.dirty = "false";
                 closeModal(
                     characterModal
                 );
@@ -1772,6 +1866,7 @@ if (deleteCharacterButton) {
                 }
 
 
+                characterModal.dataset.dirty = "false";
                 closeModal(
                     characterModal
                 );
