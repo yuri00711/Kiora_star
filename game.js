@@ -11,7 +11,7 @@
 
     document.getElementById("game-back").addEventListener("click", () => {
         if (navigation) navigation.back("games.html");
-        else window.location.href = "games.html";
+        else window.location.replace("games.html");
     });
 
     const returnState = navigation?.peek();
@@ -38,6 +38,8 @@
         status.textContent = error?.message || "这条游戏档案不存在。";
         return;
     }
+    window.KioraDetailState = window.KioraDetailState || {};
+    window.KioraDetailState.game = game;
 
     const archiveNumber = String(game.sort_order ?? game.id).padStart(3, "0");
     document.title = `${game.title || "Game Archive"} · Kiora`;
@@ -111,10 +113,8 @@
     openRecord.addEventListener("click", () => navigation?.capture({ label: game.title }));
 
     if (auth.can("game:edit") || auth.can("character:create")) {
-        document.getElementById("game-edit-record").href = `games.html?editGame=${encodeURIComponent(game.id)}&gameSection=overview`;
-        document.getElementById("game-add-character").href = `games.html?editGame=${encodeURIComponent(game.id)}&addCharacter=1`;
-        document.getElementById("game-edit-record").addEventListener("click", () => navigation?.capture({ label: game.title }));
-        document.getElementById("game-add-character").addEventListener("click", () => navigation?.capture({ label: game.title }));
+        document.getElementById("game-edit-record").hidden = !auth.can("game:edit");
+        document.getElementById("game-add-character").hidden = !auth.can("character:create");
         const writeAfterglow = document.getElementById("game-write-afterglow");
         writeAfterglow.href = `write.html?type=game_review&gameId=${encodeURIComponent(game.id)}`;
         writeAfterglow.hidden = !auth.can("writing:create");
@@ -169,5 +169,6 @@
 
     status.hidden = true;
     detail.hidden = false;
+    window.dispatchEvent(new CustomEvent("kiora:game-detail-ready", { detail: { game } }));
     navigation?.restore();
 })();

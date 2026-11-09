@@ -79,7 +79,7 @@
             button.innerHTML = `<span>${String(index + 1).padStart(2, "0")}</span>${escapeText(board.title)}`;
             button.addEventListener("click", async () => {
                 activeBoard = board;
-                history.replaceState(null, "", `?id=${encodeURIComponent(board.id)}`);
+                history.replaceState(history.state, "", `?id=${encodeURIComponent(board.id)}`);
                 renderTabs();
                 await loadBoard(board.id);
             });
@@ -234,7 +234,7 @@
         const { data, error } = await auth.write("tier_board_create", payload, () => db.from("tier_boards").insert(payload).select("id,title,description,sort_order,created_at,updated_at").single());
         if (error) return alert(`Create failed: ${error.message}`);
         boards.push(data); activeBoard = data; sections = []; items = [];
-        history.replaceState(null, "", `?id=${encodeURIComponent(data.id)}`);
+        history.replaceState(history.state, "", `?id=${encodeURIComponent(data.id)}`);
         renderTabs(); renderBoard();
     }
 

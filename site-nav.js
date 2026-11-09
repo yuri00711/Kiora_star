@@ -10,6 +10,10 @@
         link.classList.toggle("active", active);
         if (active) link.setAttribute("aria-current", "page");
         else link.removeAttribute("aria-current");
+        if (active) link.addEventListener("click", (event) => {
+            const target = new URL(link.href, window.location.href);
+            if (target.pathname === window.location.pathname && target.search === window.location.search && !target.hash) event.preventDefault();
+        });
     });
 
     function setMenu(open, returnFocus = false) {

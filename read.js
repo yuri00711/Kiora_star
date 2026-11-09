@@ -37,8 +37,8 @@
         const url = new URL(window.location.href);
         if (articlePages.length > 1) url.searchParams.set("page", String(page));
         else url.searchParams.delete("page");
-        const state = { articleId: String(id), page };
-        if (mode === "push") history.pushState(state, "", url);
+        const state = { ...(history.state || {}), articleId: String(id), page };
+        if (mode === "push") history.pushState(navigation?.markSameDocumentPush(state) || state, "", url);
         else if (mode === "replace") history.replaceState(state, "", url);
     }
 
@@ -86,7 +86,7 @@
             ? `game.html?id=${encodeURIComponent(sourceGameId)}`
             : "writing.html";
         if (navigation) navigation.back(fallback);
-        else window.location.href = fallback;
+        else window.location.replace(fallback);
     }
 
     document.getElementById("reader-back").addEventListener("click", returnToJournal);

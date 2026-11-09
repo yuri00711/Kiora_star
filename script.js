@@ -182,6 +182,7 @@ window.yuriArchive = Object.freeze({
     openGameEditor,
     openModal,
     closeModal,
+    restorePageScroll,
     safeImageUrl
 });
 
@@ -204,6 +205,17 @@ function openModal(modal) {
         "hidden";
 }
 
+function restorePageScroll(scrollY = lockedPageScrollY) {
+    const root = document.documentElement;
+    const previousBehavior = root.style.scrollBehavior;
+    root.style.setProperty("scroll-behavior", "auto", "important");
+    window.scrollTo(0, Math.max(0, Number(scrollY) || 0));
+    requestAnimationFrame(() => {
+        if (previousBehavior) root.style.scrollBehavior = previousBehavior;
+        else root.style.removeProperty("scroll-behavior");
+    });
+}
+
 
 function closeModal(modal) {
 
@@ -220,7 +232,7 @@ function closeModal(modal) {
     const anotherModalIsOpen = document.querySelector(".archive-modal.active");
     document.body.style.overflow = anotherModalIsOpen ? "hidden" : "";
     if (!anotherModalIsOpen) {
-        window.scrollTo(0, lockedPageScrollY);
+        restorePageScroll();
     }
 }
 
@@ -700,8 +712,9 @@ document.getElementById("game-review")?.addEventListener("input", updateGameRevi
 document.getElementById("game-open-writing")?.addEventListener("click", () => {
     const gameId = document.getElementById("game-id")?.value;
     if (!gameId) return;
-    window.KioraNavigation?.capture({ label: document.getElementById("game-title")?.value || "Game editor" });
-    window.location.href = `write.html?type=game_review&gameId=${encodeURIComponent(gameId)}`;
+    const target = `write.html?type=game_review&gameId=${encodeURIComponent(gameId)}`;
+    if (window.KioraNavigation) window.KioraNavigation.navigate(target, { label: document.getElementById("game-title")?.value || "Game editor" });
+    else window.location.assign(target);
 });
 
 function normalizeGameList(value) {

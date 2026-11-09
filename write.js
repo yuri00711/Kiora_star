@@ -200,7 +200,7 @@
             ? `game.html?id=${encodeURIComponent(requestedGameId)}`
             : "writing.html";
         if (window.KioraNavigation) window.KioraNavigation.back(fallback);
-        else window.location.href = fallback;
+        else window.location.replace(fallback);
     }
     field("write-back").addEventListener("click", goBack);
 
@@ -295,7 +295,7 @@
             target.searchParams.set("id", String(result.data.id));
             target.searchParams.set("from", payload.category);
             if (payload.game_id) target.searchParams.set("gameId", String(payload.game_id));
-            window.location.href = `${target.pathname.split("/").pop()}${target.search}`;
+            window.location.replace(`${target.pathname.split("/").pop()}${target.search}`);
         }, 450);
     });
 
@@ -324,7 +324,7 @@
     await auth.initialize(db);
     if (!(auth.can("writing:create") || auth.can("writing:edit"))) {
         gateStatus.textContent = "此页面仅限管理员使用，正在返回首页……";
-        window.setTimeout(() => { window.location.href = "index.html"; }, 900);
+        window.setTimeout(() => { window.location.replace("index.html"); }, 900);
         return;
     }
     adminUser = auth.state.identity || auth.role;

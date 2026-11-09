@@ -88,7 +88,7 @@
         state.view = view;
         $$(".study-view").forEach((section) => { section.hidden = section.dataset.view !== view; });
         $$('[data-study-view]').forEach((button) => button.setAttribute("aria-current", button.dataset.studyView === view ? "page" : "false"));
-        if (updateHash) history.replaceState(null, "", `#${view}`);
+        if (updateHash) history.replaceState(history.state, "", `#${view}`);
         if (view === "calendar") renderCalendar(); if (view === "practice") renderPractices();
         if (view === "mistakes") renderMistakes(); if (view === "revisions") renderRevisions(); if (view === "notes") renderNotes();
         window.scrollTo({ top: $(".study-index").offsetTop - 80, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });

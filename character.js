@@ -26,12 +26,15 @@
     const { data: game } = gameId
         ? await db.from("games").select("id,title").eq("id", gameId).maybeSingle()
         : { data: null };
-    const backPath = gameId ? `game-record.html?id=${encodeURIComponent(gameId)}` : "games.html";
+    window.KioraDetailState = window.KioraDetailState || {};
+    window.KioraDetailState.character = character;
+    window.KioraDetailState.game = game;
+    const backPath = gameId ? `game.html?id=${encodeURIComponent(gameId)}` : "games.html";
     document.getElementById("character-back").href = backPath;
     document.getElementById("character-back-bottom").href = backPath;
     [document.getElementById("character-back"), document.getElementById("character-back-bottom")].forEach((link) => {
         link.addEventListener("click", (event) => {
-            if (!navigation?.peek()) return;
+            if (!navigation) return;
             event.preventDefault();
             navigation.back(backPath);
         });
@@ -50,9 +53,7 @@
 
     if (gameId && auth.can("character:edit")) {
         const edit = document.getElementById("character-edit");
-        edit.href = `games.html?editGame=${encodeURIComponent(gameId)}&gameSection=characters&editCharacter=${encodeURIComponent(character.id)}`;
         edit.hidden = false;
-        edit.addEventListener("click", () => navigation?.capture({ label: character.name || "Character" }));
     }
 
     if (character.subtitle) {
@@ -70,7 +71,7 @@
         image.alt = character.name || "Character";
         frame.hidden = false;
         image.addEventListener("error", () => {
-            frame.remove();
+            frame.hidden = true;
             header.classList.remove("has-image");
         }, { once: true });
     }
@@ -82,5 +83,6 @@
 
     status.hidden = true;
     detail.hidden = false;
+    window.dispatchEvent(new CustomEvent("kiora:character-detail-ready", { detail: { character, game } }));
     navigation?.restore();
 })();

@@ -6,7 +6,7 @@
     <title>Character Record · Kiora</title>
     <meta name="description" content="Kiora character archive record.">
     <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="game.css?v=20261109-4">
+    <link rel="stylesheet" href="game.css?v=20261109-5">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
 </head>
 <body class="character-record-page">
@@ -15,7 +15,7 @@
     <div class="game-orbits" aria-hidden="true"><span></span><span></span></div>
 
     <nav class="game-detail-nav" aria-label="Character navigation">
-        <a id="character-back" href="game-record.html">← BACK TO GAME RECORD</a>
+        <a id="character-back" href="game.html">← BACK TO GAME</a>
         <a href="index.html">KIORA.SPACE</a>
     </nav>
 
@@ -33,7 +33,7 @@
                     <p id="character-subtitle" class="game-detail-original" hidden></p>
                     <div class="character-primary-actions">
                         <div class="character-rating-focus"><span>MY RATING</span><strong id="character-rating"></strong></div>
-                        <a id="character-edit" class="character-edit-record" href="games.html" hidden>EDIT IMPRESSION</a>
+                        <button id="character-edit" class="character-edit-record" type="button" hidden>EDIT IMPRESSION</button>
                     </div>
                 </div>
             </header>
@@ -46,7 +46,7 @@
             </section>
 
             <footer class="game-detail-footer">
-                <a id="character-back-bottom" href="game-record.html">← RETURN TO GAME RECORD</a>
+                <a id="character-back-bottom" href="game.html">← RETURN TO GAME</a>
             </footer>
         </article>
     </main>
@@ -54,8 +54,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260920-1"></script>
     <script src="article-common.js?v=20260916-2"></script>
-    <script src="navigation-state.js?v=20261109-2"></script>
-    <script src="character.js?v=20261108-1"></script>
+    <script src="navigation-state.js?v=20261109-3"></script>
+    <script src="character.js?v=20261109-2"></script>
+    <script src="detail-editors.js?v=20261109-1"></script>
     <script src="kiora/context-broker.js?v=20260921-3"></script>
     <script src="kiora/page-adapters.js?v=20260921-3"></script>
     <script src="kiora/kiora-dock.js?v=20260922-1"></script>

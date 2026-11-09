@@ -54,6 +54,12 @@
         .map((tag) => tag.trim())
         .filter(Boolean);
 
+    async function refreshAtSameScroll(loader) {
+        const scrollY = window.scrollY;
+        await loader();
+        bridge.restorePageScroll?.(scrollY);
+    }
+
     function escapeHtml(text) {
         return String(text ?? "")
             .replaceAll("&", "&amp;")
@@ -909,7 +915,7 @@
         await removeReplacedImage(state.profile.avatar_url, avatarUrl);
         byId("profile-modal").dataset.dirty = "false";
         bridge.closeModal(byId("profile-modal"));
-        await loadProfile();
+        await refreshAtSameScroll(loadProfile);
     });
 
     byId("restore-auto-updated")?.addEventListener("click", async () => {
@@ -1053,7 +1059,7 @@
         await removeReplacedImage(previousItem?.image_url, imageUrl);
         byId("profile-item-modal").dataset.dirty = "false";
         bridge.closeModal(byId("profile-item-modal"));
-        await loadProfile();
+        await refreshAtSameScroll(loadProfile);
     });
 
     byId("profile-item-delete")?.addEventListener("click", async () => {
@@ -1070,7 +1076,7 @@
         await removeReplacedImage(deletedItem?.image_url, null);
         byId("profile-item-modal").dataset.dirty = "false";
         bridge.closeModal(byId("profile-item-modal"));
-        await loadProfile();
+        await refreshAtSameScroll(loadProfile);
     });
 
     function addAxisEditor(axis = {}) {
@@ -1139,7 +1145,7 @@
         }
         byId("otome-modal").dataset.dirty = "false";
         bridge.closeModal(byId("otome-modal"));
-        await loadProfile();
+        await refreshAtSameScroll(loadProfile);
     });
 
     // Writings
@@ -1443,25 +1449,26 @@
         if (!window.confirm(`确定删除《${writing.title || "UNTITLED"}》吗？`)) return;
         const { error } = await db.from("writings").delete().eq("id", writing.id);
         if (error) window.alert(`删除失败：${error.message}`);
-        else await loadWritings();
+        else await refreshAtSameScroll(loadWritings);
     }
 
     function openWritingEditor(category, writing = null) {
         if (!isAdmin()) return;
-        window.KioraNavigation?.capture({ label: "Writing" });
         const query = writing?.id
             ? `id=${encodeURIComponent(writing.id)}`
             : `type=${encodeURIComponent(category || "essay")}`;
-        window.location.href = `write.html?${query}`;
+        if (window.KioraNavigation) window.KioraNavigation.navigate(`write.html?${query}`, { label: "Writing" });
+        else window.location.assign(`write.html?${query}`);
     }
 
     function openReading(writing) {
-        window.KioraNavigation?.capture({ label: "Writing" });
         const target = new URL("read.html", window.location.href);
         target.searchParams.set("id", String(writing.id));
         target.searchParams.set("from", writing.category || "");
         if (writing.game_id) target.searchParams.set("gameId", String(writing.game_id));
-        window.location.href = `${target.pathname.split("/").pop()}${target.search}`;
+        const href = `${target.pathname.split("/").pop()}${target.search}`;
+        if (window.KioraNavigation) window.KioraNavigation.navigate(href, { label: "Writing" });
+        else window.location.assign(href);
     }
 
     document.addEventListener("click", async (event) => {
@@ -1477,13 +1484,15 @@
         }
         if (event.target.closest("[data-edit-currently-playing]")) {
             if (!isAdmin()) return;
-            window.location.href = "currently-playing.html";
+            if (window.KioraNavigation) window.KioraNavigation.navigate("currently-playing.html", { label: "About" });
+            else window.location.assign("currently-playing.html");
             return;
         }
 
         if (event.target.closest("[data-edit-export-profile]")) {
             if (!isAdmin()) return;
-            window.location.href = "export-profile.html";
+            if (window.KioraNavigation) window.KioraNavigation.navigate("export-profile.html", { label: "About" });
+            else window.location.assign("export-profile.html");
             return;
         }
 
@@ -1535,7 +1544,7 @@
                 () => db.from("writings").update({ is_pinned: !writing.is_pinned }).eq("id", writing.id)
             );
             if (error) window.alert(`更新失败：${error.message}`);
-            else await loadWritings();
+            else await refreshAtSameScroll(loadWritings);
         }
     });
 

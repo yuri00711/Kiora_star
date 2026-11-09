@@ -63,10 +63,10 @@
     byId("currently-add-tag").addEventListener("click", addTag);
     byId("currently-tag-entry").addEventListener("keydown", (event) => { if (event.key !== "Enter") return; event.preventDefault(); addTag(); });
     window.addEventListener("beforeunload", (event) => { if (!dirty) return; saveDraft(); event.preventDefault(); event.returnValue = ""; });
-    function back() { if (dirty && !confirm("还有未保存的修改，确定返回吗？草稿会保留在此设备。")) return; window.location.href = "about.html"; }
+    function back() { if (dirty && !confirm("还有未保存的修改，确定返回吗？草稿会保留在此设备。")) return; if (window.KioraNavigation) window.KioraNavigation.back("about.html"); else window.location.replace("about.html"); }
     byId("settings-back").addEventListener("click", back);
     await auth.initialize(db);
-    if (!auth.can("currently-playing:update")) { byId("settings-gate").textContent = "此页面仅限管理员使用，正在返回首页……"; setTimeout(() => location.href = "index.html", 900); return; }
+    if (!auth.can("currently-playing:update")) { byId("settings-gate").textContent = "此页面仅限管理员使用，正在返回首页……"; setTimeout(() => location.replace("index.html"), 900); return; }
     const [settingsResult, gamesResult, otomeResult, favoritesResult] = await Promise.all([db.from("site_settings").select("*").eq("id", 1).maybeSingle(), db.from("games").select("id,title").order("sort_order", { ascending: true, nullsFirst: false }), db.from("otome_profile").select("play_styles,favorite_elements").eq("id", 1).maybeSingle(), db.from("profile_favorites").select("name").order("sort_order", { ascending: true, nullsFirst: false })]);
     if (settingsResult.error || gamesResult.error) { byId("settings-gate").textContent = settingsResult.error?.message || gamesResult.error?.message; return; }
     games = gamesResult.data || [];
