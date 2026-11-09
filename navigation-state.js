@@ -5,6 +5,8 @@
     const RESTORE_KEY = "kiora:navigation:restore:v1";
     const MAX_AGE = 4 * 60 * 60 * 1000;
 
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
     function currentHref() {
         return `${window.location.pathname}${window.location.search}`;
     }
@@ -105,7 +107,15 @@
         sessionStorage.removeItem("yuri:restore-scroll");
         if (state.href !== currentHref()) return false;
         requestAnimationFrame(() => requestAnimationFrame(() => {
-            window.scrollTo({ top: state.scrollY, behavior: "auto" });
+            const root = document.documentElement;
+            const previousBehavior = root.style.scrollBehavior;
+            const maxScroll = Math.max(0, root.scrollHeight - window.innerHeight);
+            root.style.setProperty("scroll-behavior", "auto", "important");
+            window.scrollTo(0, Math.min(state.scrollY, maxScroll));
+            requestAnimationFrame(() => {
+                if (previousBehavior) root.style.scrollBehavior = previousBehavior;
+                else root.style.removeProperty("scroll-behavior");
+            });
         }));
         return true;
     }
