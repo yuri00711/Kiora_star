@@ -543,6 +543,7 @@
             byId("free-space-content").innerHTML = state.profile.free_space_content
                 ? markdownToHtml(state.profile.free_space_content)
                 : `<p class="cms-empty">${isAdmin() ? "这里还没有留下文字。" : ""}</p>`;
+            setOptionalProfileSection("free-space", !state.profile.free_space_content);
             renderProfileCollections();
             renderOtome();
             renderProfileSidebarMeta();
@@ -576,7 +577,7 @@
         byId("home-profile-otome").textContent = otome.join(" / ") || "—";
         const current = state.settings.currently_playing || {};
         const linked = (bridge.games || []).find((game) => String(game.id) === String(current.game_id));
-        byId("home-profile-current").textContent = current.title || linked?.title || bridge.games?.[0]?.title || "—";
+        byId("home-profile-current").textContent = current.title || linked?.title || "—";
     }
 
     function renderProfileIdentity() {
@@ -656,12 +657,14 @@
     function renderCurrentGame(games) {
         const setting = state.settings.currently_playing || {};
         const linked = games?.find((game) => String(game.id) === String(setting.game_id));
+        const hasCurrentGame = Boolean(setting.title || linked?.title);
         const current = byId("profile-current-game");
         const currentLink = byId("profile-current-game-link");
         const subtitle = byId("profile-current-subtitle");
         const status = byId("profile-current-status");
         const note = byId("profile-current-note");
-        if (current) current.textContent = setting.title || linked?.title || games?.[0]?.title || "—";
+        if (current) current.textContent = setting.title || linked?.title || (isAdmin() ? "NOT SET" : "");
+        setOptionalProfileSection("current", !hasCurrentGame);
         if (currentLink) {
             const targetGame = linked || null;
             currentLink.href = targetGame?.id ? `game.html?id=${encodeURIComponent(targetGame.id)}` : "games.html";
@@ -703,10 +706,21 @@
         renderBoundaries();
     }
 
+    function setOptionalProfileSection(name, empty) {
+        const section = document.querySelector(`[data-profile-optional="${name}"]`);
+        if (!section) return;
+        section.hidden = Boolean(empty && !isAdmin());
+        document.querySelectorAll("[data-profile-row]").forEach((row) => {
+            const optionalSections = [...row.querySelectorAll("[data-profile-optional]")];
+            row.hidden = Boolean(optionalSections.length && !isAdmin() && optionalSections.every((item) => item.hidden));
+        });
+    }
+
     function renderFandoms() {
         const container = byId("profile-fandoms");
         if (!container) return;
         container.replaceChildren();
+        setOptionalProfileSection("fandoms", !state.fandoms.length);
         if (!state.fandoms.length) {
             container.append(emptyState(isAdmin() ? "还没有添加坑。" : "暂无内容。"));
             return;
@@ -736,6 +750,7 @@
         const container = byId("profile-favorites");
         if (!container) return;
         container.replaceChildren();
+        setOptionalProfileSection("favorites", !state.favorites.length);
         if (!state.favorites.length) {
             container.append(emptyState(isAdmin() ? "陈列柜还是空的。" : "暂无内容。"));
             return;
@@ -771,6 +786,7 @@
         const container = byId("profile-boundaries");
         if (!container) return;
         container.replaceChildren();
+        setOptionalProfileSection("boundaries", !state.boundaries.length);
         if (!state.boundaries.length) {
             container.append(emptyState(isAdmin() ? "还没有填写需要避开的内容。" : "暂无内容。"));
             return;
@@ -790,6 +806,9 @@
         container.replaceChildren();
         (tags || []).forEach((tag) => container.append(create("span", "", tag)));
         if (showEmpty && !tags?.length) container.append(emptyState("—"));
+        if (container.closest(".standalone-about .otome-tag-groups")) {
+            container.parentElement.hidden = Boolean(!tags?.length && !isAdmin());
+        }
     }
 
     function renderOtome() {
@@ -797,6 +816,13 @@
         if (!container) return;
         container.replaceChildren();
         const axes = Array.isArray(state.otome.axes) ? state.otome.axes : [];
+        const hasOtomeProfile = Boolean(
+            axes.length
+            || state.otome.play_styles?.length
+            || state.otome.favorite_elements?.length
+            || state.otome.not_my_type?.length
+        );
+        setOptionalProfileSection("otome", !hasOtomeProfile);
         if (!axes.length) {
             container.append(emptyState(isAdmin() ? "点击 EDIT 添加你的第一条玩家属性轴。" : "暂无属性记录。"));
         } else {

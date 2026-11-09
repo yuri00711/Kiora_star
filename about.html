@@ -7,7 +7,7 @@
     <meta name="description" content="Kiora's personal profile and constellation of favorites.">
     <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="style.css?v=20260915-5">
-    <link rel="stylesheet" href="cms.css?v=20261108-2">
+    <link rel="stylesheet" href="cms.css?v=20261109-4">
     <link rel="stylesheet" href="standalone.css?v=20260915-1">
     <link rel="stylesheet" href="site-nav.css?v=20260915-1">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
@@ -42,6 +42,7 @@
         <header class="standalone-page-heading">
             <p>KIORA.SPACE / ABOUT</p>
             <h1>About</h1>
+            <span>A portrait made of little things I love.</span>
         </header>
 <section
         class="content-section reveal about-section"
@@ -53,17 +54,12 @@
         </h2>
 
 
-        <div class="profile-heading">
-            <div>
-                <p class="archive-subtitle">A portrait made of little things I love.</p>
-            </div>
-            <span class="profile-admin-controls" data-profile-admin-controls></span>
-        </div>
+        <div class="about-profile-tools"><span class="profile-admin-controls" data-profile-admin-controls></span></div>
 
         <div id="profile-status" class="cms-status" role="status">Loading profile…</div>
 
         <div id="profile-content" class="profile-content about-profile-content hidden">
-            <div class="about-profile-overview">
+            <div class="about-profile-lead">
                 <section class="profile-identity" aria-label="Profile identity">
                     <div class="profile-identity-portrait-wrap" aria-hidden="true">
                         <div class="profile-identity-portrait">
@@ -81,7 +77,7 @@
                     </div>
                 </section>
 
-                <section class="profile-block profile-desktop-meta about-current-card" aria-labelledby="currently-playing-title">
+                <section class="profile-desktop-meta about-current-card" data-profile-optional="current" aria-labelledby="currently-playing-title">
                     <div class="profile-sidebar-meta-row">
                         <div class="profile-sidebar-meta-heading">
                             <p id="currently-playing-title">CURRENTLY PLAYING</p>
@@ -100,20 +96,8 @@
                 </section>
             </div>
 
-            <nav class="about-profile-index" aria-label="About page index">
-                <a href="#about-collections"><span>01</span>COLLECTIONS</a>
-                <a href="#about-play-style"><span>02</span>PLAY STYLE</a>
-                <a href="#about-personal-notes"><span>03</span>PERSONAL NOTES</a>
-            </nav>
-
-            <section id="about-collections" class="about-profile-chapter" aria-labelledby="about-collections-title">
-                <header class="about-chapter-heading">
-                    <p>01 / COLLECTIONS</p>
-                    <h3 id="about-collections-title">Things kept close</h3>
-                    <span>熟悉的世界与反复想起的事物。</span>
-                </header>
-                <div class="about-collections-grid">
-                    <section class="profile-block">
+            <section id="about-collections" class="about-profile-band about-collections-grid" data-profile-row>
+                    <section class="about-profile-unit" data-profile-optional="fandoms">
                         <div class="profile-block-heading">
                             <div><p>FANDOMS</p></div>
                             <span data-admin-slot="add-fandom"></span>
@@ -121,23 +105,17 @@
                         <div id="profile-fandoms" class="fandom-grid"></div>
                     </section>
 
-                    <section class="profile-block">
+                    <section class="about-profile-unit" data-profile-optional="favorites">
                         <div class="profile-block-heading">
                             <div><p>FAVORITES</p></div>
                             <span data-admin-slot="add-favorite"></span>
                         </div>
                         <div id="profile-favorites" class="favorite-grid"></div>
                     </section>
-                </div>
             </section>
 
-            <section id="about-play-style" class="about-profile-chapter" aria-labelledby="about-play-style-title">
-                <header class="about-chapter-heading">
-                    <p>02 / PLAY STYLE</p>
-                    <h3 id="about-play-style-title">How stories are experienced</h3>
-                    <span>先看偏好轴，再看喜欢与避开的元素。</span>
-                </header>
-                <section class="profile-block otome-profile-block">
+            <section id="about-play-style" class="about-profile-band" data-profile-row>
+                <section class="about-profile-unit otome-profile-block" data-profile-optional="otome">
                     <div class="profile-block-heading">
                         <div><p>OTOME PROFILE</p></div>
                         <span data-admin-slot="edit-otome"></span>
@@ -151,14 +129,8 @@
                 </section>
             </section>
 
-            <section id="about-personal-notes" class="about-profile-chapter" aria-labelledby="about-personal-notes-title">
-                <header class="about-chapter-heading">
-                    <p>03 / PERSONAL NOTES</p>
-                    <h3 id="about-personal-notes-title">Boundaries and loose fragments</h3>
-                    <span>需要避开的内容，与不想丢失的文字。</span>
-                </header>
-                <div class="about-notes-grid">
-                    <section class="profile-block">
+            <section id="about-personal-notes" class="about-profile-band about-notes-grid" data-profile-row>
+                    <section class="about-profile-unit" data-profile-optional="boundaries">
                         <div class="profile-block-heading">
                             <div><p>NG</p></div>
                             <span data-admin-slot="add-boundary"></span>
@@ -166,14 +138,13 @@
                         <div id="profile-boundaries" class="boundary-list"></div>
                     </section>
 
-                    <section class="profile-block free-space-block">
+                    <section class="about-profile-unit free-space-block" data-profile-optional="free-space">
                         <div class="profile-block-heading">
                             <div><p>FREE SPACE</p></div>
                             <span aria-hidden="true">◇</span>
                         </div>
                         <div id="free-space-content" class="rich-reading"></div>
                     </section>
-                </div>
             </section>
         </div>
 
@@ -274,9 +245,9 @@
 <div id="profile-export-sheet" class="profile-export-sheet" aria-hidden="true"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260920-1"></script>
-    <script src="navigation-state.js?v=20261108-1"></script>
+    <script src="navigation-state.js?v=20261109-2"></script>
     <script src="script.js?v=20260915-8"></script>
-    <script src="cms.js?v=20261108-2"></script>
+    <script src="cms.js?v=20261108-3"></script>
     <script src="site-nav.js?v=20261108-1"></script>
     <script src="kiora/context-broker.js?v=20260921-3"></script>
     <script src="kiora/page-adapters.js?v=20260921-3"></script>
