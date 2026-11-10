@@ -1,18 +1,89 @@
 :root {
-    --page-bg: #f3eef3;
-    --text-main: #493f52;
-    --text-soft: #665a70;
-    --text-muted: #76697f;
-    --accent: #956f91;
-    --accent-soft: #e8dce9;
-    --accent-blue: #7486a3;
-    --accent-gold: #9b7d56;
-    --border: rgba(103, 82, 108, 0.22);
-    --border-soft: rgba(103, 82, 108, 0.14);
-    --surface: rgba(252, 249, 252, 0.9);
-    --surface-soft: rgba(255, 253, 255, 0.72);
-    --surface-strong: rgba(255, 253, 255, 0.96);
-    --shadow-soft: 0 24px 70px rgba(75, 57, 81, 0.065);
-    --radius-card: 16px;
-    --tracking-label: 3px;
+    color-scheme: light;
+
+    /* Kiora candy palette */
+    --cream: #fffcf5;
+    --white: #ffffff;
+    --candy-pink: #ff79b0;
+    --soda-blue: #70d7ea;
+    --sunny-yellow: #ffd868;
+    --mint-green: #a6e8c6;
+    --grape-purple: #beaef4;
+    --peach-orange: #ffa987;
+    --ink-deep: #40394d;
+
+    /* Soft surfaces */
+    --pink-soft: #fff0f6;
+    --blue-soft: #eafaff;
+    --yellow-soft: #fff8d9;
+    --mint-soft: #effcf5;
+    --purple-soft: #f2efff;
+    --orange-soft: #fff1e8;
+
+    /* Accessible emphasis colors */
+    --pink-deep: #ad2f68;
+    --blue-deep: #257b91;
+    --yellow-deep: #765812;
+    --mint-deep: #2f7354;
+    --purple-deep: #62509d;
+    --orange-deep: #9b4e2d;
+
+    /* Existing semantic aliases */
+    --page-bg: var(--cream);
+    --text-main: var(--ink-deep);
+    --text-soft: #62586d;
+    --text-muted: #786e82;
+    --accent: var(--candy-pink);
+    --accent-soft: var(--pink-soft);
+    --accent-blue: var(--soda-blue);
+    --accent-gold: var(--sunny-yellow);
+    --border: rgba(64, 57, 77, 0.18);
+    --border-soft: rgba(64, 57, 77, 0.10);
+    --surface: var(--white);
+    --surface-soft: rgba(255, 255, 255, 0.84);
+    --surface-strong: var(--white);
+    --shadow-soft: 0 16px 42px rgba(64, 57, 77, 0.08);
+    --shadow-pop: 5px 6px 0 rgba(64, 57, 77, 0.10);
+    --radius-card: 22px;
+    --radius-soft: 14px;
+    --radius-pill: 999px;
+    --tracking-label: 0.14em;
+
+    /* Typography */
+    --font-display: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+    --font-body: "Noto Sans SC", "Noto Sans JP", "Microsoft YaHei UI", "Yu Gothic UI", sans-serif;
+    --font-reading: "Noto Serif SC", "Noto Serif JP", "Yu Mincho", "Songti SC", serif;
+
+    /* Layout and interaction */
+    --content-max: 1240px;
+    --content-pad: clamp(18px, 4vw, 52px);
+    --tap-size: 44px;
+    --motion-fast: 160ms;
+    --motion-base: 240ms;
+
+    /* Module colors */
+    --home-color: var(--peach-orange);
+    --home-soft: var(--orange-soft);
+    --home-deep: var(--orange-deep);
+    --games-color: var(--soda-blue);
+    --games-soft: var(--blue-soft);
+    --games-deep: var(--blue-deep);
+    --study-color: var(--sunny-yellow);
+    --study-soft: var(--yellow-soft);
+    --study-deep: var(--yellow-deep);
+    --writing-color: var(--candy-pink);
+    --writing-soft: var(--pink-soft);
+    --writing-deep: var(--pink-deep);
+    --archive-color: var(--grape-purple);
+    --archive-soft: var(--purple-soft);
+    --archive-deep: var(--purple-deep);
+    --music-color: var(--mint-green);
+    --music-soft: var(--mint-soft);
+    --music-deep: var(--mint-deep);
+    --sale-color: var(--peach-orange);
+    --sale-soft: var(--orange-soft);
+    --sale-deep: var(--orange-deep);
+    --profile-color: var(--grape-purple);
+    --profile-soft: var(--purple-soft);
+    --profile-deep: var(--purple-deep);
 }

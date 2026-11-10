@@ -5,8 +5,38 @@
     const button = document.getElementById("site-mobile-menu-button");
     const page = document.body.dataset.page || "";
 
-    document.querySelectorAll("[data-page-link]").forEach((link) => {
-        const active = link.dataset.pageLink === page;
+    const labels = {
+        home: "ホーム",
+        about: "わたしのこと",
+        archive: "アーカイブ",
+        games: "ゲーム",
+        sale: "セール",
+        writing: "かきもの",
+        study: "おべんきょう"
+    };
+
+    const pageKeyFromLink = (link) => {
+        if (link.dataset.pageLink) return link.dataset.pageLink;
+        const file = new URL(link.href, window.location.href).pathname.split("/").pop() || "";
+        if (!file || file === "index.html") return "home";
+        if (file.startsWith("sale")) return "sale";
+        return file.replace(/\.html$/i, "");
+    };
+
+    const setVisibleLabel = (link, label) => {
+        const textNode = Array.from(link.childNodes).find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+        if (textNode) textNode.textContent = label;
+        else link.append(document.createTextNode(label));
+        link.setAttribute("aria-label", label);
+    };
+
+    document.querySelectorAll(".site-desktop-nav a, .site-mobile-menu a, [data-page-link]").forEach((link) => {
+        const linkPage = pageKeyFromLink(link);
+        if (labels[linkPage]) {
+            link.dataset.pageLink = linkPage;
+            setVisibleLabel(link, labels[linkPage]);
+        }
+        const active = linkPage === page;
         link.classList.toggle("active", active);
         if (active) link.setAttribute("aria-current", "page");
         else link.removeAttribute("aria-current");
