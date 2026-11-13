@@ -548,7 +548,7 @@
             renderProfileIdentity();
             byId("free-space-content").innerHTML = state.profile.free_space_content
                 ? markdownToHtml(state.profile.free_space_content)
-                : `<p class="cms-empty">${isAdmin() ? "这里还没有留下文字。" : ""}</p>`;
+                : `<p class="cms-empty">${isAdmin() ? "ここにはまだ文章がありません。" : ""}</p>`;
             setOptionalProfileSection("free-space", !state.profile.free_space_content);
             renderProfileCollections();
             renderOtome();
@@ -728,7 +728,7 @@
         container.replaceChildren();
         setOptionalProfileSection("fandoms", !state.fandoms.length);
         if (!state.fandoms.length) {
-            container.append(emptyState(isAdmin() ? "还没有添加坑。" : "暂无内容。"));
+            container.append(emptyState(isAdmin() ? "好きな作品を追加できます。" : "まだ記録がありません。"));
             return;
         }
         state.fandoms.forEach((item) => {
@@ -758,7 +758,7 @@
         container.replaceChildren();
         setOptionalProfileSection("favorites", !state.favorites.length);
         if (!state.favorites.length) {
-            container.append(emptyState(isAdmin() ? "陈列柜还是空的。" : "暂无内容。"));
+            container.append(emptyState(isAdmin() ? "お気に入りを追加できます。" : "まだ記録がありません。"));
             return;
         }
         state.favorites.forEach((item) => {
@@ -794,7 +794,7 @@
         container.replaceChildren();
         setOptionalProfileSection("boundaries", !state.boundaries.length);
         if (!state.boundaries.length) {
-            container.append(emptyState(isAdmin() ? "还没有填写需要避开的内容。" : "暂无内容。"));
+            container.append(emptyState(isAdmin() ? "NGの項目はまだありません。" : "まだ記録がありません。"));
             return;
         }
         state.boundaries.forEach((item) => {
@@ -830,7 +830,7 @@
         );
         setOptionalProfileSection("otome", !hasOtomeProfile);
         if (!axes.length) {
-            container.append(emptyState(isAdmin() ? "点击 EDIT 添加你的第一条玩家属性轴。" : "暂无属性记录。"));
+            container.append(emptyState(isAdmin() ? "編集から好みの軸を追加できます。" : "まだ記録がありません。"));
         } else {
             axes.forEach((axis) => {
                 const row = create("div", "otome-axis");

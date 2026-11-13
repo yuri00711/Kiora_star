@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="write.css?v=20261108-1">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
     <link rel="stylesheet" href="kiora-pop.css?v=20261113-2">
+    <link rel="stylesheet" href="write-editor.css?v=20261113-1">
     <script defer src="kiora-ja.js?v=20261113-1"></script>
 </head>
 <body data-page="writing">
@@ -38,10 +39,9 @@
             <div class="write-fields-primary">
                 <label>タイトル<input id="write-title" type="text" required maxlength="240"></label>
                 <label>サブタイトル / あらすじ<input id="write-subtitle" type="text"></label>
-                <label>短い抜粋<textarea id="write-excerpt" rows="3"></textarea></label>
             </div>
 
-            <div class="write-meta-grid">
+            <div class="write-essential-meta">
                 <label>日付<input id="write-date" type="date" required></label>
                 <label>分類<select id="write-category" required>
                     <option value="game_review">ゲーム感想</option>
@@ -54,12 +54,6 @@
                     </select>
                     <small>ゲーム感想を、対応するゲーム記録と結びつけられます。</small>
                 </label>
-                <label>タグ<input id="write-tags" type="text" placeholder="読点区切り"></label>
-                <label>並び順<input id="write-sort" type="number"></label>
-                <label class="write-wide">カバー画像URL<input id="write-cover" type="url" placeholder="https://..."></label>
-                <label class="write-wide write-upload-field">カバー画像をアップロード<input id="write-cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="write-cover-file-name"><span class="write-file-button">画像を選ぶ</span><span id="write-cover-file-name" class="write-file-name" aria-live="polite">画像はまだ選ばれていません</span><small>最大 5MB</small></label>
-                <label class="write-check"><input id="write-pinned" type="checkbox"> 上に固定</label>
-                <label class="write-check"><input id="write-public" type="checkbox" checked> 公開する</label>
             </div>
 
             <section class="body-editor">
@@ -83,6 +77,19 @@
                 <div id="write-preview" class="write-preview" hidden></div>
                 <div class="writing-stats"><span id="word-count">0 字</span><span id="reading-time">読む時間 約1分</span></div>
             </section>
+
+            <details class="write-advanced">
+                <summary>文章の設定 <span>抜粋・タグ・画像・公開範囲</span></summary>
+                <div class="write-meta-grid">
+                    <label class="write-wide">短い抜粋<textarea id="write-excerpt" rows="3"></textarea></label>
+                    <label>タグ<input id="write-tags" type="text" placeholder="読点区切り"></label>
+                    <label>並び順<input id="write-sort" type="number"></label>
+                    <label class="write-wide">カバー画像URL<input id="write-cover" type="url" placeholder="https://..."></label>
+                    <label class="write-wide write-upload-field">カバー画像をアップロード<input id="write-cover-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="write-cover-file-name"><span class="write-file-button">画像を選ぶ</span><span id="write-cover-file-name" class="write-file-name" aria-live="polite">画像はまだ選ばれていません</span><small>最大 5MB</small></label>
+                    <label class="write-check"><input id="write-pinned" type="checkbox"> 上に固定</label>
+                    <label class="write-check"><input id="write-public" type="checkbox" checked> 公開する</label>
+                </div>
+            </details>
 
             <p id="write-message" class="write-message" role="status"></p>
             <div class="write-actions">
