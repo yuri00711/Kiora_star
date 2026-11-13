@@ -8,6 +8,8 @@
     const STATES = ["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"];
     const PLATFORMS = ["SWITCH", "STEAM", "PC", "PSVITA", "PSP", "PS4", "PS5", "MOBILE", "OTHER"];
     const FAVORITES = ["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME", "UNFILED"];
+    const STATUS_LABELS = { PLAYING: "プレイ中", COMPLETED: "クリア済み", PAUSED: "休止中", DROPPED: "中断", WISHLIST: "気になる" };
+    const FAVORITE_LABELS = { FAVORITE: "いちばん好き", BELOVED: "大切", LOVE: "大好き", LIKE: "好き", NEUTRAL: "ふつう", "NOT FOR ME": "合わなかった", UNFILED: "未分類" };
     const selection = {
         status: new Set(pageParams.getAll("status")),
         platforms: new Set(pageParams.getAll("platform")),
@@ -48,6 +50,8 @@
     const gameStatus = (game) => String(game.status || game.play_status || "").toUpperCase();
     const gamePlatforms = (game) => normalizeList(game.platforms).map((item) => item.toUpperCase());
     const gameTags = (game) => normalizeList(game.tags);
+    const statusLabel = (value) => STATUS_LABELS[String(value || "").toUpperCase()] || value || "未分類";
+    const filterValueLabel = (key, value) => key === "status" ? statusLabel(value) : key === "favorite" ? (FAVORITE_LABELS[value] || value) : value;
     const favoriteLevel = (game) => {
         const value = String(game.favorite_level || "").toUpperCase();
         return ["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME"].includes(value) ? value : "UNFILED";
@@ -62,8 +66,8 @@
         const button = document.createElement("button");
         button.type = "button";
         button.className = "game-record-edit";
-        button.textContent = "EDIT";
-        button.setAttribute("aria-label", `Edit ${game.title || "game"}`);
+        button.textContent = "編集";
+        button.setAttribute("aria-label", `${game.title || "ゲーム"}を編集`);
         button.addEventListener("click", () => openEditor(game));
         return button;
     }
@@ -80,7 +84,7 @@
             button.type = "button";
             button.dataset.filterKey = key;
             button.dataset.filterValue = option;
-            button.textContent = option;
+            button.textContent = filterValueLabel(key, option);
             button.setAttribute("aria-pressed", selection[key].has(option));
             button.addEventListener("click", () => {
                 selection[key].has(option) ? selection[key].delete(option) : selection[key].add(option);
@@ -98,10 +102,10 @@
         const tags = [...new Set(games.flatMap(gameTags))].sort((a, b) => a.localeCompare(b, "zh-CN"));
         [document.getElementById("desktop-filters"), document.getElementById("mobile-filters")].forEach((root) => {
             root.replaceChildren(
-                filterGroup("STATUS", "status", STATES),
-                filterGroup("PLATFORM", "platforms", PLATFORMS),
-                filterGroup("TAGS", "tags", tags),
-                filterGroup("FAVORITE LEVEL", "favorite", FAVORITES)
+                filterGroup("状態", "status", STATES),
+                filterGroup("機種", "platforms", PLATFORMS),
+                filterGroup("タグ", "tags", tags),
+                filterGroup("お気に入り度", "favorite", FAVORITES)
             );
         });
     }
@@ -120,13 +124,14 @@
         bar.replaceChildren();
         active.forEach((value) => {
             const span = document.createElement("span");
-            span.textContent = value;
+            const key = Object.entries(selection).find(([, values]) => values.has(value))?.[0] || "";
+            span.textContent = filterValueLabel(key, value);
             bar.append(span);
         });
         if (active.length) {
             const clear = document.createElement("button");
             clear.type = "button";
-            clear.textContent = "CLEAR";
+            clear.textContent = "クリア";
             clear.addEventListener("click", clearFilters);
             bar.append(clear);
         }
@@ -179,19 +184,19 @@
         copy.className = "game-card-copy";
         const number = document.createElement("p");
         number.className = "game-card-number";
-        number.textContent = `ARCHIVE ${String(game.sort_order ?? index + 1).padStart(3, "0")}`;
+        number.textContent = `記録 ${String(game.sort_order ?? index + 1).padStart(3, "0")}`;
         const title = document.createElement("h3");
-        title.textContent = game.title || "UNTITLED";
+        title.textContent = game.title || "タイトル未設定";
         const meta = document.createElement("p");
         meta.className = "game-card-meta";
-        meta.textContent = [gameStatus(game), ...gamePlatforms(game)].filter(Boolean).join(" · ") || "UNFILED";
+        meta.textContent = [statusLabel(gameStatus(game)), ...gamePlatforms(game)].filter(Boolean).join(" · ") || "未分類";
         const foot = document.createElement("div");
         foot.className = "game-card-foot";
         const tags = gameTags(game);
         const tagLine = document.createElement("p");
         tagLine.textContent = tags.slice(0, 3).map((tag) => `#${tag}`).join(" ") + (tags.length > 3 ? `  +${tags.length - 3}` : "");
         const rating = document.createElement("strong");
-        rating.innerHTML = `<span>RATING</span>${ratingText(game.rating)}`;
+        rating.innerHTML = `<span>評価</span>${ratingText(game.rating)}`;
         foot.append(tagLine, rating);
         copy.append(number, title, meta, foot);
         card.append(copy);
@@ -210,8 +215,8 @@
         row.addEventListener("click", () => navigation?.capture({ label: "Games Archive" }));
         const no = document.createElement("span"); no.textContent = String(index + 1).padStart(3, "0");
         row.append(no, createCover(game, true));
-        const title = document.createElement("strong"); title.textContent = game.title || "UNTITLED";
-        const state = document.createElement("span"); state.textContent = gameStatus(game) || "—";
+        const title = document.createElement("strong"); title.textContent = game.title || "タイトル未設定";
+        const state = document.createElement("span"); state.textContent = gameStatus(game) ? statusLabel(gameStatus(game)) : "—";
         const platform = document.createElement("span"); platform.textContent = gamePlatforms(game).join(" · ") || "—";
         const rating = document.createElement("span"); rating.textContent = ratingText(game.rating);
         row.append(title, state, platform, rating);
@@ -227,9 +232,9 @@
         list.replaceChildren(...matches.map((game, index) => view === "grid" ? createGridCard(game, index) : createIndexRow(game, index)));
         list.hidden = false;
         statusLine.hidden = Boolean(matches.length);
-        statusLine.textContent = games.length ? "No records found in this constellation." : "The archive is still waiting for its first record.";
-        document.getElementById("games-count").textContent = `${String(matches.length).padStart(2, "0")} / ${String(games.length).padStart(2, "0")} RECORDS`;
-        document.getElementById("games-result-heading").textContent = selectedValues().length || query ? "Selected records" : "All records";
+        statusLine.textContent = games.length ? "条件に合うゲームがありません。" : "最初のゲーム記録を待っています。";
+        document.getElementById("games-count").textContent = `${String(matches.length).padStart(2, "0")} / ${String(games.length).padStart(2, "0")} 件`;
+        document.getElementById("games-result-heading").textContent = selectedValues().length || query ? "選んだゲーム" : "すべてのゲーム";
         document.querySelectorAll("[data-view]").forEach((button) => button.setAttribute("aria-pressed", button.dataset.view === view));
     }
 

@@ -10,19 +10,19 @@
     const db = bridge.supabaseClient;
     const auth = window.KioraAuth;
     const categoryLabels = {
-        game_review: "AFTERGLOW",
-        essay: "MOON NOTES",
-        dream: "DREAM LETTERS"
+        game_review: "ゲーム感想",
+        essay: "随筆",
+        dream: "夢の文章"
     };
     const categoryMeta = {
         game_review: {
-            index: "01 / AFTERGLOW"
+            index: "01 / ゲーム感想"
         },
         essay: {
-            index: "02 / MOON NOTES"
+            index: "02 / 随筆"
         },
         dream: {
-            index: "03 / DREAM LETTERS"
+            index: "03 / 夢の文章"
         }
     };
     const itemTables = {
@@ -221,18 +221,18 @@
                 Object.entries(attributes).forEach(([key, value]) => { button.dataset[key] = value; });
                 return button;
             };
-            controls?.append(makeButton("EDIT PROFILE", { editProfile: "" }));
+            controls?.append(makeButton("プロフィールを編集", { editProfile: "" }));
             if (isOwner()) {
                 controls?.append(
                     makeButton("EXPORT PROFILE", { exportProfileOpen: "" }),
-                    makeButton("EDIT EXPORT PROFILE", { editExportProfile: "" })
+                    makeButton("書き出し設定を編集", { editExportProfile: "" })
                 );
             }
             document.querySelector('[data-admin-slot="add-fandom"]')?.append(makeButton("＋ ADD", { addItem: "fandom" }));
             document.querySelector('[data-admin-slot="add-favorite"]')?.append(makeButton("＋ ADD", { addItem: "favorite" }));
-            document.querySelector('[data-admin-slot="edit-otome"]')?.append(makeButton("EDIT", { editOtome: "" }));
+            document.querySelector('[data-admin-slot="edit-otome"]')?.append(makeButton("編集", { editOtome: "" }));
             document.querySelector('[data-admin-slot="add-boundary"]')?.append(makeButton("＋ ADD", { addItem: "boundary" }));
-            document.querySelector('[data-admin-slot="edit-currently-playing"]')?.append(makeButton("EDIT", { editCurrentlyPlaying: "" }));
+            document.querySelector('[data-admin-slot="edit-currently-playing"]')?.append(makeButton("編集", { editCurrentlyPlaying: "" }));
             ["game_review", "essay", "dream"].forEach((category) => {
                 document.querySelector(`[data-admin-slot="add-writing-${category}"]`)
                     ?.append(makeButton("＋ WRITE", { addWriting: category }));
@@ -699,7 +699,7 @@
 
     function adminEditButton(kind, item) {
         if (!isAdmin()) return null;
-        const button = create("button", "cms-mini-button", "EDIT");
+        const button = create("button", "cms-mini-button", "編集");
         button.type = "button";
         button.dataset.editItem = kind;
         button.dataset.itemId = item.id;
@@ -1212,7 +1212,7 @@
     function relatedGameLink(writing, className = "writing-related-game") {
         const game = relatedGameFor(writing);
         if (!game) return null;
-        const link = create("a", className, `GAME / ${game.title || "UNTITLED"} →`);
+        const link = create("a", className, `ゲーム / ${game.title || "タイトル未設定"} →`);
         link.href = `game.html?id=${encodeURIComponent(game.id)}`;
         link.addEventListener("click", () => window.KioraNavigation?.capture({ label: writing.title }));
         return link;
@@ -1231,30 +1231,30 @@
         const items = state.writings.filter((item) => isAdmin() || item.is_public);
         const featured = featuredWriting(items);
         if (!featured) {
-            const empty = create("p", "home-journal-empty", "The next page is still being written.");
+            const empty = create("p", "home-journal-empty", "次のページを準備しています。");
             featuredHost.append(empty);
             return;
         }
 
-        featuredHost.append(create("p", "home-writing-featured-label", `FEATURED / ${categoryLabels[featured.category] || "WRITING"}`));
+        featuredHost.append(create("p", "home-writing-featured-label", `おすすめ / ${categoryLabels[featured.category] || "かきもの"}`));
         const featuredGame = relatedGameLink(featured, "home-writing-related-game");
         if (featuredGame) featuredHost.append(featuredGame);
-        featuredHost.append(create("h3", "", featured.title || "UNTITLED"));
+        featuredHost.append(create("h3", "", featured.title || "タイトル未設定"));
         if (featured.subtitle) featuredHost.append(create("p", "home-writing-featured-subtitle", featured.subtitle));
         if (featured.excerpt) featuredHost.append(create("p", "home-writing-featured-excerpt", featured.excerpt));
         const footer = create("div", "home-writing-featured-meta");
-        footer.append(create("time", "", writingDate(featured)), writingAction("READ STORY →", "read", featured.id));
+        footer.append(create("time", "", writingDate(featured)), writingAction("読む →", "read", featured.id));
         featuredHost.append(footer);
 
         items.filter((item) => String(item.id) !== String(featured.id)).slice(0, 4).forEach((writing) => {
             const row = create("article", "home-writing-recent-item");
             row.append(create("time", "home-writing-recent-date", writingDate(writing)));
             const copy = create("div", "home-writing-recent-copy");
-            copy.append(create("p", "home-writing-recent-category", categoryLabels[writing.category] || "WRITING"));
+            copy.append(create("p", "home-writing-recent-category", categoryLabels[writing.category] || "かきもの"));
             const relatedGame = relatedGameLink(writing, "home-writing-recent-game");
             if (relatedGame) copy.append(relatedGame);
-            copy.append(create("h3", "", writing.title || "UNTITLED"));
-            row.append(copy, writingAction("READ →", "read", writing.id));
+            copy.append(create("h3", "", writing.title || "タイトル未設定"));
+            row.append(copy, writingAction("読む →", "read", writing.id));
             recentHost.append(row);
         });
     }
@@ -1273,44 +1273,44 @@
         const featured = featuredWriting(items);
         featuredHost.replaceChildren();
         list.replaceChildren();
-        byId("writing-page-count").textContent = `${items.length} ${items.length === 1 ? "STORY" : "STORIES"}`;
+        byId("writing-page-count").textContent = `${items.length} 篇`;
 
         const admin = byId("writing-page-admin");
         admin?.replaceChildren();
         if (admin && isAdmin()) {
-            const write = create("button", "", "＋ WRITE");
+            const write = create("button", "", "＋ 書く");
             write.type = "button";
             write.dataset.addWriting = state.writingFilter === "all" ? "essay" : state.writingFilter;
             admin.append(write);
         }
 
         if (!featured) {
-            featuredHost.append(create("p", "writing-magazine-empty", "No stories in this part of the archive yet."));
+            featuredHost.append(create("p", "writing-magazine-empty", "この場所には、まだ文章がありません。"));
             return;
         }
-        featuredHost.append(create("p", "writing-featured-label", `FEATURED / ${categoryLabels[featured.category] || "WRITING"}`));
+        featuredHost.append(create("p", "writing-featured-label", `おすすめ / ${categoryLabels[featured.category] || "かきもの"}`));
         const featuredGame = relatedGameLink(featured);
         if (featuredGame) featuredHost.append(featuredGame);
-        featuredHost.append(create("h2", "", featured.title || "UNTITLED"));
+        featuredHost.append(create("h2", "", featured.title || "タイトル未設定"));
         if (featured.subtitle) featuredHost.append(create("p", "writing-featured-subtitle", featured.subtitle));
         if (featured.excerpt) featuredHost.append(create("p", "writing-featured-excerpt", featured.excerpt));
         const featuredFooter = create("div", "writing-featured-footer");
-        featuredFooter.append(create("time", "", writingDate(featured)), writingAction("READ STORY →", "read", featured.id));
+        featuredFooter.append(create("time", "", writingDate(featured)), writingAction("読む →", "read", featured.id));
         if (isAdmin()) {
             const actions = create("div", "writing-flow-admin");
-            actions.append(writingAction("EDIT", "edit", featured.id), writingAction(featured.is_pinned ? "UNPIN" : "PIN", "pin", featured.id));
-            if (isOwner()) actions.append(writingAction("DELETE", "delete", featured.id));
+            actions.append(writingAction("編集", "edit", featured.id), writingAction(featured.is_pinned ? "固定を外す" : "固定する", "pin", featured.id));
+            if (isOwner()) actions.append(writingAction("削除", "delete", featured.id));
             featuredFooter.append(actions);
         }
         featuredHost.append(featuredFooter);
 
         items.filter((item) => String(item.id) !== String(featured.id)).forEach((writing, index) => {
             const row = create("article", "writing-flow-item");
-            row.append(create("p", "writing-flow-index", `${String(index + 1).padStart(2, "0")} / ${categoryLabels[writing.category] || "WRITING"}`));
+            row.append(create("p", "writing-flow-index", `${String(index + 1).padStart(2, "0")} / ${categoryLabels[writing.category] || "かきもの"}`));
             const copy = create("div", "writing-flow-copy");
             const relatedGame = relatedGameLink(writing);
             if (relatedGame) copy.append(relatedGame);
-            copy.append(create("h3", "", writing.title || "UNTITLED"));
+            copy.append(create("h3", "", writing.title || "タイトル未設定"));
             if (writing.subtitle) copy.append(create("p", "writing-flow-subtitle", writing.subtitle));
             if (writing.excerpt) copy.append(create("p", "writing-flow-excerpt", writing.excerpt));
             if (writing.tags?.length) {
@@ -1319,11 +1319,11 @@
                 copy.append(tags);
             }
             const meta = create("div", "writing-flow-meta");
-            meta.append(create("time", "", writingDate(writing)), writingAction("READ STORY →", "read", writing.id));
+            meta.append(create("time", "", writingDate(writing)), writingAction("読む →", "read", writing.id));
             if (isAdmin()) {
                 const actions = create("div", "writing-flow-admin");
-                actions.append(writingAction("EDIT", "edit", writing.id), writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id));
-                if (isOwner()) actions.append(writingAction("DELETE", "delete", writing.id));
+                actions.append(writingAction("編集", "edit", writing.id), writingAction(writing.is_pinned ? "固定を外す" : "固定する", "pin", writing.id));
+                if (isOwner()) actions.append(writingAction("削除", "delete", writing.id));
                 meta.append(actions);
             }
             row.append(copy, meta);
@@ -1366,13 +1366,13 @@
         if (tags.childElementCount) copy.append(tags);
 
         const footer = create("div", "writing-entry-footer");
-        const read = writingAction("READ STORY →", "read", writing.id);
+        const read = writingAction("読む →", "read", writing.id);
         read.className = "writing-read-button";
         footer.append(read);
         if (isAdmin()) {
             const actions = create("div", "writing-admin-actions");
-            actions.append(writingAction("EDIT", "edit", writing.id), writingAction(writing.is_pinned ? "UNPIN" : "PIN", "pin", writing.id));
-            if (isOwner()) actions.append(writingAction("DELETE", "delete", writing.id));
+            actions.append(writingAction("編集", "edit", writing.id), writingAction(writing.is_pinned ? "固定を外す" : "固定する", "pin", writing.id));
+            if (isOwner()) actions.append(writingAction("削除", "delete", writing.id));
             footer.append(actions);
         }
         copy.append(footer);
@@ -1388,7 +1388,7 @@
             const viewAll = document.querySelector(`[data-view-writing-category="${category}"]`);
             if (viewAll) {
                 viewAll.classList.toggle("has-stories", writings.length > 0);
-                viewAll.textContent = `VIEW ALL / ${writings.length} ${writings.length === 1 ? "STORY" : "STORIES"} →`;
+                viewAll.textContent = `すべて見る / ${writings.length} 篇 →`;
             }
             if (!writings.length) {
                 container.append(emptyState(isAdmin() ? "这个分区还没有文章。" : "文字正在慢慢抵达这里。"));
@@ -1428,7 +1428,7 @@
             groups.forEach((items, year) => {
                 const group = create("section", "writing-archive-year");
                 const heading = create("div", "writing-archive-year-heading");
-                heading.append(create("h4", "", year), create("span", "", `${items.length} ${items.length === 1 ? "STORY" : "STORIES"}`));
+                heading.append(create("h4", "", year), create("span", "", `${items.length} 篇`));
                 const list = create("div", "writing-archive-list");
                 items.forEach((writing) => list.append(createWritingEntry(writing, true)));
                 group.append(heading, list);
@@ -1446,7 +1446,7 @@
 
     async function deleteWriting(writing) {
         if (!isOwner() || !writing?.id) return;
-        if (!window.confirm(`确定删除《${writing.title || "UNTITLED"}》吗？`)) return;
+        if (!window.confirm(`确定删除《${writing.title || "タイトル未設定"}》吗？`)) return;
         const { error } = await db.from("writings").delete().eq("id", writing.id);
         if (error) window.alert(`删除失败：${error.message}`);
         else await refreshAtSameScroll(loadWritings);

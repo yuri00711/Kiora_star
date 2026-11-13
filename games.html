@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="site-nav.css?v=20260915-1">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
     <link rel="stylesheet" href="kiora-pop.css?v=20261110-1">
+    <script defer src="kiora-ja.js?v=20261113-1"></script>
 </head>
 <body data-page="games">
     <div class="games-atmosphere" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -42,13 +43,13 @@
 
     <header class="games-header">
         <div class="games-heading-copy">
-            <p>PRIVATE CELESTIAL INDEX / 03</p>
+            <p>わたしのゲーム棚 / 03</p>
             <h1>ゲーム</h1>
-            <span>A quiet catalogue of stories once held close.</span>
+            <span>好きだった物語を静かに並べた記録。</span>
         </div>
         <nav class="games-header-nav" aria-label="Games archive links">
-            <a href="tier-board.html">TIER BOARD →</a>
-            <a href="sale.html">SALE →</a>
+            <a href="tier-board.html">ティア表 →</a>
+            <a href="sale.html">セール →</a>
             <span id="games-admin-actions"></span>
         </nav>
     </header>
@@ -56,29 +57,29 @@
     <main class="games-layout">
         <aside class="games-index" aria-label="Game filters">
             <div class="filter-section search-section">
-                <label for="games-search">SEARCH</label>
-                <div class="search-line"><input id="games-search" type="search" autocomplete="off" placeholder="TITLE / TAG"><span>⌕</span></div>
+                <label for="games-search">さがす</label>
+                <div class="search-line"><input id="games-search" type="search" autocomplete="off" placeholder="タイトル / タグ"><span>⌕</span></div>
             </div>
             <div id="desktop-filters"></div>
-            <button id="desktop-clear" class="clear-filters" type="button" hidden>CLEAR SELECTIONS</button>
-            <p class="index-footnote">SELECT ACROSS SECTIONS TO NARROW THE CONSTELLATION.</p>
+            <button id="desktop-clear" class="clear-filters" type="button" hidden>選択をクリア</button>
+            <p class="index-footnote">条件を組み合わせてゲームを絞り込めます。</p>
         </aside>
 
         <section class="games-content" aria-labelledby="games-result-heading">
             <div class="mobile-toolbar">
-                <label class="mobile-search" for="games-search-mobile"><span>SEARCH</span><input id="games-search-mobile" type="search" autocomplete="off" placeholder="Title or tag"></label>
-                <button id="open-filters" type="button">FILTER <span id="mobile-filter-count"></span></button>
+                <label class="mobile-search" for="games-search-mobile"><span>さがす</span><input id="games-search-mobile" type="search" autocomplete="off" placeholder="タイトルやタグ"></label>
+                <button id="open-filters" type="button">絞り込み <span id="mobile-filter-count"></span></button>
                 <div class="view-switch" aria-label="View style">
-                    <button type="button" data-view="grid" aria-pressed="true">GRID</button>
+                    <button type="button" data-view="grid" aria-pressed="true">カード</button>
                     <span>/</span>
-                    <button type="button" data-view="index" aria-pressed="false">INDEX</button>
+                    <button type="button" data-view="index" aria-pressed="false">一覧</button>
                 </div>
             </div>
 
             <div class="games-result-heading">
-                <div><p>CATALOGUE</p><h2 id="games-result-heading">All records</h2></div>
+                <div><p>ゲーム棚</p><h2 id="games-result-heading">すべてのゲーム</h2></div>
                 <div class="desktop-view-switch view-switch" aria-label="View style">
-                    <button type="button" data-view="grid" aria-pressed="true">GRID</button><span>/</span><button type="button" data-view="index" aria-pressed="false">INDEX</button>
+                    <button type="button" data-view="grid" aria-pressed="true">カード</button><span>/</span><button type="button" data-view="index" aria-pressed="false">一覧</button>
                 </div>
                 <p id="games-count" aria-live="polite"></p>
             </div>

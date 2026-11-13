@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>おべんきょう · Kiora</title>
-    <meta name="description" content="Kiora Study — a private learning constellation.">
+    <meta name="description" content="Kioraの、静かな学びの記録。">
     <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="style.css?v=20260915-5">
     <link rel="stylesheet" href="standalone.css?v=20260915-1">
@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="study.css?v=20260923-2">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
     <link rel="stylesheet" href="kiora-pop.css?v=20261110-1">
+    <script defer src="kiora-ja.js?v=20261113-1"></script>
 </head>
 <body data-page="study" class="standalone-body study-body">
     <div class="standalone-atmosphere study-atmosphere" aria-hidden="true"><i></i><i></i><i></i><span>✦</span><span>◇</span></div>
@@ -30,68 +31,68 @@
 
     <main class="study-shell">
         <header class="study-heading">
-            <div><p>KIORA.SPACE / PRIVATE LEARNING ARCHIVE</p><h1>おべんきょう</h1><span>Learning Constellation</span></div>
-            <p class="study-philosophy">保存我是怎样逐渐学会的。</p>
+            <div><p>KIORA.SPACE / まなびの記録</p><h1>おべんきょう</h1><span>学びの星座</span></div>
+            <p class="study-philosophy">少しずつ身につけていく、その過程を残す場所。</p>
         </header>
 
         <nav class="study-index" aria-label="Study sections">
-            <button type="button" data-study-view="home" aria-current="page"><span>01</span>INDEX</button>
-            <button type="button" data-study-view="calendar"><span>02</span>CALENDAR</button>
-            <button type="button" data-study-view="practice"><span>03</span>PRACTICE</button>
-            <button type="button" data-study-view="mistakes"><span>04</span>MISTAKES</button>
-            <button type="button" data-study-view="revisions"><span>05</span>REVISIONS</button>
-            <button type="button" data-study-view="notes"><span>06</span>NOTES</button>
+            <button type="button" data-study-view="home" aria-current="page"><span>01</span>一覧</button>
+            <button type="button" data-study-view="calendar"><span>02</span>カレンダー</button>
+            <button type="button" data-study-view="practice"><span>03</span>練習</button>
+            <button type="button" data-study-view="mistakes"><span>04</span>まちがいノート</button>
+            <button type="button" data-study-view="revisions"><span>05</span>答案の見直し</button>
+            <button type="button" data-study-view="notes"><span>06</span>メモ</button>
         </nav>
 
-        <p id="study-status" class="study-status" role="status">Reading the constellation…</p>
+        <p id="study-status" class="study-status" role="status">学びの星座を読み込んでいます…</p>
 
         <section id="study-view-home" class="study-view" data-view="home">
             <div class="study-month-preview">
-                <div><p class="study-kicker">CURRENT MONTH / CALENDAR PREVIEW</p><h2 id="study-current-month"></h2></div>
-                <button class="study-text-button" type="button" data-open-view="calendar">VIEW CALENDAR →</button>
+                <div><p class="study-kicker">今月 / カレンダー</p><h2 id="study-current-month"></h2></div>
+                <button class="study-text-button" type="button" data-open-view="calendar">カレンダーを見る →</button>
                 <div id="study-month-stars" class="study-month-stars" aria-label="本月学习活动"></div>
             </div>
             <div id="study-dashboard" class="study-dashboard"></div>
         </section>
 
         <section id="study-view-calendar" class="study-view" data-view="calendar" hidden>
-            <div class="study-view-heading"><div><p>TIME INDEX</p><h2>Calendar</h2></div><div class="study-calendar-actions"><button id="study-calendar-prev" type="button" aria-label="上个月">←</button><button id="study-calendar-today" type="button">TODAY</button><button id="study-calendar-next" type="button" aria-label="下个月">→</button></div></div>
+            <div class="study-view-heading"><div><p>学びの時間</p><h2>カレンダー</h2></div><div class="study-calendar-actions"><button id="study-calendar-prev" type="button" aria-label="上个月">←</button><button id="study-calendar-today" type="button">今日</button><button id="study-calendar-next" type="button" aria-label="下个月">→</button></div></div>
             <h3 id="study-calendar-title" class="study-calendar-title"></h3>
-            <div class="study-calendar-week" aria-hidden="true"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>
+            <div class="study-calendar-week" aria-hidden="true"><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span></div>
             <div id="study-calendar-grid" class="study-calendar-grid"></div>
-            <section class="study-day-log"><p class="study-kicker" id="study-day-title">SELECT A DAY</p><div id="study-day-activities" class="study-timeline"></div></section>
+            <section class="study-day-log"><p class="study-kicker" id="study-day-title">日付を選んでください</p><div id="study-day-activities" class="study-timeline"></div></section>
         </section>
 
         <section id="study-view-practice" class="study-view" data-view="practice" hidden>
-            <div class="study-view-heading"><div><p>RAW LEARNING RECORDS</p><h2>Practice</h2></div><button class="study-primary" type="button" data-action="new-practice">＋ NEW PRACTICE</button></div>
-            <div class="study-filter-row" role="group" aria-label="Practice filters"><button type="button" data-practice-filter="all" class="active">ALL</button><button type="button" data-practice-filter="aptitude">APTITUDE</button><button type="button" data-practice-filter="shenlun">SHENLUN</button></div>
+            <div class="study-view-heading"><div><p>学習の記録</p><h2>練習</h2></div><button class="study-primary" type="button" data-action="new-practice">＋ 練習を追加</button></div>
+            <div class="study-filter-row" role="group" aria-label="練習の絞り込み"><button type="button" data-practice-filter="all" class="active">すべて</button><button type="button" data-practice-filter="aptitude">適性試験</button><button type="button" data-practice-filter="shenlun">申論</button></div>
             <div id="study-practice-list" class="study-record-list"></div>
             <div id="study-practice-detail" class="study-detail" hidden></div>
         </section>
 
         <section id="study-view-mistakes" class="study-view" data-view="mistakes" hidden>
-            <div class="study-view-heading"><div><p>APTITUDE ARCHIVE</p><h2>Mistakes</h2></div><button class="study-primary" type="button" data-action="quick-mistake">＋ QUICK MISTAKE</button></div>
-            <div class="study-browse-bar"><div id="study-mistake-subjects" class="study-filter-row"></div><div class="study-filter-row"><button type="button" data-mistake-status="all" class="active">ALL</button><button type="button" data-mistake-status="learning">LEARNING</button><button type="button" data-mistake-status="review">REVIEW</button><button type="button" data-mistake-status="mastered">MASTERED</button></div><div class="study-view-switch"><button type="button" data-mistake-mode="index" class="active">INDEX</button><button type="button" data-mistake-mode="card">CARD</button></div></div>
+            <div class="study-view-heading"><div><p>まちがいの記録</p><h2>まちがいノート</h2></div><button class="study-primary" type="button" data-action="quick-mistake">＋ まちがいを追加</button></div>
+            <div class="study-browse-bar"><div id="study-mistake-subjects" class="study-filter-row"></div><div class="study-filter-row"><button type="button" data-mistake-status="all" class="active">すべて</button><button type="button" data-mistake-status="learning">学習中</button><button type="button" data-mistake-status="review">復習</button><button type="button" data-mistake-status="mastered">習得済み</button></div><div class="study-view-switch"><button type="button" data-mistake-mode="index" class="active">一覧</button><button type="button" data-mistake-mode="card">カード</button></div></div>
             <div id="study-mistake-content"></div>
         </section>
 
         <section id="study-view-revisions" class="study-view" data-view="revisions" hidden>
-            <div class="study-view-heading"><div><p>SHENLUN ARCHIVE</p><h2>Revisions</h2></div></div>
+            <div class="study-view-heading"><div><p>申論の記録</p><h2>答案の見直し</h2></div></div>
             <div id="study-revision-list" class="study-record-list"></div>
             <div id="study-revision-detail" class="study-detail" hidden></div>
         </section>
 
         <section id="study-view-notes" class="study-view" data-view="notes" hidden>
-            <div class="study-view-heading"><div><p>LEARNING FRAGMENTS</p><h2>Notes</h2></div><button class="study-primary" type="button" data-action="new-note">＋ NEW NOTE</button></div>
+            <div class="study-view-heading"><div><p>学びのかけら</p><h2>メモ</h2></div><button class="study-primary" type="button" data-action="new-note">＋ メモを追加</button></div>
             <div id="study-note-filters" class="study-filter-row"></div>
             <div id="study-note-list" class="study-note-list"></div>
         </section>
     </main>
 
-    <dialog id="study-editor" class="study-dialog"><form id="study-editor-form" method="dialog"><header><div><p id="study-editor-kicker">STUDY EDITOR</p><h2 id="study-editor-title">New record</h2></div><button type="button" class="study-dialog-close" aria-label="关闭">×</button></header><div id="study-editor-fields" class="study-form"></div><footer><p id="study-editor-message" role="status"></p><button type="button" class="study-secondary study-dialog-close">CANCEL</button><button id="study-editor-save" type="submit" class="study-primary">SAVE</button></footer></form></dialog>
+    <dialog id="study-editor" class="study-dialog"><form id="study-editor-form" method="dialog"><header><div><p id="study-editor-kicker">学習記録の編集</p><h2 id="study-editor-title">新しい記録</h2></div><button type="button" class="study-dialog-close" aria-label="閉じる">×</button></header><div id="study-editor-fields" class="study-form"></div><footer><p id="study-editor-message" role="status"></p><button type="button" class="study-secondary study-dialog-close">キャンセル</button><button id="study-editor-save" type="submit" class="study-primary">保存</button></footer></form></dialog>
     <dialog id="study-sheet" class="study-dialog study-sheet"><div id="study-sheet-content"></div></dialog>
 
-    <footer class="standalone-footer"><span>Kiora's learning constellation</span><span>PRIVATE ARCHIVE</span></footer>
+    <footer class="standalone-footer"><span>Kioraの学びの星座</span><span>ひみつの記録</span></footer>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260923-1"></script>
     <script src="article-common.js?v=20260917-3"></script>

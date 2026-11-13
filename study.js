@@ -28,7 +28,7 @@
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     }
     function displayDate(value) { return value ? String(value).slice(0, 10).replaceAll("-", ".") : "—"; }
-    function monthLabel(date) { return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(date).toUpperCase(); }
+    function monthLabel(date) { return new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long" }).format(date); }
     function status(text, error = false) { const node = $("#study-status"); node.textContent = text; node.classList.toggle("study-error", error); node.hidden = !text; }
     function empty(text, action = "") { return `<div class="study-empty"><p>${esc(text)}</p>${action}</div>`; }
     function uid() { return crypto.randomUUID(); }
@@ -106,12 +106,12 @@
         const shenlun = state.practices.filter((item) => item.practice_type === "shenlun").length;
         const subjects = Object.entries(state.mistakes.reduce((map, item) => ({ ...map, [item.subject]: (map[item.subject] || 0) + 1 }), {})).slice(0, 3);
         const cards = [
-            ["01","PRACTICE",state.practices.length,`APTITUDE ${aptitude}<br>SHENLUN ${shenlun}`,"practice"],
-            ["02","MISTAKES",state.mistakes.length,subjects.map(([name,count])=>`${esc(name)} ${count}`).join("<br>") || "No records yet.","mistakes"],
-            ["03","REVISIONS",state.revisions.length,"Rewrite and compare.","revisions"],
-            ["04","NOTES",state.notes.length,"Learning fragments.","notes"]
+            ["01","練習",state.practices.length,`行測 ${aptitude}<br>申論 ${shenlun}`,"practice"],
+            ["02","まちがいノート",state.mistakes.length,subjects.map(([name,count])=>`${esc(name)} ${count}`).join("<br>") || "まだ記録がありません。","mistakes"],
+            ["03","答案の見直し",state.revisions.length,"書き直して比べる。","revisions"],
+            ["04","メモ",state.notes.length,"学びのかけら。","notes"]
         ];
-        $("#study-dashboard").innerHTML = cards.map(([index,title,count,detail,view]) => `<button type="button" class="study-dashboard-card" data-open-view="${view}"><span class="index">${index} / ARCHIVE</span><h3>${title}</h3><strong>${count}</strong><p>${detail}</p></button>`).join("");
+        $("#study-dashboard").innerHTML = cards.map(([index,title,count,detail,view]) => `<button type="button" class="study-dashboard-card" data-open-view="${view}"><span class="index">${index} / 記録</span><h3>${title}</h3><strong>${count}</strong><p>${detail}</p></button>`).join("");
     }
 
     function renderCalendar() {
@@ -128,8 +128,8 @@
 
     function renderDay() {
         const key = isoDate(state.selectedDay); const events = state.activities.filter((item) => String(item.activity_at).slice(0,10) === key).sort((a,b) => String(a.activity_at).localeCompare(String(b.activity_at)));
-        $("#study-day-title").textContent = new Intl.DateTimeFormat("en-US", { month:"long", day:"numeric", year:"numeric" }).format(state.selectedDay).toUpperCase();
-        $("#study-day-activities").innerHTML = events.length ? events.map((item) => `<a href="#${entityView(item.entity_type)}" class="study-timeline-item" data-activity-entity="${esc(item.entity_type)}" data-activity-id="${esc(item.entity_id || "")}"><time>${new Date(item.activity_at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</time><em>${esc(String(item.activity_type).replaceAll("_"," ").toUpperCase())}</em><strong>${esc(item.title)}</strong></a>`).join("") : empty("No learning activity recorded on this day.");
+        $("#study-day-title").textContent = new Intl.DateTimeFormat("ja-JP", { year:"numeric", month:"long", day:"numeric" }).format(state.selectedDay);
+        $("#study-day-activities").innerHTML = events.length ? events.map((item) => `<a href="#${entityView(item.entity_type)}" class="study-timeline-item" data-activity-entity="${esc(item.entity_type)}" data-activity-id="${esc(item.entity_id || "")}"><time>${new Date(item.activity_at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</time><em>${esc(String(item.activity_type).replaceAll("_"," ").toUpperCase())}</em><strong>${esc(item.title)}</strong></a>`).join("") : empty("この日の学習記録はありません。");
     }
 
     function entityView(type) { return type.includes("mistake") ? "mistakes" : type.includes("revision") ? "revisions" : type === "note" ? "notes" : "practice"; }

@@ -39,6 +39,7 @@
     --accent-gold: var(--sunny-yellow);
     --border: rgba(64, 57, 77, 0.18);
     --border-soft: rgba(64, 57, 77, 0.10);
+    --pop-line: rgba(64, 57, 77, 0.52);
     --surface: var(--white);
     --surface-soft: rgba(255, 255, 255, 0.84);
     --surface-strong: var(--white);
