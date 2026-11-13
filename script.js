@@ -705,7 +705,7 @@ document.querySelectorAll("[data-game-editor-tab]").forEach((button) => {
 function updateGameReviewStats() {
     const review = document.getElementById("game-review");
     const count = document.getElementById("game-review-count");
-    if (review && count) count.textContent = `${[...review.value.trim()].length} 字`;
+    if (review && count) count.textContent = `${[...review.value.trim()].length} 文字`;
 }
 
 document.getElementById("game-review")?.addEventListener("input", updateGameReviewStats);
@@ -1505,7 +1505,7 @@ window.addEventListener("beforeunload", (event) => {
 }
 
 function updateCharacterEditorPreview() {
-    const name = document.getElementById("character-name")?.value.trim() || "UNTITLED";
+    const name = document.getElementById("character-name")?.value.trim() || "名前未設定";
     const subtitle = document.getElementById("character-subtitle")?.value.trim() || "";
     const rating = document.getElementById("character-rating")?.value;
     const imageUrl = safeImageUrl(document.getElementById("character-image-url")?.value.trim());
@@ -1515,14 +1515,20 @@ function updateCharacterEditorPreview() {
     document.getElementById("character-preview-name").textContent = name;
     document.getElementById("character-preview-subtitle").textContent = subtitle;
     document.getElementById("character-preview-rating").textContent = rating ? `✦ ${rating} / 10` : "✦ —";
-    document.getElementById("character-review-count").textContent = `${[...review].length} 字`;
+    document.getElementById("character-review-count").textContent = `${[...review].length} 文字`;
 
     image.replaceChildren();
+    const layout = image.closest(".character-editor-layout");
+    layout?.classList.remove("has-character-image");
     if (imageUrl) {
         const preview = document.createElement("img");
         preview.src = imageUrl;
         preview.alt = "";
-        preview.addEventListener("error", () => image.replaceChildren(Object.assign(document.createElement("span"), { textContent: "NO IMAGE" })), { once: true });
+        preview.addEventListener("load", () => layout?.classList.add("has-character-image"), { once: true });
+        preview.addEventListener("error", () => {
+            layout?.classList.remove("has-character-image");
+            image.replaceChildren(Object.assign(document.createElement("span"), { textContent: "画像なし" }));
+        }, { once: true });
         image.append(preview);
     } else {
         const empty = document.createElement("span");

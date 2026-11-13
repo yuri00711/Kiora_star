@@ -1,0 +1,424 @@
+/* The two Games editors share one quiet writing surface. Loaded after the site theme. */
+#game-modal .game-editor-card,
+#character-modal .character-modal-card {
+  --editor-line: rgba(74, 101, 112, .16);
+  --editor-ink: #39434f;
+  --editor-muted: #747c88;
+  width: min(1080px, calc(100vw - 36px));
+  max-width: none;
+  max-height: min(92dvh, 1100px);
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid rgba(110, 157, 169, .28);
+  border-radius: 24px;
+  background: #fffcf8;
+  color: var(--editor-ink);
+  box-shadow: 0 24px 80px rgba(57, 62, 77, .19);
+  scroll-padding-top: 76px;
+}
+
+#game-modal .modal-close,
+#character-modal .modal-close {
+  position: sticky;
+  top: 13px;
+  float: right;
+  z-index: 8;
+  width: 40px;
+  height: 40px;
+  margin: 13px 17px -53px 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--editor-line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .92);
+  color: var(--editor-ink);
+  font-size: 22px;
+}
+
+#game-modal .game-editor-header,
+#character-modal .character-modal-heading {
+  display: block;
+  min-height: 0;
+  margin: 0;
+  padding: 24px 74px 22px 32px;
+  border: 0;
+  border-bottom: 1px solid var(--editor-line);
+  background: linear-gradient(105deg, #e9f7fa 0%, #fffaf4 55%, #fbeff2 100%);
+}
+
+#game-modal .game-editor-header .modal-label,
+#character-modal .character-modal-heading .modal-label {
+  margin: 0 0 5px;
+  color: #5b8492;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+#game-modal .game-editor-header h3,
+#character-modal .character-modal-heading h3 {
+  margin: 0;
+  color: #354752;
+  font-family: var(--font-display);
+  font-size: clamp(23px, 2.6vw, 32px);
+  font-weight: 750;
+  line-height: 1.35;
+  letter-spacing: .025em;
+}
+
+#game-modal .game-editor-description,
+#character-modal .character-modal-game {
+  margin: 5px 0 0;
+  color: var(--editor-muted);
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+
+#game-modal .game-editor-mark,
+#character-modal .character-modal-heading > span { display: none; }
+
+#game-modal .game-editor-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0 32px;
+  border: 0;
+  border-bottom: 1px solid var(--editor-line);
+  background: rgba(255, 252, 248, .97);
+  backdrop-filter: blur(12px);
+}
+
+#game-modal .game-editor-tabs button {
+  min-width: 0;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #6e7882;
+  font-size: 13px;
+  text-align: center;
+}
+
+#game-modal .game-editor-tabs button + button { border-left: 1px solid var(--editor-line); }
+#game-modal .game-editor-tabs button > span { grid-row: auto; color: #93a0ab; font-size: 11px; }
+#game-modal .game-editor-tabs button strong { font-size: 13px; font-weight: 700; letter-spacing: .025em; }
+#game-modal .game-editor-tabs button small { display: none; }
+#game-modal .game-editor-tabs button[aria-selected="true"] {
+  border-bottom-color: #71b8c9;
+  background: #eaf7f9;
+  color: #275d6e;
+}
+
+#game-modal #game-form,
+#character-modal #character-form { display: block; gap: 0; }
+#game-modal .game-editor-pane { padding: 24px 32px 4px; }
+
+#game-modal .game-editor-section,
+#game-modal .game-review-section,
+#game-modal .character-editor-section {
+  margin: 0;
+  padding: 6px 0 26px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#game-modal .game-editor-section + .game-editor-section {
+  padding-top: 24px;
+  border-top: 1px solid var(--editor-line);
+}
+
+#game-modal .game-editor-section-heading { margin: 0 0 18px; gap: 10px; }
+#game-modal .game-editor-section-heading span { color: #88aebb; font-size: 11px; letter-spacing: .04em; }
+#game-modal .game-editor-section-heading h4 {
+  color: #286d80;
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: .03em;
+}
+
+#game-modal .game-basic-grid {
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 26px;
+}
+#game-modal .game-cover-editor {
+  align-self: start;
+  padding: 0;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+}
+#game-modal .game-cover-preview { aspect-ratio: 3 / 4; border-radius: 12px; }
+#game-modal .game-upload-button {
+  margin-top: 9px;
+  border-color: #edd7a1;
+  border-radius: 10px;
+  background: #fff4d9;
+  color: #715d33 !important;
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+#game-modal .game-field-note { font-size: 10px; letter-spacing: 0; }
+#game-modal .game-basic-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+#game-modal .game-basic-fields > label:first-child,
+#game-modal .game-basic-fields > .form-grid,
+#game-modal .game-basic-fields > .game-played-date { grid-column: 1 / -1; }
+#game-modal .game-basic-fields > .form-grid,
+#game-modal .game-played-date > .form-grid,
+#game-modal .game-archive-grid,
+#game-modal .game-links-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+#game-modal .game-played-date {
+  display: block;
+  min-height: 0;
+  margin: 0;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--editor-line);
+  border-radius: 0;
+  background: transparent;
+}
+#game-modal .game-played-date .game-control-label { margin-bottom: 10px; }
+#game-modal .game-platform-fieldset,
+#game-modal .game-tag-field,
+#game-modal .game-links-grid { margin-top: 19px; }
+#game-modal .game-platform-options span { min-height: 35px; border-radius: 9px; font-size: 11px; letter-spacing: .02em; }
+#game-modal .game-platform-options input:focus-visible + span { outline: 2px solid #438ca0; outline-offset: 2px; }
+#game-modal .game-platform-options input:checked + span {
+  border-color: #e7a7aa;
+  background: #ffe5e5;
+  color: #7e4c61;
+}
+#game-modal .game-tag-entry { align-items: center; }
+#game-modal .game-tag-entry button { min-height: 43px; border-radius: 10px; font-size: 11px; letter-spacing: .02em; }
+#game-modal .game-tag-list > span { border-radius: 999px; }
+
+#game-modal .game-writing-focus {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#game-modal .game-writing-focus > header {
+  align-items: baseline;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+}
+#game-modal .game-writing-focus > header p { max-width: none; color: var(--editor-muted); font-size: 13px; }
+#game-modal .game-writing-focus > header span { color: var(--editor-muted); font-size: 12px; letter-spacing: 0; }
+#game-modal .game-review-writing-field > span,
+#character-modal .character-review-writing-field > span {
+  margin-bottom: 10px;
+  color: #526b78;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+#game-modal .game-review-section .game-review-writing-field textarea,
+#character-modal .character-review-writing-field textarea {
+  width: 100%;
+  min-height: 290px;
+  max-height: none;
+  padding: 22px 24px;
+  border: 1px solid var(--editor-line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--editor-ink);
+  font-size: 16px;
+  line-height: 1.9;
+  letter-spacing: .02em;
+  resize: vertical;
+}
+#game-modal .game-review-section .game-review-writing-field textarea {
+  height: min(43dvh, 430px);
+  min-height: 260px;
+}
+#game-modal .game-review-guide { align-items: center; margin-top: 12px; color: var(--editor-muted); font-size: 11px; }
+#game-modal .game-review-guide span { width: auto; font-size: 11px; letter-spacing: 0; }
+#game-modal .game-review-guide p {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #fff2e2;
+  color: #796674;
+}
+#game-modal .game-review-guide p + p::before { display: none; }
+#game-modal .game-open-writing {
+  min-height: 48px;
+  margin-top: 16px;
+  border-color: #edc6bb;
+  border-radius: 11px;
+  background: #fff1e9;
+  padding: 10px 14px;
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+#game-modal .game-open-writing small { font-size: 11px; }
+#game-modal .character-editor-intro { margin: 4px 0 0; color: var(--editor-muted); font-size: 12px; }
+
+#game-modal .game-editor-actions,
+#character-modal .editor-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 0;
+  padding: 13px 32px;
+  border-top: 1px solid var(--editor-line);
+  background: rgba(255, 252, 248, .97);
+  backdrop-filter: blur(12px);
+}
+#game-modal .game-editor-actions .modal-primary-button,
+#character-modal .editor-actions .modal-primary-button {
+  order: 2;
+  width: auto;
+  min-width: 160px;
+  min-height: 43px;
+  margin: 0;
+  border-radius: 11px;
+  background: #83cddd;
+  color: #214f60;
+  font-size: 13px;
+}
+#game-modal .game-editor-actions .modal-secondary-button,
+#character-modal .editor-actions .modal-secondary-button {
+  order: 1;
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 43px;
+  border-radius: 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+#game-modal .game-editor-actions .modal-danger-button,
+#character-modal .editor-actions .modal-danger-button { order: 0; margin-right: auto; }
+
+#character-modal .character-editor-layout {
+  display: block;
+  margin: 0;
+  padding: 26px 32px 0;
+}
+#character-modal .character-editor-layout.has-character-image {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 24px;
+}
+#character-modal .character-editor-preview { display: none; }
+#character-modal .has-character-image .character-editor-preview {
+  position: static;
+  display: block;
+  padding: 8px 8px 14px;
+  border-radius: 13px;
+}
+#character-modal .character-preview-image { aspect-ratio: 3 / 4; border-radius: 8px; }
+#character-modal .character-editor-preview > p { margin: 12px 0 4px; font-size: 10px; letter-spacing: .03em; }
+#character-modal .character-editor-preview > strong { font-size: 17px; }
+#character-modal .character-editor-preview > i { margin-top: 8px; padding-top: 8px; }
+#character-modal .character-editor-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#character-modal .character-editor-fields > .form-grid { grid-column: 1 / -1; gap: 16px; }
+#character-modal .character-editor-fields > label:last-child { grid-column: 1 / -1; }
+#character-modal .character-review-writing-field {
+  display: block;
+  margin: 24px 32px 0;
+  padding: 20px 0 28px;
+  border-top: 1px solid var(--editor-line);
+}
+#character-modal .character-review-writing-field small { margin-top: 8px; color: var(--editor-muted); font-size: 11px; }
+#character-modal .form-message,
+#game-modal .form-message { margin: 0 32px 8px; }
+
+#game-modal label,
+#character-modal label { color: #526573; font-size: 12px; letter-spacing: .02em; }
+#game-modal .game-control-label,
+#game-modal legend { color: #526573; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+#game-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+#game-modal textarea,
+#game-modal select,
+#character-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+#character-modal textarea {
+  min-height: 43px;
+  border-color: var(--editor-line);
+  background: #fff;
+  color: var(--editor-ink);
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  #game-modal .game-editor-card,
+  #character-modal .character-modal-card {
+    width: 100%;
+    max-width: none;
+    max-height: 96dvh;
+    border-radius: 18px 18px 0 0;
+  }
+  #game-modal .game-editor-header,
+  #character-modal .character-modal-heading { padding: 20px 58px 17px 18px; }
+  #game-modal .game-editor-tabs { padding: 0 8px; overflow-x: visible; }
+  #game-modal .game-editor-tabs button { min-height: 53px; padding: 8px 4px; gap: 4px; }
+  #game-modal .game-editor-tabs button > span { font-size: 9px; }
+  #game-modal .game-editor-tabs button strong { font-size: 11px; }
+  #game-modal .game-editor-pane { padding: 18px 18px 0; }
+  #game-modal .game-basic-grid { grid-template-columns: 1fr; gap: 18px; }
+  #game-modal .game-cover-editor { width: min(150px, 45vw); margin: 0 auto; }
+  #game-modal .game-basic-fields { grid-template-columns: 1fr; }
+  #game-modal .game-basic-fields > label:first-child,
+  #game-modal .game-basic-fields > .form-grid,
+  #game-modal .game-basic-fields > .game-played-date { grid-column: auto; }
+  #game-modal .game-basic-fields > .form-grid,
+  #game-modal .game-played-date > .form-grid,
+  #game-modal .game-archive-grid,
+  #game-modal .game-links-grid,
+  #character-modal .character-editor-fields,
+  #character-modal .character-editor-fields > .form-grid { grid-template-columns: 1fr; }
+  #game-modal .game-writing-focus > header { display: flex; gap: 8px; }
+  #game-modal .game-review-section .game-review-writing-field textarea { min-height: 40dvh; padding: 16px; }
+  #game-modal .game-review-guide { display: none; }
+  #game-modal .game-open-writing { align-items: flex-start; }
+  #game-modal .game-editor-actions,
+  #character-modal .editor-actions { padding: 10px 18px max(10px, env(safe-area-inset-bottom)); flex-direction: row; }
+  #game-modal .game-editor-actions .modal-primary-button,
+  #character-modal .editor-actions .modal-primary-button {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+  #game-modal .game-editor-actions .modal-danger-button,
+  #character-modal .editor-actions .modal-danger-button { font-size: 11px; }
+  #character-modal .character-editor-layout,
+  #character-modal .character-editor-layout.has-character-image { display: block; padding: 18px 18px 0; }
+  #character-modal .has-character-image .character-editor-preview {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    column-gap: 13px;
+    margin-bottom: 18px;
+  }
+  #character-modal .has-character-image .character-preview-image { grid-row: 1 / 5; }
+  #character-modal .character-review-writing-field { margin: 18px 18px 0; }
+  #character-modal .character-review-writing-field textarea { min-height: 36dvh; padding: 16px; }
+  #character-modal .form-message,
+  #game-modal .form-message { margin-inline: 18px; }
+}
