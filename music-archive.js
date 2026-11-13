@@ -276,7 +276,7 @@
             .order("sort_order", { ascending: true, nullsFirst: false })
             .order("created_at", { ascending: true });
         if (error) {
-            byId("music-status").textContent = "Music archive is waiting to be opened.";
+            byId("music-status").textContent = "音楽アーカイブは、開かれるのを待っています。";
             renderAdminActions();
             return;
         }
@@ -318,7 +318,7 @@
         };
         const message = byId("music-form-message");
         if (!payload.music_url) { message.textContent = "请输入有效的官方音乐页面 URL。"; return; }
-        message.textContent = "Saving…";
+        message.textContent = "保存しています…";
         const result = await bridge.write(
             id ? "music_update" : "music_create",
             id ? { id, data: payload } : { data: payload },

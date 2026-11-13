@@ -1404,6 +1404,245 @@ button,
     max-width: min(var(--dialog-width, 980px), calc(100vw - 24px));
 }
 
+/* The Games sidebar is a grid child: the shared page-width rule must not shrink it. */
+.games-layout > .games-index {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 18px 12px 26px;
+    border: 1px solid color-mix(in srgb, var(--games-color) 30%, var(--border-soft));
+    border-radius: 22px;
+    background: linear-gradient(160deg, var(--blue-soft), rgba(255, 255, 255, .94) 56%, var(--mint-soft));
+    box-shadow: 0 12px 30px rgba(52, 115, 136, .08);
+}
+.games-index .filter-section {
+    min-width: 0;
+    margin-bottom: 14px;
+    padding: 12px 4px 18px;
+}
+.games-index .filter-choices {
+    display: flex;
+    align-items: stretch;
+    gap: 7px;
+}
+.games-index .filter-choices button {
+    display: block;
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .58);
+    color: var(--text-soft);
+    font-size: .76rem;
+    line-height: 1.45;
+    letter-spacing: .015em;
+    text-align: left;
+    overflow-wrap: normal;
+    word-break: keep-all;
+}
+.games-index .filter-choices button::before { display: none; }
+.games-index .filter-choices button:hover,
+.games-index .filter-choices button[aria-pressed="true"] {
+    border-color: color-mix(in srgb, var(--games-color) 45%, transparent);
+    background: var(--blue-soft);
+    color: var(--games-deep);
+}
+.games-index .filter-choices button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--games-color) 20%, white);
+    font-weight: 700;
+}
+
+/* One editor language across old modal, settings and dedicated writing forms. */
+.archive-modal-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.archive-modal-card textarea,
+.archive-modal-card select,
+.settings-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.settings-card textarea,
+.settings-card select,
+.sale-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.sale-dialog textarea,
+.sale-dialog select {
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--module-color) 27%, var(--border-soft));
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--module-soft) 30%, white);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
+    color: var(--ink-deep);
+    font-family: var(--font-body);
+    font-size: max(.9rem, 14px);
+    line-height: 1.55;
+}
+.archive-modal-card input:focus,
+.archive-modal-card textarea:focus,
+.archive-modal-card select:focus,
+.settings-card input:focus,
+.settings-card textarea:focus,
+.settings-card select:focus {
+    background: white;
+    border-color: var(--module-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--module-color) 20%, transparent);
+}
+.archive-modal-card label,
+.settings-card label,
+.sale-dialog label,
+.write-form label {
+    font-family: var(--font-body);
+    font-size: .78rem;
+    line-height: 1.5;
+    letter-spacing: .035em;
+}
+.archive-modal-card input[type="file"],
+.settings-card input[type="file"],
+.write-form input[type="file"] {
+    width: 100%;
+    min-width: 0;
+    padding: 8px;
+    border: 1px dashed color-mix(in srgb, var(--module-color) 44%, var(--border));
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--module-soft) 37%, white);
+    color: var(--text-soft);
+    font-size: .78rem;
+}
+.archive-modal-card input[type="file"]::file-selector-button,
+.settings-card input[type="file"]::file-selector-button,
+.write-form input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    padding: 9px 14px;
+    border: 0;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--module-color) 30%, white);
+    color: var(--ink-deep);
+    font-family: var(--font-display);
+    cursor: pointer;
+}
+.game-editor-section-heading h4,
+.archive-modal-card .modal-label,
+.settings-card h2 {
+    font-size: .88rem;
+    letter-spacing: .045em;
+    font-weight: 700;
+}
+.game-editor-description,
+.game-control-label,
+.archive-modal-card small,
+.settings-card small {
+    font-size: .74rem;
+    line-height: 1.6;
+    letter-spacing: .02em;
+}
+
+body[data-page="writing"] .write-nav,
+body[data-page="writing"] .write-heading,
+body[data-page="writing"] .write-form {
+    font-family: var(--font-body);
+}
+.write-nav { border-bottom-color: color-mix(in srgb, var(--writing-color) 30%, var(--border-soft)); }
+.write-nav button,
+.write-nav a,
+.write-nav span {
+    font-family: var(--font-display);
+    font-size: .79rem;
+    letter-spacing: .035em;
+}
+.write-heading h1 {
+    color: var(--writing-deep);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: .01em;
+}
+.write-form {
+    background: linear-gradient(155deg, var(--pink-soft), rgba(255,255,255,.97) 40%, var(--yellow-soft));
+    border-color: color-mix(in srgb, var(--writing-color) 30%, var(--border-soft));
+    box-shadow: 0 18px 44px rgba(144, 80, 113, .09);
+}
+.write-form .write-fields-primary,
+.write-form .write-meta-grid {
+    gap: 18px;
+}
+.write-form .write-fields-primary { grid-template-columns: 1fr; }
+.write-form .write-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 0;
+    padding: 24px;
+    border-radius: 19px;
+    background: linear-gradient(145deg, var(--blue-soft), rgba(255,255,255,.94) 58%, var(--mint-soft));
+}
+.write-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.write-form textarea,
+.write-form select {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--writing-color) 24%, var(--border-soft));
+    border-radius: 13px;
+    background: rgba(255,255,255,.8);
+    color: var(--ink-deep);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.6;
+    box-shadow: inset 0 1px 0 white;
+}
+.write-form input:focus,
+.write-form textarea:focus,
+.write-form select:focus {
+    border-color: var(--writing-color);
+    background: white;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--writing-color) 20%, transparent);
+}
+.write-form #write-excerpt { min-height: 115px; }
+.write-form #write-body {
+    min-height: 52vh;
+    border-radius: 0 0 16px 16px;
+    background: #fffefc;
+    font-family: var(--font-reading);
+    font-size: 1.05rem;
+    line-height: 1.95;
+}
+.write-form .body-editor { margin-top: 30px; background: var(--yellow-soft); }
+.write-form .editor-toolbar {
+    background: color-mix(in srgb, var(--writing-color) 12%, white);
+    border-color: color-mix(in srgb, var(--writing-color) 26%, var(--border-soft));
+}
+.write-form .write-save {
+    border-color: color-mix(in srgb, var(--writing-color) 65%, var(--border));
+    border-radius: 14px;
+    background: var(--writing-color);
+    color: var(--ink-deep);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+.write-upload-field { position: relative; cursor: pointer; }
+.write-upload-field #write-cover-file {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.write-upload-field .write-file-button {
+    display: inline-flex;
+    width: fit-content;
+    min-height: 44px;
+    align-items: center;
+    padding: 8px 17px;
+    border: 1px solid color-mix(in srgb, var(--writing-color) 35%, var(--border-soft));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--writing-color) 22%, white);
+    color: var(--ink-deep);
+    font-family: var(--font-display);
+    font-size: .82rem;
+    font-weight: 700;
+}
+.write-upload-field .write-file-name { color: var(--text-soft); font-size: .8rem; }
+.write-upload-field:focus-within .write-file-button { outline: 3px solid var(--writing-color); outline-offset: 3px; }
+.write-form .write-check { display: flex; gap: 10px; align-items: center; }
+.write-form .write-check input { width: 18px; min-height: 18px; accent-color: var(--writing-color); }
+
 /* Responsive -------------------------------------------------------------- */
 @media (max-width: 1180px) {
     .games-grid,
@@ -1578,6 +1817,11 @@ button,
     .repo-editor-actions button {
         width: 100%;
     }
+
+    .write-form .write-meta-grid { grid-template-columns: 1fr; padding: 16px; }
+    .write-form .write-fields-primary { padding: 18px; }
+    .write-form .body-editor { padding: 16px; }
+    .write-form #write-body { min-height: 52dvh; }
 }
 
 @media (max-width: 420px) {

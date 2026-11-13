@@ -815,7 +815,7 @@ function updateGameCoverPreview(url) {
     }
     const image = document.createElement("img");
     image.src = safeUrl;
-    image.alt = "Game cover preview";
+    image.alt = "ゲーム表紙のプレビュー";
     image.addEventListener("error", () => updateGameCoverPreview(""), { once: true });
     preview.classList.add("has-image");
     preview.append(image);
@@ -823,17 +823,17 @@ function updateGameCoverPreview(url) {
 
 function setGameEditorMode(game) {
     const editing = Boolean(game?.id);
-    document.getElementById("game-editor-mode").textContent = editing ? "EDIT MODE" : "CREATE MODE";
-    document.getElementById("game-modal-title").textContent = editing ? "Edit record" : "New record";
+    document.getElementById("game-editor-mode").textContent = editing ? "編集" : "新規作成";
+    document.getElementById("game-modal-title").textContent = editing ? "ゲーム記録を編集" : "新しいゲーム記録";
     document.getElementById("game-editor-description").textContent = editing
-        ? `Archive ${String(game.sort_order ?? game.id).padStart(3, "0")} / ${game.title || "UNTITLED"}`
-        : "Create a new archive entry.";
+        ? `記録 ${String(game.sort_order ?? game.id).padStart(3, "0")} / ${game.title || "タイトル未設定"}`
+        : "新しいゲーム記録を作ります。";
     addCharacterButton.disabled = !editing;
     const writingButton = document.getElementById("game-open-writing");
     if (writingButton) writingButton.disabled = !editing;
     document.querySelectorAll('[data-game-editor-tab="afterglow"], [data-game-editor-tab="characters"]').forEach((button) => {
         button.disabled = !editing;
-        button.title = editing ? "" : "请先保存基础资料";
+        button.title = editing ? "" : "先に基本情報を保存してください";
     });
     deleteGameButton.classList.toggle("hidden", !editing || kioraAuth.role !== "owner");
 }
@@ -1632,7 +1632,7 @@ function openCharacterEditor(character) {
             character.sort_order ?? "";
 
         modalTitle.textContent =
-            "Edit character";
+            "キャラクターを編集";
 
 
         deleteCharacterButton.classList.toggle(
@@ -1650,7 +1650,7 @@ function openCharacterEditor(character) {
             currentGameForCharacters.id;
 
         modalTitle.textContent =
-            "New character";
+            "新しいキャラクター";
 
 
         deleteCharacterButton
@@ -1771,7 +1771,7 @@ if (characterForm) {
 
 
                 message.textContent =
-                    "Saving…";
+                    "保存しています…";
 
 
                 let result;

@@ -4,9 +4,9 @@
     const SUPABASE_URL = "https://sqgzlaunnmwkulboyems.supabase.co";
     const SUPABASE_KEY = "sb_publishable_B35Zjt_oIOMZw-NCswwVmw_WhWwDzVa";
     const categories = {
-        game_review: { label: "AFTERGLOW", note: "游戏感想" },
-        essay: { label: "MOON NOTES", note: "随笔" },
-        dream: { label: "DREAM LETTERS", note: "梦向创作" }
+        game_review: { label: "ゲームの余韻", note: "ゲーム感想" },
+        essay: { label: "月のノート", note: "随筆" },
+        dream: { label: "夢の手紙", note: "夢向け創作" }
     };
     let client;
 

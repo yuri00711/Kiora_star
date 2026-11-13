@@ -82,7 +82,7 @@
             ? await auth.readForEditor("game_list")
             : await db.from("games").select("id,title,sort_order").order("sort_order", { ascending: true, nullsFirst: false }).order("title");
         if (result.error) {
-            setMessage(`游戏档案读取失败：${result.error.message}`, true);
+            setMessage(`ゲーム記録を読み込めませんでした：${result.error.message}`, true);
             return;
         }
         const select = field("write-game");
@@ -110,7 +110,7 @@
     function updateStats() {
         const stats = common.readingStats(body.value);
         field("word-count").textContent = `${stats.characters} 字`;
-        field("reading-time").textContent = `约 ${stats.minutes} 分钟阅读`;
+        field("reading-time").textContent = `読む時間 約${stats.minutes}分`;
         if (previewing) preview.innerHTML = common.markdownToHtml(body.value);
     }
 
@@ -159,7 +159,7 @@
             body.focus();
             const start = body.selectionStart;
             const end = body.selectionEnd;
-            const label = body.value.slice(start, end) || "链接文字";
+            const label = body.value.slice(start, end) || "リンクの文字";
             body.setRangeText(`[${label}](https://)`, start, end, "end");
             scheduleDraft();
         } else if (command === "rule") {
@@ -195,7 +195,7 @@
     });
 
     function goBack() {
-        if (dirty && !window.confirm("还有未保存的修改，确定离开写作页吗？草稿会保留在此设备。")) return;
+        if (dirty && !window.confirm("保存していない変更があります。ページを離れますか？下書きはこの端末に残ります。")) return;
         const fallback = requestedGameId
             ? `game.html?id=${encodeURIComponent(requestedGameId)}`
             : "writing.html";
@@ -203,12 +203,15 @@
         else window.location.replace(fallback);
     }
     field("write-back").addEventListener("click", goBack);
+    field("write-cover-file").addEventListener("change", (event) => {
+        field("write-cover-file-name").textContent = event.target.files?.[0]?.name || "画像はまだ選ばれていません";
+    });
 
     async function uploadCover() {
         const file = field("write-cover-file").files[0];
         if (!file) return field("write-cover").value.trim() || null;
-        if (!file.type.startsWith("image/")) throw new Error("请选择图片文件。");
-        if (file.size > 5 * 1024 * 1024) throw new Error("图片不能超过 5MB。");
+        if (!file.type.startsWith("image/")) throw new Error("画像ファイルを選んでください。");
+        if (file.size > 5 * 1024 * 1024) throw new Error("画像は5MB以下にしてください。");
         const extension = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
         const path = `writings/${crypto.randomUUID()}.${extension}`;
         const { data, error } = await auth.uploadSiteMedia(file, path);
@@ -237,13 +240,13 @@
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         if (!adminUser) return;
-        setMessage("正在保存……");
+        setMessage("保存しています…");
         saveState.textContent = "保存中…";
         let coverUrl;
         try {
             coverUrl = await uploadCover();
         } catch (error) {
-            setMessage(`封面上传失败：${error.message}`, true);
+            setMessage(`カバー画像をアップロードできませんでした：${error.message}`, true);
             saveState.textContent = "保存できませんでした";
             saveDraft();
             return;
@@ -266,7 +269,7 @@
             is_public: field("write-public").checked
         };
         if (!payload.title || !payload.body) {
-            setMessage("标题和正文不能为空。", true);
+            setMessage("タイトルと本文を入力してください。", true);
             saveDraft();
             return;
         }
@@ -279,7 +282,7 @@
                 : db.from("writings").insert(payload).select("id").single()
         );
         if (result.error) {
-            setMessage(`保存失败：${result.error.message}`, true);
+            setMessage(`保存できませんでした：${result.error.message}`, true);
             saveState.textContent = "保存できませんでした";
             saveDraft();
             return;
@@ -289,7 +292,7 @@
         localStorage.removeItem(draftKey);
         dirty = false;
         saveState.textContent = "保存しました";
-        setMessage("Saved / 已保存");
+        setMessage("保存しました");
         window.setTimeout(() => {
             const target = new URL("read.html", window.location.href);
             target.searchParams.set("id", String(result.data.id));
@@ -301,10 +304,10 @@
 
     field("delete-writing").addEventListener("click", async () => {
         if (auth.role !== "owner") return;
-        if (!currentWriting || !window.confirm(`确定删除《${currentWriting.title}》吗？`)) return;
+        if (!currentWriting || !window.confirm(`「${currentWriting.title}」を削除しますか？`)) return;
         const { error } = await db.from("writings").delete().eq("id", currentWriting.id);
         if (error) {
-            setMessage(`删除失败：${error.message}`, true);
+            setMessage(`削除できませんでした：${error.message}`, true);
             return;
         }
         const path = managedPath(currentWriting.cover_url);
@@ -323,7 +326,7 @@
 
     await auth.initialize(db);
     if (!(auth.can("writing:create") || auth.can("writing:edit"))) {
-        gateStatus.textContent = "此页面仅限管理员使用，正在返回首页……";
+        gateStatus.textContent = "このページは管理者専用です。ホームへ戻ります…";
         window.setTimeout(() => { window.location.replace("index.html"); }, 900);
         return;
     }
@@ -335,7 +338,7 @@
             ? await auth.readForEditor("writing_get", { id: writingId })
             : await db.from("writings").select("*").eq("id", writingId).maybeSingle();
         if (error || !data || data.category === "archive") {
-            gateStatus.textContent = error?.message || "文章不存在。";
+            gateStatus.textContent = error?.message || "文章が見つかりません。";
             return;
         }
         currentWriting = data;
@@ -356,7 +359,7 @@
         field("write-page-title").textContent = "文章を編集する";
         field("write-mode").textContent = common.categories[data.category]?.label || "かきもの編集";
         field("delete-writing").hidden = auth.role !== "owner";
-        document.title = `Edit ${data.title} · Kiora`;
+        document.title = `${data.title}を編集 · Kiora`;
     } else {
         applyDraft({ date: localDate(), category: initialType, gameId: requestedGameId, isPublic: true });
         field("write-mode").textContent = common.categories[initialType].label;
