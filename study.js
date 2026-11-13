@@ -29,6 +29,8 @@
     }
     function displayDate(value) { return value ? String(value).slice(0, 10).replaceAll("-", ".") : "—"; }
     function monthLabel(date) { return new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long" }).format(date); }
+    function statusLabel(value) { return ({ draft:"下書き", active:"進行中", completed:"完了", learning:"学習中", review:"復習", mastered:"習得済み", rewriting:"書き直し中" })[String(value || "").toLowerCase()] || String(value || ""); }
+    function activityLabel(value) { return String(value || "").replaceAll("_", " ").replace(/\b(create|created)\b/gi, "作成").replace(/\b(update|updated)\b/gi, "更新").replace(/\b(delete|deleted)\b/gi, "削除").replace(/\b(review|reviewed)\b/gi, "見直し"); }
     function status(text, error = false) { const node = $("#study-status"); node.textContent = text; node.classList.toggle("study-error", error); node.hidden = !text; }
     function empty(text, action = "") { return `<div class="study-empty"><p>${esc(text)}</p>${action}</div>`; }
     function uid() { return crypto.randomUUID(); }
@@ -71,13 +73,13 @@
     }
 
     async function loadBase() {
-        status("Reading the constellation…");
+        status("学びの星座を読み込んでいます…");
         const publicViewer = auth.role === "viewer";
         const requests = [list("practices"), list("mistakes"), list("notes"), list("activities", { limit: 500 })];
         if (!publicViewer) requests.push(list("revisions"));
         const [practices, mistakes, notes, activities, revisions] = await Promise.all(requests);
         const failure = [practices, mistakes, notes, activities, revisions].find((result) => result?.error);
-        if (failure) { status(`Study data unavailable: ${failure.error.message || failure.error.code}. Please run supabase-study-migration.sql.`, true); return false; }
+        if (failure) { status(`学習データを読み込めません：${failure.error.message || failure.error.code}。supabase-study-migration.sql を実行してください。`, true); return false; }
         state.practices = practices.data || []; state.mistakes = mistakes.data || []; state.notes = notes.data || [];
         state.activities = activities.data || []; state.revisions = revisions?.data || [];
         status(""); renderAll(); return true;
@@ -129,14 +131,14 @@
     function renderDay() {
         const key = isoDate(state.selectedDay); const events = state.activities.filter((item) => String(item.activity_at).slice(0,10) === key).sort((a,b) => String(a.activity_at).localeCompare(String(b.activity_at)));
         $("#study-day-title").textContent = new Intl.DateTimeFormat("ja-JP", { year:"numeric", month:"long", day:"numeric" }).format(state.selectedDay);
-        $("#study-day-activities").innerHTML = events.length ? events.map((item) => `<a href="#${entityView(item.entity_type)}" class="study-timeline-item" data-activity-entity="${esc(item.entity_type)}" data-activity-id="${esc(item.entity_id || "")}"><time>${new Date(item.activity_at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</time><em>${esc(String(item.activity_type).replaceAll("_"," ").toUpperCase())}</em><strong>${esc(item.title)}</strong></a>`).join("") : empty("この日の学習記録はありません。");
+        $("#study-day-activities").innerHTML = events.length ? events.map((item) => `<a href="#${entityView(item.entity_type)}" class="study-timeline-item" data-activity-entity="${esc(item.entity_type)}" data-activity-id="${esc(item.entity_id || "")}"><time>${new Date(item.activity_at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</time><em>${esc(activityLabel(item.activity_type))}</em><strong>${esc(item.title)}</strong></a>`).join("") : empty("この日の学習記録はありません。");
     }
 
     function entityView(type) { return type.includes("mistake") ? "mistakes" : type.includes("revision") ? "revisions" : type === "note" ? "notes" : "practice"; }
 
     function renderPractices() {
         const listItems = state.practices.filter((item) => state.practiceFilter === "all" || item.practice_type === state.practiceFilter).sort((a,b) => String(b.practice_date).localeCompare(String(a.practice_date)));
-        $("#study-practice-list").innerHTML = listItems.length ? listItems.map((item,index) => `<button type="button" class="study-record" data-practice-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.practice_type === "aptitude" ? "APTITUDE / 行测" : "SHENLUN / 申论") + (item.subject ? ` · ${item.subject}` : ""))}</p></span><p class="study-record-meta">${displayDate(item.practice_date)}<br>${esc(item.status.toUpperCase())}</p></button>`).join("") : empty("No practice recorded yet.", state.writable ? '<button class="study-text-button" data-action="new-practice">＋ NEW PRACTICE</button>' : "");
+        $("#study-practice-list").innerHTML = listItems.length ? listItems.map((item,index) => `<button type="button" class="study-record" data-practice-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.practice_type === "aptitude" ? "適性試験" : "申論") + (item.subject ? ` · ${item.subject}` : ""))}</p></span><p class="study-record-meta">${displayDate(item.practice_date)}<br>${esc(statusLabel(item.status))}</p></button>`).join("") : empty("練習記録はまだありません。", state.writable ? '<button class="study-text-button" data-action="new-practice">＋ 練習を追加</button>' : "");
     }
 
     function setPracticeDetailMode(showDetail) {
@@ -161,14 +163,14 @@
         state.activePractice = practice;
         const detail = $("#study-practice-detail");
         setPracticeDetailMode(true);
-        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← BACK TO PRACTICE</button>${empty("Opening practice…")}`;
+        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← 練習一覧へ</button>${empty("練習を開いています…")}`;
         window.scrollTo({ top: Math.max($("#study-view-practice").offsetTop - 84, 0), behavior: "auto" });
-        status("Opening practice…");
+        status("練習を開いています…");
         const entities = practice.practice_type === "aptitude" ? ["files","aptitude_answers","answer_keys"] : ["files","shenlun_questions"];
         const results = await Promise.all(entities.map((entity) => list(entity, { filters:{ practice_id:id }, limit:500 })));
         if (results.some((result) => result.error)) {
-            status("Could not open this practice.", true);
-            detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← BACK TO PRACTICE</button>${empty("Could not open this practice.")}`;
+            status("この練習を開けませんでした。", true);
+            detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← 練習一覧へ</button>${empty("この練習を開けませんでした。")}`;
             return;
         }
         status("");
@@ -267,7 +269,7 @@
             window.clearTimeout(resizeTimer);
             resizeTimer = window.setTimeout(() => {
                 renderPdfPages(container, pdf).catch((error) => {
-                    container.innerHTML = `<p class="study-empty study-error">PDF could not be loaded. ${esc(error.message || "")}</p>`;
+                    container.innerHTML = `<p class="study-empty study-error">PDFを読み込めませんでした。${esc(error.message || "")}</p>`;
                 });
             }, 160);
         });
@@ -291,16 +293,16 @@
                 observePhonePdfWidth(container, pdf);
             }
         } catch (error) {
-            documents.forEach((container) => { container.innerHTML = `<p class="study-empty study-error">PDF could not be loaded. ${esc(error.message || "")}</p>`; });
+            documents.forEach((container) => { container.innerHTML = `<p class="study-empty study-error">PDFを読み込めませんでした。${esc(error.message || "")}</p>`; });
         }
     }
 
     function mobileAnswerControls(current, total, answer, writable) {
         const options = ["A", "B", "C", "D"].map((option) => {
             const selected = answer?.answer === option;
-            return `<button type="button" data-answer="${option}" class="${selected ? "active" : ""}" aria-label="第 ${current} 题选择 ${option}" aria-pressed="${selected}" ${writable ? "" : "disabled"}>${option}</button>`;
+            return `<button type="button" data-answer="${option}" class="${selected ? "active" : ""}" aria-label="第 ${current} 問で ${option} を選ぶ" aria-pressed="${selected}" ${writable ? "" : "disabled"}>${option}</button>`;
         }).join("");
-        return `<div class="study-mobile-answer-center"><span class="study-current-question">第 ${current} 题</span><div class="study-answer-options">${options}</div></div><div class="study-mobile-answer-nav"><button type="button" data-answer-nav="prev" aria-label="上一题" ${current <= 1 ? "disabled" : ""}>‹</button><button type="button" data-answer-nav="next" aria-label="下一题" ${current >= total ? "disabled" : ""}>›</button></div>`;
+        return `<div class="study-mobile-answer-center"><span class="study-current-question">第 ${current} 問</span><div class="study-answer-options">${options}</div></div><div class="study-mobile-answer-nav"><button type="button" data-answer-nav="prev" aria-label="前の問題" ${current <= 1 ? "disabled" : ""}>‹</button><button type="button" data-answer-nav="next" aria-label="次の問題" ${current >= total ? "disabled" : ""}>›</button></div>`;
     }
 
     async function renderAptitude(practice, data) {
@@ -309,12 +311,12 @@
         const answers = new Map(data.aptitude_answers.map((item)=>[item.question_number,item])); const answer = answers.get(current);
         detail._studyData = data;
         const writable = state.writable;
-        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← BACK TO PRACTICE</button><div class="study-detail-toolbar"><div><p class="study-kicker">APTITUDE / ${esc(practice.status.toUpperCase())}</p><h3>${esc(practice.title)}</h3></div><div class="study-action-row">${writable ? '<button class="study-secondary" data-action="upload-paper">UPLOAD PAPER</button><button class="study-secondary" data-action="import-key">IMPORT ANSWER KEY</button><button class="study-primary" data-action="finish-practice">RESULT</button>' : ""}</div></div><div class="study-paper-workspace"><div class="study-paper-reader">${await paperMarkup(data.files)}</div><aside class="study-answer-panel">${answerPanel(current,total,answer,writable)}</aside></div><div class="study-mobile-dock">${mobileAnswerControls(current,total,answer,writable)}</div>`;
+        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-practice">← 練習一覧へ</button><div class="study-detail-toolbar"><div><p class="study-kicker">適性試験 / ${esc(statusLabel(practice.status))}</p><h3>${esc(practice.title)}</h3></div><div class="study-action-row">${writable ? '<button class="study-secondary" data-action="upload-paper">問題用紙を追加</button><button class="study-secondary" data-action="import-key">解答を取り込む</button><button class="study-primary" data-action="finish-practice">結果</button>' : ""}</div></div><div class="study-paper-workspace"><div class="study-paper-reader">${await paperMarkup(data.files)}</div><aside class="study-answer-panel">${answerPanel(current,total,answer,writable)}</aside></div><div class="study-mobile-dock">${mobileAnswerControls(current,total,answer,writable)}</div>`;
         await renderPdfDocuments(detail);
     }
 
     function answerPanel(current,total,answer,writable) {
-        return `<p class="study-kicker">QUESTION</p><p class="study-question-count">${String(current).padStart(3,"0")} / ${String(total).padStart(3,"0")}</p><p class="study-current-question">第 ${current} 题</p><div class="study-answer-options">${["A","B","C","D"].map(option=>`<button type="button" data-answer="${option}" class="${answer?.answer===option?"active":""}" ${writable?"":"disabled"}>${option}</button>`).join("")}</div><div class="study-answer-nav"><button type="button" data-answer-nav="prev">← PREV</button><button type="button" data-answer-nav="next">NEXT →</button></div><div class="study-mini-actions"><button type="button" data-action="clear-answer">CLEAR ANSWER</button><button type="button" data-action="toggle-flag">${answer?.flagged?"UNFLAG":"FLAG"}</button><button type="button" data-action="open-answer-sheet">ANSWER SHEET</button><label><input type="checkbox" data-auto-advance ${practiceAutoAdvance()?"checked":""}> AUTO ADVANCE</label></div>`;
+        return `<p class="study-kicker">問題</p><p class="study-question-count">${String(current).padStart(3,"0")} / ${String(total).padStart(3,"0")}</p><p class="study-current-question">第 ${current} 問</p><div class="study-answer-options">${["A","B","C","D"].map(option=>`<button type="button" data-answer="${option}" class="${answer?.answer===option?"active":""}" ${writable?"":"disabled"}>${option}</button>`).join("")}</div><div class="study-answer-nav"><button type="button" data-answer-nav="prev">← 前へ</button><button type="button" data-answer-nav="next">次へ →</button></div><div class="study-mini-actions"><button type="button" data-action="clear-answer">答えを消す</button><button type="button" data-action="toggle-flag">${answer?.flagged?"印を外す":"印をつける"}</button><button type="button" data-action="open-answer-sheet">解答一覧</button><label><input type="checkbox" data-auto-advance ${practiceAutoAdvance()?"checked":""}> 自動で次へ</label></div>`;
     }
     function updateAptitudeControls() {
         const detail = $("#study-practice-detail");
@@ -334,7 +336,7 @@
     async function saveAptitudeAnswer(value, changes = {}) {
         const detail=$("#study-practice-detail"), data=detail._studyData, question=Number(detail.dataset.question), existing=data.aptitude_answers.find((item)=>item.question_number===question);
         const payload={practice_id:state.activePractice.id,question_number:question,answer:value ?? existing?.answer ?? null,flagged:changes.flagged ?? existing?.flagged ?? false};
-        const result=await upsert("aptitude_answers",payload,existing?.id||null); if(result.error){status(`Answer not saved: ${result.error.message}`,true);return;}
+        const result=await upsert("aptitude_answers",payload,existing?.id||null); if(result.error){status(`答えを保存できませんでした：${result.error.message}`,true);return;}
         if(existing) Object.assign(existing,result.data); else data.aptitude_answers.push(result.data);
         if(changes.advance && practiceAutoAdvance() && question<(state.activePractice.total_questions||1)) detail.dataset.question=question+1;
         updateAptitudeControls();
@@ -342,12 +344,12 @@
 
     function showAnswerSheet() {
         const detail=$("#study-practice-detail"),data=detail._studyData,total=state.activePractice.total_questions||Math.max(data.answer_keys.length,1),map=new Map(data.aptitude_answers.map(item=>[item.question_number,item]));
-        openSheet(`<header><div><p class="study-kicker">APTITUDE</p><h2>Answer Sheet</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-answer-grid">${Array.from({length:total},(_,i)=>{const item=map.get(i+1);return `<button data-sheet-question="${i+1}" class="${item?.answer?"answered":""} ${item?.flagged?"flagged":""}">${String(i+1).padStart(3,"0")} ${esc(item?.answer||"—")}</button>`}).join("")}</div></div>`);
+        openSheet(`<header><div><p class="study-kicker">適性試験</p><h2>解答一覧</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-answer-grid">${Array.from({length:total},(_,i)=>{const item=map.get(i+1);return `<button data-sheet-question="${i+1}" class="${item?.answer?"answered":""} ${item?.flagged?"flagged":""}">${String(i+1).padStart(3,"0")} ${esc(item?.answer||"—")}</button>`}).join("")}</div></div>`);
     }
 
     async function finishPractice() {
         const data=$("#study-practice-detail")._studyData, keys=data.answer_keys.filter(item=>item.confirmed), answers=new Map(data.aptitude_answers.map(item=>[item.question_number,item.answer]));
-        if(!keys.length){ return status("Confirm an Answer Key before grading.",true); }
+        if(!keys.length){ return status("採点する前に解答を確認してください。",true); }
         if (state.activePractice.status !== "completed") {
             const p = state.activePractice;
             const completed = await upsert("practices", { practice_type:p.practice_type,title:p.title,practice_date:p.practice_date,source:p.source,subject:p.subject,note:p.note,status:"completed",total_questions:p.total_questions,auto_advance:p.auto_advance,is_public:p.is_public }, p.id);
@@ -355,7 +357,7 @@
         }
         const rows=keys.map(key=>({number:key.question_number,mine:answers.get(key.question_number)||"",correct:key.correct_answer,ok:(answers.get(key.question_number)||"").toUpperCase()===key.correct_answer.toUpperCase()}));
         const correct=rows.filter(row=>row.ok).length, wrong=rows.filter(row=>!row.ok&&row.mine).length,unanswered=rows.filter(row=>!row.mine).length;
-        openSheet(`<header><div><p class="study-kicker">APTITUDE RESULT</p><h2>${esc(state.activePractice.title)}</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-result-summary"><div><strong>${correct}</strong>CORRECT</div><div><strong>${wrong}</strong>WRONG</div><div><strong>${unanswered}</strong>UNANSWERED</div></div><form id="archive-wrong-form"><p class="study-kicker">SELECT TO ARCHIVE</p><div class="study-result-list">${rows.filter(row=>!row.ok).map(row=>`<label><input type="checkbox" name="wrong" value="${row.number}" ${row.mine?"":"disabled"}><span>${String(row.number).padStart(3,"0")}</span><span>${esc(row.mine||"—")} → ${esc(row.correct)}</span></label>`).join("")}</div>${state.writable?'<button class="study-primary" type="submit">ADD SELECTED TO MISTAKE BOOK</button>':""}</form></div>`);
+        openSheet(`<header><div><p class="study-kicker">適性試験の結果</p><h2>${esc(state.activePractice.title)}</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-result-summary"><div><strong>${correct}</strong>正解</div><div><strong>${wrong}</strong>不正解</div><div><strong>${unanswered}</strong>未回答</div></div><form id="archive-wrong-form"><p class="study-kicker">まちがいノートに残す問題</p><div class="study-result-list">${rows.filter(row=>!row.ok).map(row=>`<label><input type="checkbox" name="wrong" value="${row.number}" ${row.mine?"":"disabled"}><span>${String(row.number).padStart(3,"0")}</span><span>${esc(row.mine||"—")} → ${esc(row.correct)}</span></label>`).join("")}</div>${state.writable?'<button class="study-primary" type="submit">選んだ問題をまちがいノートへ追加</button>':""}</form></div>`);
     }
 
    async function shenlunRegionMarkup(question, kind) {
@@ -364,7 +366,7 @@
     if (!question?.source_file_id || !regions.length) {
         return `
             <div class="study-shenlun-region-empty">
-                No ${kind === "question_regions" ? "question" : "reference answer"} area selected.
+                ${kind === "question_regions" ? "問題" : "参考答案"}の範囲が選ばれていません。
             </div>
         `;
     }
@@ -751,7 +753,7 @@ async function renderShenlun(practice, data) {
     );
 }
 
-    function reviewMarkup(review){ const sections=[["CONTENT COVERAGE",review.content_coverage],["MATERIAL EVIDENCE",review.material_evidence],["TASK ANALYSIS",review.task_analysis],["EXPRESSION",review.expression_review],["STRUCTURE",review.structure_review]];return `<div class="study-detail"><p class="study-kicker">KIORA REVIEW / ${esc(review.assessment?.level||"")}</p>${sections.map(([title,value])=>`<section class="study-review-section"><h4>${title}</h4><p>${esc(value?.summary||"")}</p><ul>${(value?.findings||[]).map(item=>`<li><strong>${esc(item.status?.toUpperCase())}</strong> ${esc(item.point)}<br>${esc(item.evidence)}<br>${esc(item.suggestion)}</li>`).join("")}</ul></section>`).join("")}<section class="study-review-section"><h4>PRIORITY</h4><p>${esc(review.assessment?.main_issue||"")}</p><ol>${(review.assessment?.priorities||[]).map(item=>`<li>${esc(item)}</li>`).join("")}</ol>${state.writable?'<button class="study-primary" data-action="add-revision">ADD TO REVISION</button>':""}</section></div>`; }
+    function reviewMarkup(review){ const sections=[["内容の網羅",review.content_coverage],["資料にもとづく根拠",review.material_evidence],["設問の分析",review.task_analysis],["表現",review.expression_review],["構成",review.structure_review]];return `<div class="study-detail"><p class="study-kicker">Kioraの見直し / ${esc(review.assessment?.level||"")}</p>${sections.map(([title,value])=>`<section class="study-review-section"><h4>${title}</h4><p>${esc(value?.summary||"")}</p><ul>${(value?.findings||[]).map(item=>`<li><strong>${esc(statusLabel(item.status))}</strong> ${esc(item.point)}<br>${esc(item.evidence)}<br>${esc(item.suggestion)}</li>`).join("")}</ul></section>`).join("")}<section class="study-review-section"><h4>優先して直すところ</h4><p>${esc(review.assessment?.main_issue||"")}</p><ol>${(review.assessment?.priorities||[]).map(item=>`<li>${esc(item)}</li>`).join("")}</ol>${state.writable?'<button class="study-primary" data-action="add-revision">答案の見直しへ追加</button>':""}</section></div>`; }
 
     let autosaveTimer;
     function installShenlunAutosave(question,answer){ const body=$("#shenlun-answer-body");if(!body)return;const count=$("#shenlun-count"),limit=question.max_characters||Infinity;body.addEventListener("input",()=>{count.textContent=`${body.value.length} / ${Number.isFinite(limit)?limit:"∞"}`;count.classList.toggle("over",body.value.length>limit);localStorage.setItem(`kiora:study-draft:${question.id}`,body.value);clearTimeout(autosaveTimer);autosaveTimer=setTimeout(()=>saveShenlun(question,answer,true),1800)});if(!answer&&localStorage.getItem(`kiora:study-draft:${question.id}`))body.value=localStorage.getItem(`kiora:study-draft:${question.id}`); }
@@ -883,7 +885,7 @@ async function renderShenlun(practice, data) {
         state.signedUrls.set(cacheKey, resultImage);
         return resultImage;
     }
-    function renderMistakes(){const subjects=[...new Set(state.mistakes.map(item=>item.subject))];$("#study-mistake-subjects").innerHTML=["all",...subjects].map(subject=>`<button data-mistake-subject="${esc(subject)}" class="${state.mistakeSubject===subject?"active":""}">${esc(subject==="all"?"ALL SUBJECTS":subject)}</button>`).join("");const items=filteredMistakes(),container=$("#study-mistake-content");if(!items.length){container.innerHTML=empty("No mistakes archived yet.",state.writable?'<button class="study-text-button" data-action="quick-mistake">＋ QUICK MISTAKE</button>':"");return;}state.currentMistake=Math.min(state.currentMistake,items.length-1);if(state.mistakeMode==="index")container.innerHTML=`<table class="study-mistake-index"><thead><tr><th>NO.</th><th>KNOWLEDGE</th><th>DATE</th><th>STATUS</th></tr></thead><tbody>${items.map((item,index)=>`<tr data-id="${item.id}"><td>${String(index+1).padStart(3,"0")}</td><td>${esc(item.knowledge_tag||item.subject)}</td><td>${displayDate(item.created_at)}</td><td>${esc(item.status.toUpperCase())}</td></tr>`).join("")}</tbody></table>`;else renderMistakeCard(items[state.currentMistake],items);}
+    function renderMistakes(){const subjects=[...new Set(state.mistakes.map(item=>item.subject))];$("#study-mistake-subjects").innerHTML=["all",...subjects].map(subject=>`<button data-mistake-subject="${esc(subject)}" class="${state.mistakeSubject===subject?"active":""}">${esc(subject==="all"?"すべての科目":subject)}</button>`).join("");const items=filteredMistakes(),container=$("#study-mistake-content");if(!items.length){container.innerHTML=empty("まちがいの記録はまだありません。",state.writable?'<button class="study-text-button" data-action="quick-mistake">＋ まちがいを追加</button>':"");return;}state.currentMistake=Math.min(state.currentMistake,items.length-1);if(state.mistakeMode==="index")container.innerHTML=`<table class="study-mistake-index"><thead><tr><th>番号</th><th>知識</th><th>日付</th><th>状態</th></tr></thead><tbody>${items.map((item,index)=>`<tr data-id="${item.id}"><td>${String(index+1).padStart(3,"0")}</td><td>${esc(item.knowledge_tag||item.subject)}</td><td>${displayDate(item.created_at)}</td><td>${esc(statusLabel(item.status))}</td></tr>`).join("")}</tbody></table>`;else renderMistakeCard(items[state.currentMistake],items);}
 
     async function renderMistakeCard(item, items = filteredMistakes(), revisit = false) {
         const container = $("#study-mistake-content");
@@ -892,21 +894,21 @@ async function renderShenlun(practice, data) {
         container.innerHTML = `
             <article class="study-mistake-card" data-mistake-card="${item.id}">
                 <p class="study-kicker">
-                    MISTAKE ${String(state.currentMistake + 1).padStart(3, "0")} /
-                    ${esc(item.status.toUpperCase())}
+                    まちがい ${String(state.currentMistake + 1).padStart(3, "0")} /
+                    ${esc(statusLabel(item.status))}
                 </p>
 
                 <h3>
                     ${esc(item.subject)} ·
-                    ${item.question_number ? `第 ${esc(item.question_number)} 题` : "题号未记录"}
+                    ${item.question_number ? `第 ${esc(item.question_number)} 問` : "問題番号なし"}
                 </h3>
 
                 <div class="study-question-media ${image ? "has-image" : ""}" style="${image ? "min-height:0" : ""}">
                     ${image
-                        ? `<img src="${esc(image)}" alt="Original question">`
+                        ? `<img src="${esc(image)}" alt="元の問題">`
                         : item.question_snapshot
                             ? `<p>${esc(item.question_snapshot)}</p>`
-                            : "Original question reference"
+                            : "元の問題"
                     }
                 </div>
 
@@ -917,16 +919,16 @@ async function renderShenlun(practice, data) {
                                 `<button data-revisit-answer="${option}">${option}</button>`
                             ).join("")}
                         </div>
-                        <button class="study-primary" data-action="submit-revisit" disabled>SUBMIT</button>
+                        <button class="study-primary" data-action="submit-revisit" disabled>答え合わせ</button>
                     `
                     : `
                         <div class="study-answer-reveal">
                             <div>
-                                <span>MY ANSWER</span>
+                                <span>自分の答え</span>
                                 <strong>${esc(item.my_answer || "—")}</strong>
                             </div>
                             <div>
-                                <span>CORRECT</span>
+                                <span>正しい答え</span>
                                 <strong>${esc(item.correct_answer)}</strong>
                             </div>
                         </div>
@@ -934,20 +936,20 @@ async function renderShenlun(practice, data) {
                         ${state.writable
                             ? `
                                 <section class="study-mistake-reason" data-mistake-reason-editor="${item.id}">
-                                    <label class="study-kicker" for="study-mistake-reason-${item.id}">WHY I GOT IT WRONG</label>
-                                    <div class="study-reason-presets" aria-label="Quick reason choices">
+                                    <label class="study-kicker" for="study-mistake-reason-${item.id}">間違えた理由</label>
+                                    <div class="study-reason-presets" aria-label="理由をすばやく選ぶ">
                                         ${["知识点不会", "概念混淆", "审题", "粗心", "时间不足", "做题策略"].map((reason) => `<button type="button" data-reason-preset="${esc(reason)}">${esc(reason)}</button>`).join("")}
                                     </div>
                                     <textarea id="study-mistake-reason-${item.id}" data-mistake-reason-input placeholder="写下这道题为什么做错……">${esc(item.reason || "")}</textarea>
                                     <div class="study-reason-save-row">
                                         <span data-mistake-reason-status role="status"></span>
-                                        <button class="study-primary" type="button" data-action="save-mistake-reason" data-id="${item.id}">SAVE</button>
+                                        <button class="study-primary" type="button" data-action="save-mistake-reason" data-id="${item.id}">保存</button>
                                     </div>
                                 </section>
                             `
                             : `
                                 <p class="study-mistake-reason-readonly">
-                                    <span class="study-kicker">WHY I GOT IT WRONG</span><br>
+                                    <span class="study-kicker">間違えた理由</span><br>
                                     ${esc(item.reason || "—")}
                                 </p>
                             `
@@ -956,13 +958,13 @@ async function renderShenlun(practice, data) {
                         ${state.writable
                             ? `
                                 <div class="study-action-row">
-                                    <button class="study-primary" data-action="start-revisit">REVISIT</button>
+                                    <button class="study-primary" data-action="start-revisit">もう一度解く</button>
                                     ${item.paper_file_id
-                                        ? `<button class="study-secondary" data-action="crop-mistake">SELECT QUESTION AREA</button>`
+                                        ? `<button class="study-secondary" data-action="crop-mistake">問題範囲を選ぶ</button>`
                                         : ""
                                     }
-                                    <button class="study-secondary" data-action="master-mistake">MASTERED</button>
-                                    <button class="study-secondary" data-action="delete-mistake">DELETE</button>
+                                    <button class="study-secondary" data-action="master-mistake">習得済みにする</button>
+                                    <button class="study-secondary" data-action="delete-mistake">削除</button>
                                 </div>
                             `
                             : ""
@@ -971,9 +973,9 @@ async function renderShenlun(practice, data) {
                 }
 
                 <footer class="study-detail-toolbar">
-                    <button class="study-text-button" data-card-nav="prev">← PREVIOUS</button>
+                    <button class="study-text-button" data-card-nav="prev">← 前へ</button>
                     <span>${state.currentMistake + 1} / ${items.length}</span>
-                    <button class="study-text-button" data-card-nav="next">NEXT →</button>
+                    <button class="study-text-button" data-card-nav="next">次へ →</button>
                 </footer>
             </article>
         `;
@@ -1002,7 +1004,7 @@ async function renderShenlun(practice, data) {
         message.textContent = "Saved.";
     }
 
-    function renderRevisions(){const container=$("#study-revision-list");container.innerHTML=state.revisions.length?state.revisions.map((item,index)=>`<button class="study-record" data-revision-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.issue_tags||[]).join(" · ")||item.category||"")}</p></span><p class="study-record-meta">${displayDate(item.created_at)}<br>${esc(item.status.toUpperCase())}</p></button>`).join(""):empty("No revisions archived yet.");}
+    function renderRevisions(){const container=$("#study-revision-list");container.innerHTML=state.revisions.length?state.revisions.map((item,index)=>`<button class="study-record" data-revision-id="${item.id}"><span class="study-record-index">${String(index+1).padStart(3,"0")}</span><span><h3>${esc(item.title)}</h3><p>${esc((item.issue_tags||[]).join(" · ")||item.category||"")}</p></span><p class="study-record-meta">${displayDate(item.created_at)}<br>${esc(statusLabel(item.status))}</p></button>`).join(""):empty("見直す答案はまだありません。");}
 
     function setRevisionDetailMode(showDetail) {
         const section = $("#study-view-revisions");
@@ -1025,7 +1027,7 @@ async function renderShenlun(practice, data) {
         state.activeRevision = item;
         const detail = $("#study-revision-detail");
         setRevisionDetailMode(true);
-        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-revision">← BACK TO REVISIONS</button>${empty("Opening revision…")}`;
+        detail.innerHTML = `<button class="study-text-button study-back-button" type="button" data-action="close-revision">← 答案の見直しへ</button>${empty("答案を開いています…")}`;
         window.scrollTo({ top: Math.max($("#study-view-revisions").offsetTop - 84, 0), behavior: "auto" });
 
         const [attemptsResult, reviewsResult, questionResult] = item.question_id
@@ -1053,38 +1055,38 @@ async function renderShenlun(practice, data) {
 
         detail.innerHTML = `
             <button class="study-text-button study-back-button" type="button" data-action="close-revision">← BACK TO REVISIONS</button>
-            <p class="study-kicker">REVISION / ${esc(item.status.toUpperCase())}</p>
+            <p class="study-kicker">答案の見直し / ${esc(statusLabel(item.status))}</p>
             <section class="study-revision-section">
-                <p class="study-kicker">QUESTION</p>
+                <p class="study-kicker">問題</p>
                 <h4>${esc(questionNumber)}</h4>
                 <p class="study-revision-copy">${esc(prompt || "原题文字未保存。")}</p>
                 ${questionImage}
             </section>
             <section class="study-revision-section">
-                <p class="study-kicker">MY PREVIOUS ANSWER</p>
+                <p class="study-kicker">前回の自分の答え</p>
                 <p class="study-revision-copy">${esc(previousAnswer?.body || "—")}</p>
             </section>
             <section class="study-revision-section">
-                <p class="study-kicker">WHAT WAS WRONG</p>
+                <p class="study-kicker">直したいところ</p>
                 <p class="study-revision-copy">${esc(mainIssue || "—")}</p>
                 ${priorities.length ? `<ul class="study-revision-priorities">${priorities.map((priority) => `<li>${esc(priority)}</li>`).join("")}</ul>` : ""}
             </section>
-            ${state.writable ? `<div class="study-action-row"><button class="study-primary" type="button" data-action="rewrite-revision" data-id="${item.id}">REWRITE</button></div>` : ""}
+            ${state.writable ? `<div class="study-action-row"><button class="study-primary" type="button" data-action="rewrite-revision" data-id="${item.id}">書き直す</button></div>` : ""}
         `;
     }
     function reviewMetrics(review){const findings=[...(review?.content_coverage?.findings||[]),...(review?.structure_review?.findings||[]),...(review?.expression_review?.findings||[])];return{covered:findings.filter(x=>x.status==="covered"||x.status==="good").length,missing:findings.filter(x=>x.status==="missing").length,partial:findings.filter(x=>x.status==="partial").length,issues:findings.filter(x=>x.status==="issue").length,priorities:review?.assessment?.priorities||[]};}
-    function comparisonMarkup(attempts,reviews){const first=attempts[0],last=attempts[attempts.length-1],firstReview=reviews.find(x=>x.answer_id===first.id),lastReview=reviews.find(x=>x.answer_id===last.id),a=reviewMetrics(firstReview),b=reviewMetrics(lastReview),improvements=[];if(b.covered>a.covered)improvements.push(`覆盖/良好项增加 ${b.covered-a.covered}`);if(b.missing<a.missing)improvements.push(`漏点减少 ${a.missing-b.missing}`);if(b.partial<a.partial)improvements.push(`部分覆盖减少 ${a.partial-b.partial}`);if(b.issues<a.issues)improvements.push(`结构与表达问题减少 ${a.issues-b.issues}`);return `<div class="study-result-summary"><div><strong>${a.covered} → ${b.covered}</strong>COVERED / GOOD</div><div><strong>${a.missing} → ${b.missing}</strong>MISSING</div><div><strong>${a.issues} → ${b.issues}</strong>ISSUES</div></div><section class="study-review-section"><h4>WHAT IMPROVED</h4><p>${esc(improvements.join("；")||"No confirmed improvement detected yet.")}</p><h4>WHAT STILL NEEDS WORK</h4><p>${esc(b.priorities.join("；")||"No major issue detected.")}</p><p>${first.body.length} → ${last.body.length} CHARACTERS</p></section><div class="study-answer-reveal"><div><span>ATTEMPT 01</span><p>${esc(first.body)}</p></div><div><span>ATTEMPT ${String(last.attempt_number).padStart(2,"0")}</span><p>${esc(last.body)}</p></div></div>`;}
+    function comparisonMarkup(attempts,reviews){const first=attempts[0],last=attempts[attempts.length-1],firstReview=reviews.find(x=>x.answer_id===first.id),lastReview=reviews.find(x=>x.answer_id===last.id),a=reviewMetrics(firstReview),b=reviewMetrics(lastReview),improvements=[];if(b.covered>a.covered)improvements.push(`網羅できた項目が ${b.covered-a.covered} 件増えました`);if(b.missing<a.missing)improvements.push(`漏れが ${a.missing-b.missing} 件減りました`);if(b.partial<a.partial)improvements.push(`不十分な項目が ${a.partial-b.partial} 件減りました`);if(b.issues<a.issues)improvements.push(`構成・表現の問題が ${a.issues-b.issues} 件減りました`);return `<div class="study-result-summary"><div><strong>${a.covered} → ${b.covered}</strong>網羅 / 良好</div><div><strong>${a.missing} → ${b.missing}</strong>不足</div><div><strong>${a.issues} → ${b.issues}</strong>問題点</div></div><section class="study-review-section"><h4>よくなったところ</h4><p>${esc(improvements.join("；")||"確認できる改善点はまだありません。")}</p><h4>まだ直したいところ</h4><p>${esc(b.priorities.join("；")||"大きな問題は見つかりませんでした。")}</p><p>${first.body.length} → ${last.body.length} 字</p></section><div class="study-answer-reveal"><div><span>1回目</span><p>${esc(first.body)}</p></div><div><span>${String(last.attempt_number).padStart(2,"0")}回目</span><p>${esc(last.body)}</p></div></div>`;}
 
-    function renderNotes(){const subjects=[...new Set(state.notes.map(item=>item.subject).filter(Boolean))];$("#study-note-filters").innerHTML=["all",...subjects].map((subject,index)=>`<button data-note-subject="${esc(subject)}" class="${index===0?"active":""}">${esc(subject==="all"?"ALL":subject)}</button>`).join("");renderNoteList("all");}
-    function renderNoteList(subject){const items=state.notes.filter(item=>subject==="all"||item.subject===subject);$("#study-note-list").innerHTML=items.length?items.map(item=>`<article class="study-note"><p class="study-kicker">${esc(item.subject||"STUDY NOTE")}</p><h3>${esc(item.title)}</h3><p>${esc(item.body)}</p><footer><span>${displayDate(item.note_date)}</span>${state.writable?`<span><button class="study-text-button" data-edit-note="${item.id}">EDIT</button> <button class="study-text-button" data-delete-note="${item.id}">DELETE</button></span>`:""}</footer></article>`).join(""):empty("No study notes yet.");}
+    function renderNotes(){const subjects=[...new Set(state.notes.map(item=>item.subject).filter(Boolean))];$("#study-note-filters").innerHTML=["all",...subjects].map((subject,index)=>`<button data-note-subject="${esc(subject)}" class="${index===0?"active":""}">${esc(subject==="all"?"すべて":subject)}</button>`).join("");renderNoteList("all");}
+    function renderNoteList(subject){const items=state.notes.filter(item=>subject==="all"||item.subject===subject);$("#study-note-list").innerHTML=items.length?items.map(item=>`<article class="study-note"><p class="study-kicker">${esc(item.subject||"学習メモ")}</p><h3>${esc(item.title)}</h3><p>${esc(item.body)}</p><footer><span>${displayDate(item.note_date)}</span>${state.writable?`<span><button class="study-text-button" data-edit-note="${item.id}">編集</button> <button class="study-text-button" data-delete-note="${item.id}">削除</button></span>`:""}</footer></article>`).join(""):empty("学習メモはまだありません。");}
 
     function fieldsMarkup(fields){return fields.map(field=>`<div class="study-field ${field.full?"full":""}"><label for="study-field-${field.name}">${esc(field.label)}</label>${field.type==="textarea"?`<textarea id="study-field-${field.name}" name="${field.name}" ${field.required?"required":""}>${esc(field.value||"")}</textarea>`:field.type==="select"?`<select id="study-field-${field.name}" name="${field.name}">${field.options.map(([value,label])=>`<option value="${esc(value)}" ${String(field.value)===String(value)?"selected":""}>${esc(label)}</option>`).join("")}</select>`:`<input id="study-field-${field.name}" name="${field.name}" type="${field.type||"text"}" value="${esc(field.value||"")}" ${field.required?"required":""} ${field.accept?`accept="${esc(field.accept)}"`:""} ${field.max?`max="${field.max}"`:""}>`}</div>`).join("");}
-    function openEditor({title,kicker="STUDY EDITOR",fields,onSave}){const dialog=$("#study-editor");$("#study-editor-title").textContent=title;$("#study-editor-kicker").textContent=kicker;$("#study-editor-fields").innerHTML=fieldsMarkup(fields);$("#study-editor-message").textContent="";dialog._onSave=onSave;dialog.showModal();setTimeout(()=>$("input,textarea,select",dialog)?.focus(),50);}
+    function openEditor({title,kicker="学習記録の編集",fields,onSave}){const dialog=$("#study-editor");$("#study-editor-title").textContent=title;$("#study-editor-kicker").textContent=kicker;$("#study-editor-fields").innerHTML=fieldsMarkup(fields);$("#study-editor-message").textContent="";dialog._onSave=onSave;dialog.showModal();setTimeout(()=>$("input,textarea,select",dialog)?.focus(),50);}
     function openSheet(html){const dialog=$("#study-sheet");$("#study-sheet-content").innerHTML=html;dialog.showModal();}
 
-    function newPractice(){openEditor({title:"New Practice",kicker:"PRACTICE ARCHIVE",fields:[{name:"practice_type",label:"TYPE",type:"select",options:[["aptitude","APTITUDE / 行测"],["shenlun","SHENLUN / 申论"]]},{name:"title",label:"TITLE",required:true},{name:"practice_date",label:"PRACTICE DATE",type:"date",value:isoDate(),required:true},{name:"source",label:"SOURCE"},{name:"subject",label:"SUBJECT"},{name:"total_questions",label:"TOTAL QUESTIONS",type:"number"},{name:"note",label:"NOTE",type:"textarea",full:true}],onSave:async data=>{data.total_questions=data.total_questions?Number(data.total_questions):null;data.status="draft";data.auto_advance=true;data.is_public=false;const result=await upsert("practices",data);if(!result.error){state.practices.unshift(result.data);return true;}throw result.error;}});}
-    function noteEditor(note=null){openEditor({title:note?"Edit Note":"New Note",kicker:"LEARNING FRAGMENT",fields:[{name:"title",label:"TITLE",value:note?.title,required:true},{name:"note_date",label:"DATE",type:"date",value:note?.note_date||isoDate(),required:true},{name:"subject",label:"SUBJECT",value:note?.subject},{name:"tags",label:"TAGS / comma separated",value:(note?.tags||[]).join(", ")},{name:"body",label:"BODY",type:"textarea",value:note?.body,required:true,full:true}],onSave:async data=>{data.tags=data.tags.split(/[,，]/).map(x=>x.trim()).filter(Boolean);data.is_public=note?.is_public||false;const result=await upsert("notes",data,note?.id);if(result.error)throw result.error;if(note)Object.assign(note,result.data);else state.notes.unshift(result.data);return true;}});}
-    function quickMistake(){openEditor({title:"Quick Mistake",kicker:"BATCH CAPTURE",fields:[{name:"image",label:"IMAGE / paste or upload",type:"file",accept:"image/jpeg,image/png,image/webp",full:true},{name:"subject",label:"SUBJECT",required:true},{name:"knowledge_tag",label:"KNOWLEDGE TAG"},{name:"my_answer",label:"MY ANSWER"},{name:"correct_answer",label:"CORRECT ANSWER",required:true},{name:"reason",label:"REASON",type:"select",options:[["知识点不会","知识点不会"],["概念混淆","概念混淆"],["审题","审题"],["粗心","粗心"],["时间不足","时间不足"],["做题策略","做题策略"],["其他","其他"]]},{name:"question_snapshot",label:"QUESTION / optional text",type:"textarea",full:true}],onSave:async(data,form)=>{const file=form.elements.image.files[0];delete data.image;data.source_type="quick";data.status="learning";data.is_public=false;let result=await upsert("mistakes",data);if(result.error)throw result.error;if(file){const upload=await uploadFile(file,`mistakes/${result.data.id}/${safeName(file.name)}`);if(upload.error)throw upload.error;result=await upsert("mistakes",{...data,image_path:upload.data.path},result.data.id);}state.mistakes.unshift(result.data);return true;}});const area=$("#study-editor-fields");area.addEventListener("paste",event=>{const file=Array.from(event.clipboardData?.files||[]).find(item=>item.type.startsWith("image/"));if(!file)return;const transfer=new DataTransfer();transfer.items.add(file);$("#study-field-image").files=transfer.files;},{once:true});}
+    function newPractice(){openEditor({title:"新しい練習",kicker:"練習の記録",fields:[{name:"practice_type",label:"種類",type:"select",options:[["aptitude","適性試験"],["shenlun","申論"]]},{name:"title",label:"タイトル",required:true},{name:"practice_date",label:"練習日",type:"date",value:isoDate(),required:true},{name:"source",label:"出典"},{name:"subject",label:"科目"},{name:"total_questions",label:"問題数",type:"number"},{name:"note",label:"メモ",type:"textarea",full:true}],onSave:async data=>{data.total_questions=data.total_questions?Number(data.total_questions):null;data.status="draft";data.auto_advance=true;data.is_public=false;const result=await upsert("practices",data);if(!result.error){state.practices.unshift(result.data);return true;}throw result.error;}});}
+    function noteEditor(note=null){openEditor({title:note?"メモを編集":"新しいメモ",kicker:"学びのかけら",fields:[{name:"title",label:"タイトル",value:note?.title,required:true},{name:"note_date",label:"日付",type:"date",value:note?.note_date||isoDate(),required:true},{name:"subject",label:"科目",value:note?.subject},{name:"tags",label:"タグ / 読点区切り",value:(note?.tags||[]).join(", ")},{name:"body",label:"本文",type:"textarea",value:note?.body,required:true,full:true}],onSave:async data=>{data.tags=data.tags.split(/[,，]/).map(x=>x.trim()).filter(Boolean);data.is_public=note?.is_public||false;const result=await upsert("notes",data,note?.id);if(result.error)throw result.error;if(note)Object.assign(note,result.data);else state.notes.unshift(result.data);return true;}});}
+    function quickMistake(){openEditor({title:"まちがいを追加",kicker:"すばやく記録",fields:[{name:"image",label:"画像を貼り付ける、またはアップロード",type:"file",accept:"image/jpeg,image/png,image/webp",full:true},{name:"subject",label:"科目",required:true},{name:"knowledge_tag",label:"知識タグ"},{name:"my_answer",label:"自分の答え"},{name:"correct_answer",label:"正しい答え",required:true},{name:"reason",label:"間違えた理由",type:"select",options:[["知识点不会","知识点不会"],["概念混淆","概念混淆"],["审题","审题"],["粗心","粗心"],["时间不足","时间不足"],["做题策略","做题策略"],["其他","其他"]]},{name:"question_snapshot",label:"問題文（任意）",type:"textarea",full:true}],onSave:async(data,form)=>{const file=form.elements.image.files[0];delete data.image;data.source_type="quick";data.status="learning";data.is_public=false;let result=await upsert("mistakes",data);if(result.error)throw result.error;if(file){const upload=await uploadFile(file,`mistakes/${result.data.id}/${safeName(file.name)}`);if(upload.error)throw upload.error;result=await upsert("mistakes",{...data,image_path:upload.data.path},result.data.id);}state.mistakes.unshift(result.data);return true;}});const area=$("#study-editor-fields");area.addEventListener("paste",event=>{const file=Array.from(event.clipboardData?.files||[]).find(item=>item.type.startsWith("image/"));if(!file)return;const transfer=new DataTransfer();transfer.items.add(file);$("#study-field-image").files=transfer.files;},{once:true});}
 
     function safeName(name){return String(name||"file").normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"-").slice(-120);}
     async function uploadFile(file,path){if(file.size>50*1024*1024)return{error:{message:"File exceeds 50 MB."}};return auth.uploadStudyFile(file,`${path.replace(/^\/+/,"")}`);}
@@ -1172,9 +1174,9 @@ async function renderShenlun(practice, data) {
                 const answer = answerMap.get(number) || "";
                 return `<label><span>${String(number).padStart(3, "0")}</span><select name="key-${number}" data-key-question="${number}"><option value="">—</option>${["A", "B", "C", "D"].map((option) => `<option value="${option}" ${answer === option ? "selected" : ""}>${option}</option>`).join("")}</select></label>`;
             }).join("")
-            : `<p class="study-empty">No answer numbers were recognized. Set TOTAL QUESTIONS on the practice and import again.</p>`;
+            : `<p class="study-empty">解答番号を認識できませんでした。練習の「問題数」を設定して、もう一度取り込んでください。</p>`;
 
-        openSheet(`<header><div><p class="study-kicker">ANSWER KEY</p><h2>Review</h2></div><button class="study-dialog-close" type="button" data-close-sheet>×</button></header><div class="study-sheet-content"><form id="answer-key-review-form"><div class="study-answer-grid">${rows}</div>${total && state.writable ? '<button class="study-primary" type="submit">SAVE ANSWER KEY</button>' : ""}</form></div>`);
+        openSheet(`<header><div><p class="study-kicker">正解一覧</p><h2>内容を確認</h2></div><button class="study-dialog-close" type="button" data-close-sheet>×</button></header><div class="study-sheet-content"><form id="answer-key-review-form"><div class="study-answer-grid">${rows}</div>${total && state.writable ? '<button class="study-primary" type="submit">正解を保存</button>' : ""}</form></div>`);
         const form = $("#answer-key-review-form");
         if (form) form._fileId = fileId;
     }
@@ -1375,44 +1377,44 @@ function parseAnswerKey(
         );
 }
 
-    async function confirmAnswerKey(form){status("Saving confirmed Answer Key…");const fields=$$("[data-key-question]",form);for(const field of fields){const number=Number(field.dataset.keyQuestion),answer=field.value.trim().toUpperCase();if(!answer)continue;if(!/^[A-D]$/.test(answer))continue;const existing=$("#study-practice-detail")._studyData.answer_keys.find(item=>item.question_number===number);const result=await upsert("answer_keys",{practice_id:state.activePractice.id,question_number:number,correct_answer:answer,source_file_id:form._fileId,confirmed:true},existing?.id);if(result.error){status(`Answer ${number} failed to save.`,true);return;}}$("#study-sheet").close();status("Answer Key confirmed.");openPractice(state.activePractice.id);}
+    async function confirmAnswerKey(form){status("確認した正解を保存しています…");const fields=$$("[data-key-question]",form);for(const field of fields){const number=Number(field.dataset.keyQuestion),answer=field.value.trim().toUpperCase();if(!answer)continue;if(!/^[A-D]$/.test(answer))continue;const existing=$("#study-practice-detail")._studyData.answer_keys.find(item=>item.question_number===number);const result=await upsert("answer_keys",{practice_id:state.activePractice.id,question_number:number,correct_answer:answer,source_file_id:form._fileId,confirmed:true},existing?.id);if(result.error){status(`第 ${number} 問の正解を保存できませんでした。`,true);return;}}$("#study-sheet").close();status("正解を保存しました。");openPractice(state.activePractice.id);}
 
     
 
     async function extractAnswerKeyText(file, allowOcr = false) { return extractText(file, allowOcr); }
-    async function extractText(file,allowOcr=false){if(file.type.includes("wordprocessingml")){await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js","mammoth");return (await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value;}if(file.type==="application/pdf"){await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs","pdfjsLib",true);const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text="";for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(" ")+"\n";}if(text.trim().length>20)return text;if(!allowOcr)return text;await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),viewport=page.getViewport({scale:1.6}),canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:context,viewport}).promise;const result=await window.Tesseract.recognize(canvas,"chi_sim+eng",{logger:message=>status(`OCR page ${i}/${pdf.numPages} · ${Math.round((message.progress||0)*100)}%`)});text+=result.data.text+"\n";}return text;}if(file.type.startsWith("image/")&&allowOcr){await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");const result=await window.Tesseract.recognize(file,"chi_sim+eng",{logger:message=>status(`OCR ${Math.round((message.progress||0)*100)}%`)});return result.data.text;}throw new Error("This file contains no extractable text.");}
-    function loadScript(src,global,module=false){if(window[global])return Promise.resolve();if(module)return import(src).then(value=>{window[global]=value;if(global==="pdfjsLib"&&value.GlobalWorkerOptions)value.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";});return new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error("Parser could not be loaded."));document.head.append(script);});}
+    async function extractText(file,allowOcr=false){if(file.type.includes("wordprocessingml")){await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js","mammoth");return (await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value;}if(file.type==="application/pdf"){await loadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs","pdfjsLib",true);const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text="";for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(" ")+"\n";}if(text.trim().length>20)return text;if(!allowOcr)return text;await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),viewport=page.getViewport({scale:1.6}),canvas=document.createElement("canvas"),context=canvas.getContext("2d");canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:context,viewport}).promise;const result=await window.Tesseract.recognize(canvas,"chi_sim+eng",{logger:message=>status(`OCR 第 ${i}/${pdf.numPages} ページ · ${Math.round((message.progress||0)*100)}%`)});text+=result.data.text+"\n";}return text;}if(file.type.startsWith("image/")&&allowOcr){await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");const result=await window.Tesseract.recognize(file,"chi_sim+eng",{logger:message=>status(`OCR ${Math.round((message.progress||0)*100)}%`)});return result.data.text;}throw new Error("このファイルから文字を取り出せませんでした。");}
+    function loadScript(src,global,module=false){if(window[global])return Promise.resolve();if(module)return import(src).then(value=>{window[global]=value;if(global==="pdfjsLib"&&value.GlobalWorkerOptions)value.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";});return new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error("読み取り機能を読み込めませんでした。"));document.head.append(script);});}
 
     function shenlunTypeOptions(selected = "summary") {
     const options = [
         [
             "summary",
-            "概括题 / SUMMARY"
+            "要約問題"
         ],
 
         [
             "analysis",
-            "分析题 / ANALYSIS"
+            "分析問題"
         ],
 
         [
             "proposal",
-            "对策题 / PROPOSAL"
+            "対策問題"
         ],
 
         [
             "official_document",
-            "应用文 / OFFICIAL DOCUMENT"
+            "公文書"
         ],
 
         [
             "essay",
-            "大作文 / ESSAY"
+            "論述作文"
         ],
 
         [
             "other",
-            "其他 / OTHER"
+            "その他"
         ]
     ];
 
@@ -1438,7 +1440,7 @@ function parseAnswerKey(
 async function openShenlunRegionSelector({
     file,
     regions = [],
-    label = "QUESTION",
+    label = "問題",
     onDone
 }) {
     /*
@@ -1451,7 +1453,7 @@ async function openShenlunRegionSelector({
 
     if (!file) {
         return status(
-            "Please upload the Shenlun PDF first.",
+            "先に申論の PDF を追加してください。",
             true
         );
     }
@@ -1463,7 +1465,7 @@ async function openShenlunRegionSelector({
 
     if (!url) {
         return status(
-            "Source paper could not be opened.",
+            "問題用紙を開けませんでした。",
             true
         );
     }
@@ -2529,7 +2531,7 @@ async function addShenlunQuestion() {
     );
 }
 
-    async function importReference(){const input=document.createElement("input");input.type="file";input.accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";input.onchange=async()=>{const file=input.files[0],question=$("#study-practice-detail")._studyData.shenlun_questions.find(item=>item.id===$("#study-practice-detail").dataset.questionId);if(!file||!question)return;status("Extracting reference…");try{const text=await extractText(file,true);openEditor({title:"Reference Import",kicker:"REVIEW BEFORE CONFIRM",fields:[{name:"body",label:`${String(question.question_number).padStart(2,"0")} ${question.title}`,type:"textarea",value:text,required:true,full:true}],onSave:async data=>{const existing=$("#study-practice-detail")._reference;const result=await upsert("shenlun_references",{practice_id:state.activePractice.id,question_id:question.id,body:data.body,confirmed:true},existing?.id);if(result.error)throw result.error;return true;}});}catch(error){status(error.message,true);}};input.click();}
+    async function importReference(){const input=document.createElement("input");input.type="file";input.accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp";input.onchange=async()=>{const file=input.files[0],question=$("#study-practice-detail")._studyData.shenlun_questions.find(item=>item.id===$("#study-practice-detail").dataset.questionId);if(!file||!question)return;status("参考答案を読み取っています…");try{const text=await extractText(file,true);openEditor({title:"参考答案を取り込む",kicker:"保存前に内容を確認",fields:[{name:"body",label:`${String(question.question_number).padStart(2,"0")} ${question.title}`,type:"textarea",value:text,required:true,full:true}],onSave:async data=>{const existing=$("#study-practice-detail")._reference;const result=await upsert("shenlun_references",{practice_id:state.activePractice.id,question_id:question.id,body:data.body,confirmed:true},existing?.id);if(result.error)throw result.error;return true;}});}catch(error){status(error.message,true);}};input.click();}
     
     async function runReview() {
     const detail =
@@ -2625,11 +2627,11 @@ async function addShenlunQuestion() {
     if (button) {
         button.disabled = false;
         button.textContent =
-            "REVIEW AGAIN";
+            "もう一度見直す";
     }
 
     status(
-        `Review complete${
+        `見直しが完了しました${
             result.data?.model
                 ? ` · ${result.data.model}${
                       result.data?.model_version
@@ -2637,13 +2639,13 @@ async function addShenlunQuestion() {
                           : ""
                   }`
                 : ""
-        }.`
+        }。`
     );
 }
 
-    async function addRevision(){const detail=$("#study-practice-detail"),question=detail._studyData.shenlun_questions.find(item=>item.id===detail.dataset.questionId),answer=detail._answer,reviews=await list("reviews",{filters:{question_id:question.id}}),review=(reviews.data||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];if(!review)return;const result=await upsert("revisions",{practice_id:state.activePractice.id,question_id:question.id,answer_id:answer.id,review_id:review.id,title:`${state.activePractice.title} · ${question.title}`,category:question.question_type,issue_tags:[review.assessment?.main_issue].filter(Boolean),source_snapshot:{material_scope:question.material_scope,prompt:question.prompt},status:"pending"});if(result.error)return status(result.error.message,true);state.revisions.unshift(result.data);status("Added to Revision Archive.");}
+    async function addRevision(){const detail=$("#study-practice-detail"),question=detail._studyData.shenlun_questions.find(item=>item.id===detail.dataset.questionId),answer=detail._answer,reviews=await list("reviews",{filters:{question_id:question.id}}),review=(reviews.data||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];if(!review)return;const result=await upsert("revisions",{practice_id:state.activePractice.id,question_id:question.id,answer_id:answer.id,review_id:review.id,title:`${state.activePractice.title} · ${question.title}`,category:question.question_type,issue_tags:[review.assessment?.main_issue].filter(Boolean),source_snapshot:{material_scope:question.material_scope,prompt:question.prompt},status:"pending"});if(result.error)return status(result.error.message,true);state.revisions.unshift(result.data);status("答案の見直しに追加しました。");}
 
-    async function archiveSelected(form){const detail=$("#study-practice-detail"),data=detail._studyData,selected=Array.from(form.elements.wrong).filter(input=>input.checked).map(input=>Number(input.value));for(const number of selected){const mine=data.aptitude_answers.find(x=>x.question_number===number)?.answer||null,correct=data.answer_keys.find(x=>x.question_number===number)?.correct_answer;if(!correct)continue;const result=await upsert("mistakes",{practice_id:state.activePractice.id,question_number:number,source_type:"practice",subject:state.activePractice.subject||"APTITUDE",paper_file_id:data.files.find(x=>x.file_kind==="paper")?.id||null,my_answer:mine,correct_answer:correct,reason:null,status:"learning",is_public:false});if(!result.error)state.mistakes.unshift(result.data);}$("#study-sheet").close();status(`${selected.length} records added to Mistake Book.`);renderHome();}
+    async function archiveSelected(form){const detail=$("#study-practice-detail"),data=detail._studyData,selected=Array.from(form.elements.wrong).filter(input=>input.checked).map(input=>Number(input.value));for(const number of selected){const mine=data.aptitude_answers.find(x=>x.question_number===number)?.answer||null,correct=data.answer_keys.find(x=>x.question_number===number)?.correct_answer;if(!correct)continue;const result=await upsert("mistakes",{practice_id:state.activePractice.id,question_number:number,source_type:"practice",subject:state.activePractice.subject||"APTITUDE",paper_file_id:data.files.find(x=>x.file_kind==="paper")?.id||null,my_answer:mine,correct_answer:correct,reason:null,status:"learning",is_public:false});if(!result.error)state.mistakes.unshift(result.data);}$("#study-sheet").close();status(`${selected.length} 件をまちがいノートに追加しました。`);renderHome();}
 
     function mistakeData(item, overrides = {}) {
         return {
@@ -2794,16 +2796,16 @@ async function addShenlunQuestion() {
 
         const fileResult = await getEntity("files", item.paper_file_id);
         const file = fileResult.data;
-        if (!file) return status("Source paper is unavailable.", true);
+        if (!file) return status("問題用紙を利用できません。", true);
 
         const url = await getSignedUrl(file.storage_path);
-        if (!url) return status("Source paper could not be opened.", true);
+        if (!url) return status("問題用紙を開けませんでした。", true);
 
         openSheet(`
             <header>
                 <div>
-                    <p class="study-kicker">QUESTION CROP</p>
-                    <h2>Select Question Area</h2>
+                    <p class="study-kicker">問題の切り抜き</p>
+                    <h2>問題の範囲を選ぶ</h2>
                 </div>
                 <button class="study-dialog-close" data-close-sheet type="button">×</button>
             </header>
@@ -2811,7 +2813,7 @@ async function addShenlunQuestion() {
             <div class="study-sheet-content">
                 <div class="study-crop-controls">
                     <label>
-                        PAGE
+                        ページ
                         <input
                             id="study-crop-page"
                             type="number"
@@ -2821,26 +2823,26 @@ async function addShenlunQuestion() {
                     </label>
 
                     <button class="study-secondary" id="study-crop-load" type="button">
-                        LOAD PAGE
+                        ページを表示
                     </button>
 
                     <div class="study-crop-jumps">
-                        <button class="study-secondary" data-crop-jump="top" type="button">TOP</button>
-                        <button class="study-secondary" data-crop-jump="middle" type="button">MIDDLE</button>
-                        <button class="study-secondary" data-crop-jump="bottom" type="button">BOTTOM</button>
+                        <button class="study-secondary" data-crop-jump="top" type="button">上へ</button>
+                        <button class="study-secondary" data-crop-jump="middle" type="button">中央へ</button>
+                        <button class="study-secondary" data-crop-jump="bottom" type="button">下へ</button>
                     </div>
 
                     <button class="study-secondary" id="study-crop-select" type="button">
-                        SELECT AREA
+                        範囲を選ぶ
                     </button>
 
                     <button class="study-primary" id="study-crop-save" type="button" disabled>
-                        SAVE AREA
+                        範囲を保存
                     </button>
                 </div>
 
                 <p id="study-crop-hint">
-                    Scroll to the question, press SELECT AREA, then drag. You can keep scrolling while selecting.
+                    問題までスクロールし、「範囲を選ぶ」を押してからドラッグしてください。選択中もスクロールできます。
                 </p>
 
                 <div id="study-crop-scroll" class="study-crop-scroll">
@@ -2876,12 +2878,12 @@ async function addShenlunQuestion() {
             stage.replaceChildren();
             stage._selection = null;
             saveButton.disabled = true;
-            selectButton.textContent = "SELECT AREA";
+            selectButton.textContent = "範囲を選ぶ";
             selectButton.classList.remove("active");
             stage.classList.remove("is-selecting");
 
             hint.textContent =
-                "Scroll to the question, press SELECT AREA, then drag. While dragging, use the mouse wheel or move near the top/bottom edge to keep scrolling.";
+                "問題までスクロールし、「範囲を選ぶ」を押してからドラッグしてください。ドラッグ中はホイールか上下端への移動でスクロールできます。";
 
             scroll.scrollTop = 0;
             scroll.scrollLeft = 0;
@@ -2928,7 +2930,7 @@ async function addShenlunQuestion() {
                 canvas.getContext("2d").drawImage(image, 0, 0);
             } else {
                 stage.innerHTML = `
-                    <p class="study-empty study-error">This source cannot be cropped.</p>
+                    <p class="study-empty study-error">この形式の問題用紙は切り抜けません。</p>
                 `;
                 return;
             }
@@ -2955,16 +2957,16 @@ async function addShenlunQuestion() {
                     selectButton.classList.toggle("active", selecting);
 
                     selectButton.textContent = selecting
-                        ? "CANCEL SELECT"
+                        ? "選択をやめる"
                         : stage._selection
-                            ? "RESELECT"
-                            : "SELECT AREA";
+                            ? "選び直す"
+                            : "範囲を選ぶ";
 
                     hint.textContent = selecting
-                        ? "Selecting… keep holding. Use the mouse wheel, or drag near the top/bottom edge to continue scrolling."
+                        ? "選択中です…押したまま、ホイールまたは上下端へ動かすとスクロールできます。"
                         : stage._selection
-                            ? "Area selected. Check it, then SAVE AREA or RESELECT."
-                            : "Scroll to the question, then press SELECT AREA.";
+                            ? "範囲を選びました。確認して「範囲を保存」するか、選び直してください。"
+                            : "問題までスクロールして、「範囲を選ぶ」を押してください。";
                 }
             });
         };
@@ -3301,11 +3303,11 @@ async function addShenlunQuestion() {
         };
     }
 
-    async function submitRevisit(){const item=filteredMistakes()[state.currentMistake],answer=$("[data-revisit-answer].active")?.dataset.revisitAnswer;if(!answer)return;const isCorrect=answer.toUpperCase()===item.correct_answer.toUpperCase();const result=await upsert("mistake_attempts",{mistake_id:item.id,answer,is_correct:isCorrect,attempted_at:new Date().toISOString()});if(result.error)return status(result.error.message,true);await upsert("mistakes",mistakeData(item,{status:isCorrect?"review":"learning"}),item.id);item.status=isCorrect?"review":"learning";const attempts=await list("mistake_attempts",{filters:{mistake_id:item.id}});openSheet(`<header><div><p class="study-kicker">REVISIT RESULT</p><h2>${isCorrect?"✓ CORRECT":"× NEEDS REVIEW"}</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-answer-reveal"><div><span>CURRENT</span><strong>${esc(answer)} ${isCorrect?"✓":"×"}</strong></div><div><span>LAST TIME</span><strong>${esc(item.my_answer||"—")}</strong></div></div><p class="study-kicker">ATTEMPTS</p>${(attempts.data||[]).map(attempt=>`<p>${displayDate(attempt.attempted_at)}　${esc(attempt.answer)} ${attempt.is_correct?"✓":"×"}</p>`).join("")}</div>`);}
+    async function submitRevisit(){const item=filteredMistakes()[state.currentMistake],answer=$("[data-revisit-answer].active")?.dataset.revisitAnswer;if(!answer)return;const isCorrect=answer.toUpperCase()===item.correct_answer.toUpperCase();const result=await upsert("mistake_attempts",{mistake_id:item.id,answer,is_correct:isCorrect,attempted_at:new Date().toISOString()});if(result.error)return status(result.error.message,true);await upsert("mistakes",mistakeData(item,{status:isCorrect?"review":"learning"}),item.id);item.status=isCorrect?"review":"learning";const attempts=await list("mistake_attempts",{filters:{mistake_id:item.id}});openSheet(`<header><div><p class="study-kicker">復習の結果</p><h2>${isCorrect?"✓ 正解":"× もう一度見直す"}</h2></div><button class="study-dialog-close" data-close-sheet>×</button></header><div class="study-sheet-content"><div class="study-answer-reveal"><div><span>今回</span><strong>${esc(answer)} ${isCorrect?"✓":"×"}</strong></div><div><span>前回</span><strong>${esc(item.my_answer||"—")}</strong></div></div><p class="study-kicker">これまでの回答</p>${(attempts.data||[]).map(attempt=>`<p>${displayDate(attempt.attempted_at)}　${esc(attempt.answer)} ${attempt.is_correct?"✓":"×"}</p>`).join("")}</div>`);}
 
-    async function rewriteRevision(id){const revision=state.revisions.find(item=>item.id===id);if(!revision?.question_id)return;const questions=await list("shenlun_questions",{filters:{practice_id:revision.practice_id}}),question=(questions.data||[]).find(item=>item.id===revision.question_id),answers=await list("shenlun_answers",{filters:{question_id:revision.question_id}}),attempt=Math.max(0,...(answers.data||[]).map(item=>item.attempt_number))+1;openEditor({title:"Rewrite",kicker:"MATERIAL + QUESTION ONLY",fields:[{name:"prompt",label:"QUESTION",type:"textarea",value:question?.prompt||revision.source_snapshot?.prompt||"",full:true},{name:"body",label:"YOUR NEW ANSWER",type:"textarea",required:true,full:true}],onSave:async data=>{const result=await upsert("shenlun_answers",{practice_id:revision.practice_id,question_id:revision.question_id,attempt_number:attempt,body:data.body,outline:[],submitted_at:new Date().toISOString()});if(result.error)throw result.error;const review=await auth.requestStudyReview(result.data.id);const nextStatus=review.error?"rewriting":"completed";await upsert("revisions",{practice_id:revision.practice_id,question_id:revision.question_id,answer_id:revision.answer_id,review_id:revision.review_id,title:revision.title,category:revision.category,issue_tags:revision.issue_tags,source_snapshot:revision.source_snapshot,status:nextStatus},revision.id);revision.status=nextStatus;if(review.error)status("Rewrite saved. Review unavailable; retry from the Shenlun record.",true);return true;}});}
+    async function rewriteRevision(id){const revision=state.revisions.find(item=>item.id===id);if(!revision?.question_id)return;const questions=await list("shenlun_questions",{filters:{practice_id:revision.practice_id}}),question=(questions.data||[]).find(item=>item.id===revision.question_id),answers=await list("shenlun_answers",{filters:{question_id:revision.question_id}}),attempt=Math.max(0,...(answers.data||[]).map(item=>item.attempt_number))+1;openEditor({title:"答案を書き直す",kicker:"資料と問題",fields:[{name:"prompt",label:"問題",type:"textarea",value:question?.prompt||revision.source_snapshot?.prompt||"",full:true},{name:"body",label:"新しい答案",type:"textarea",required:true,full:true}],onSave:async data=>{const result=await upsert("shenlun_answers",{practice_id:revision.practice_id,question_id:revision.question_id,attempt_number:attempt,body:data.body,outline:[],submitted_at:new Date().toISOString()});if(result.error)throw result.error;const review=await auth.requestStudyReview(result.data.id);const nextStatus=review.error?"rewriting":"completed";await upsert("revisions",{practice_id:revision.practice_id,question_id:revision.question_id,answer_id:revision.answer_id,review_id:revision.review_id,title:revision.title,category:revision.category,issue_tags:revision.issue_tags,source_snapshot:revision.source_snapshot,status:nextStatus},revision.id);revision.status=nextStatus;if(review.error)status("書き直した答案を保存しました。見直しを利用できないため、申論の記録からもう一度お試しください。",true);return true;}});}
 
-    $("#study-editor-form").addEventListener("submit",async event=>{event.preventDefault();const form=event.currentTarget,data=Object.fromEntries(new FormData(form).entries());$("#study-editor-save").disabled=true;$("#study-editor-message").textContent="Saving…";try{const done=await $("#study-editor")._onSave(data,form);if(done){$("#study-editor").close();await loadBase();if(state.activePractice)openPractice(state.activePractice.id);}}catch(error){$("#study-editor-message").textContent=error.message||"Save failed.";}finally{$("#study-editor-save").disabled=false;}});
+    $("#study-editor-form").addEventListener("submit",async event=>{event.preventDefault();const form=event.currentTarget,data=Object.fromEntries(new FormData(form).entries());$("#study-editor-save").disabled=true;$("#study-editor-message").textContent="保存しています…";try{const done=await $("#study-editor")._onSave(data,form);if(done){$("#study-editor").close();await loadBase();if(state.activePractice)openPractice(state.activePractice.id);}}catch(error){$("#study-editor-message").textContent=error.message||"保存できませんでした。";}finally{$("#study-editor-save").disabled=false;}});
     $$(".study-dialog-close",$("#study-editor")).forEach(button=>button.addEventListener("click",()=>$("#study-editor").close()));
 
     document.addEventListener("click",async event=>{
@@ -3340,7 +3342,7 @@ async function addShenlunQuestion() {
         if(action==="start-revisit")renderMistakeCard(filteredMistakes()[state.currentMistake],filteredMistakes(),true);if(action==="submit-revisit")submitRevisit();if(action==="crop-mistake")openCropEditor(filteredMistakes()[state.currentMistake]);
         if(action==="save-mistake-reason")await saveMistakeReason(event.target.closest("[data-id]"));
         if(action==="master-mistake"){const item=filteredMistakes()[state.currentMistake];const result=await upsert("mistakes",{...Object.fromEntries(Object.entries(item).filter(([key])=>!["id","owner_id","created_at","updated_at"].includes(key))),status:"mastered"},item.id);if(!result.error){Object.assign(item,result.data);renderMistakes();}}
-        if(action==="delete-mistake"){const item=filteredMistakes()[state.currentMistake];if(confirm("Delete this mistake record?")){const result=await remove("mistakes",item.id);if(!result.error){state.mistakes=state.mistakes.filter(x=>x.id!==item.id);renderMistakes();}}}
+        if(action==="delete-mistake"){const item=filteredMistakes()[state.currentMistake];if(confirm("このまちがい記録を削除しますか？")){const result=await remove("mistakes",item.id);if(!result.error){state.mistakes=state.mistakes.filter(x=>x.id!==item.id);renderMistakes();}}}
         if(action==="rewrite-revision")rewriteRevision(event.target.closest("[data-id]").dataset.id);
     });
     $("#study-calendar-prev").addEventListener("click",()=>{state.calendarDate=new Date(state.calendarDate.getFullYear(),state.calendarDate.getMonth()-1,1);renderCalendar();});
@@ -3348,7 +3350,7 @@ async function addShenlunQuestion() {
     $("#study-calendar-today").addEventListener("click",()=>{state.calendarDate=new Date();state.selectedDay=new Date();renderCalendar();});
     $("#study-sheet").addEventListener("submit",event=>{if(event.target.id==="answer-key-review-form"){event.preventDefault();confirmAnswerKey(event.target);}if(event.target.id==="archive-wrong-form"){event.preventDefault();archiveSelected(event.target);}});
     $("#study-practice-detail").addEventListener("change",async event=>{if(event.target.matches("[data-auto-advance]")){const p=state.activePractice;const result=await upsert("practices",{practice_type:p.practice_type,title:p.title,practice_date:p.practice_date,source:p.source,subject:p.subject,note:p.note,status:p.status,total_questions:p.total_questions,auto_advance:event.target.checked,is_public:p.is_public},p.id);if(!result.error)Object.assign(p,result.data);}});
-    $("#study-note-list").addEventListener("click",async event=>{const button=event.target.closest("[data-delete-note]");if(button&&confirm("Delete this note?")){const result=await remove("notes",button.dataset.deleteNote);if(!result.error){state.notes=state.notes.filter(x=>x.id!==button.dataset.deleteNote);renderNotes();}}});
+    $("#study-note-list").addEventListener("click",async event=>{const button=event.target.closest("[data-delete-note]");if(button&&confirm("このメモを削除しますか？")){const result=await remove("notes",button.dataset.deleteNote);if(!result.error){state.notes=state.notes.filter(x=>x.id!==button.dataset.deleteNote);renderNotes();}}});
 
     await auth.initialize(db); state.writable=auth.can("study:write");
     if(!state.writable) $$('[data-action="new-practice"],[data-action="quick-mistake"],[data-action="new-note"]').forEach(button=>button.remove());

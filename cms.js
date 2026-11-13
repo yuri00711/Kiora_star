@@ -143,7 +143,7 @@
     }
 
     function formatYear(date) {
-        if (!date) return "UNDATED";
+        if (!date) return "日付なし";
         return new Intl.DateTimeFormat("en", {
             year: "numeric",
             timeZone: "Asia/Tokyo"
@@ -224,18 +224,18 @@
             controls?.append(makeButton("プロフィールを編集", { editProfile: "" }));
             if (isOwner()) {
                 controls?.append(
-                    makeButton("EXPORT PROFILE", { exportProfileOpen: "" }),
+                    makeButton("プロフィールを書き出す", { exportProfileOpen: "" }),
                     makeButton("書き出し設定を編集", { editExportProfile: "" })
                 );
             }
-            document.querySelector('[data-admin-slot="add-fandom"]')?.append(makeButton("＋ ADD", { addItem: "fandom" }));
-            document.querySelector('[data-admin-slot="add-favorite"]')?.append(makeButton("＋ ADD", { addItem: "favorite" }));
+            document.querySelector('[data-admin-slot="add-fandom"]')?.append(makeButton("＋ 追加", { addItem: "fandom" }));
+            document.querySelector('[data-admin-slot="add-favorite"]')?.append(makeButton("＋ 追加", { addItem: "favorite" }));
             document.querySelector('[data-admin-slot="edit-otome"]')?.append(makeButton("編集", { editOtome: "" }));
-            document.querySelector('[data-admin-slot="add-boundary"]')?.append(makeButton("＋ ADD", { addItem: "boundary" }));
+            document.querySelector('[data-admin-slot="add-boundary"]')?.append(makeButton("＋ 追加", { addItem: "boundary" }));
             document.querySelector('[data-admin-slot="edit-currently-playing"]')?.append(makeButton("編集", { editCurrentlyPlaying: "" }));
             ["game_review", "essay", "dream"].forEach((category) => {
                 document.querySelector(`[data-admin-slot="add-writing-${category}"]`)
-                    ?.append(makeButton("＋ WRITE", { addWriting: category }));
+                    ?.append(makeButton("＋ 書く", { addWriting: category }));
             });
         }
         renderProfileCollections();
@@ -298,8 +298,8 @@
         const masthead = create("header", "profile-sheet-masthead");
         masthead.append(
             create("span", "profile-sheet-publication", "KIORA.SPACE"),
-            create("span", "profile-sheet-edition", "PERSONAL ARCHIVE / 私人記録"),
-            create("span", "profile-sheet-issue", `ISSUE ${issueDate}`)
+            create("span", "profile-sheet-edition", "わたしの記録"),
+            create("span", "profile-sheet-issue", `発行日 ${issueDate}`)
         );
         sheet.append(masthead);
 
@@ -318,12 +318,12 @@
         } else {
             portraitFrame.classList.add("profile-sheet-portrait-hidden");
         }
-        portraitFrame.append(create("figcaption", "", "PORTRAIT / PERSONAL RECORD"));
+        portraitFrame.append(create("figcaption", "", "ポートレート / わたしの記録"));
         portraitColumn.append(portraitFrame);
 
         const identity = create("div", "profile-sheet-identity");
-        identity.append(create("p", "profile-sheet-overline", "PROFILE  —  NO. 01"));
-        if (visibility.name) identity.append(create("h1", "", displayName || "PROFILE"));
+        identity.append(create("p", "profile-sheet-overline", "プロフィール — 01"));
+        if (visibility.name) identity.append(create("h1", "", displayName || "プロフィール"));
         if (visibility.subtitle && subtitleText) identity.append(create("p", "profile-sheet-tagline", subtitleText));
         if (visibility.bio && bioText) identity.append(create("p", "profile-sheet-summary", exportText(bioText)));
         portraitColumn.append(identity);
@@ -331,7 +331,7 @@
 
         const editorial = create("main", "profile-sheet-editorial");
         const editorialLead = create("section", "profile-sheet-lead");
-        editorialLead.append(create("p", "profile-sheet-kicker", "A SMALL INDEX OF THE THINGS I LOVE"));
+        editorialLead.append(create("p", "profile-sheet-kicker", "好きなものを集めた小さな索引"));
         editorialLead.append(create("h2", "", "静かな記録、好きなものの輪郭。"));
         if (visibility.bio && aboutText) {
             editorialLead.append(create("p", "profile-sheet-prose", exportText(aboutText)));
@@ -354,11 +354,11 @@
         };
         if (visibility.fandoms) {
             const custom = exportRows(overrides.fandoms);
-            collection("FANDOMS", custom.length ? custom : state.fandoms, (item) => item.description || [item.status].filter(Boolean).join(" / "));
+            collection("好きな作品", custom.length ? custom : state.fandoms, (item) => item.description || [item.status].filter(Boolean).join(" / "));
         }
         if (visibility.favorites) {
             const custom = exportRows(overrides.favorites);
-            collection("FAVORITES", custom.length ? custom : state.favorites, (item) => item.description || [item.work_name, item.favorite_level, item.note].filter(Boolean).join(" / "));
+            collection("お気に入り", custom.length ? custom : state.favorites, (item) => item.description || [item.work_name, item.favorite_level, item.note].filter(Boolean).join(" / "));
         }
         if (visibility.boundaries) {
             const custom = exportRows(overrides.boundaries);
@@ -368,7 +368,7 @@
         const hasOtomeTags = state.otome.play_styles?.length || state.otome.favorite_elements?.length || state.otome.not_my_type?.length;
         if (visibility.otome_profile && (overrides.otome_profile || hasOtomeTags || state.otome.axes?.length)) {
             const otome = create("section", "profile-sheet-section profile-sheet-otome");
-            otome.append(create("h2", "", "OTOME PROFILE"));
+            otome.append(create("h2", "", "乙女ゲームの好み"));
             if (overrides.otome_profile) {
                 otome.append(create("p", "", exportText(overrides.otome_profile)));
             } else (state.otome.axes || []).forEach((axis) => {
@@ -387,9 +387,9 @@
                 otome.append(axisRow);
             });
             const tagGroups = [
-                ["PLAY STYLE", state.otome.play_styles],
-                ["FAVORITE ELEMENTS", state.otome.favorite_elements],
-                ["NOT MY TYPE", state.otome.not_my_type]
+                ["プレイスタイル", state.otome.play_styles],
+                ["好きな要素", state.otome.favorite_elements],
+                ["苦手な要素", state.otome.not_my_type]
             ];
             if (!overrides.otome_profile) tagGroups.forEach(([label, values]) => {
                 if (!values?.length) return;
@@ -403,7 +403,7 @@
         const currently = state.settings.currently_playing || {};
         if (visibility.currently_playing && (overrides.currently_playing || currently.title || currently.game_id)) {
             const current = create("section", "profile-sheet-section");
-            current.append(create("h2", "", "CURRENTLY PLAYING"));
+            current.append(create("h2", "", "いま遊んでいる"));
             const linked = (bridge.games || []).find((game) => String(game.id) === String(currently.game_id));
             current.append(create("p", "", resolved("currently_playing", [currently.title || linked?.title, currently.subtitle, currently.status, currently.note].filter(Boolean).join(" / "))));
             columns.append(current);
@@ -412,7 +412,7 @@
         const freeSpace = resolved("free_space", state.profile.free_space_content);
         if (visibility.free_space && freeSpace) {
             const free = create("section", "profile-sheet-section profile-sheet-free");
-            free.append(create("h2", "", state.profile.free_space_title || "FREE SPACE"));
+            free.append(create("h2", "", state.profile.free_space_title || "自由帳"));
             free.append(create("p", "", exportText(freeSpace)));
             columns.append(free);
         }
@@ -421,8 +421,8 @@
         sheet.append(spread);
 
         const footer = create("footer", "profile-sheet-footer");
-        footer.append(create("span", "", "WORDS, GAMES & SMALL CONSTELLATIONS"));
-        footer.append(create("span", "", "KIORA.SPACE  /  ALL THINGS KEPT WITH CARE"));
+        footer.append(create("span", "", "ことば、ゲーム、小さな星座"));
+        footer.append(create("span", "", "KIORA.SPACE / 大切なものを、ていねいに"));
         footer.append(create("span", "", visibility.updated ? (byId("profile-updated")?.textContent || "") : ""));
         sheet.append(footer);
         return sheet;
@@ -656,7 +656,7 @@
             .filter((date) => !Number.isNaN(date.getTime()))
             .sort((a, b) => b - a);
         const finalDate = manual || automaticCandidates[0];
-        updated.textContent = finalDate ? `UPDATED / ${formatCompactDate(finalDate)}` : "";
+        updated.textContent = finalDate ? `更新 / ${formatCompactDate(finalDate)}` : "";
         updated.dataset.updateMode = manual ? "manual" : "automatic";
     }
 
@@ -669,7 +669,7 @@
         const subtitle = byId("profile-current-subtitle");
         const status = byId("profile-current-status");
         const note = byId("profile-current-note");
-        if (current) current.textContent = setting.title || linked?.title || (isAdmin() ? "NOT SET" : "");
+        if (current) current.textContent = setting.title || linked?.title || (isAdmin() ? "未設定" : "");
         setOptionalProfileSection("current", !hasCurrentGame);
         if (currentLink) {
             const targetGame = linked || null;
@@ -864,7 +864,7 @@
         byId("site-manual-updated-at").value = state.settings.manual_updated_at || "";
         const updatedSettings = byId("site-manual-updated-at")?.closest("fieldset");
         if (updatedSettings) updatedSettings.hidden = !isOwner();
-        const automatic = byId("profile-updated")?.textContent?.replace("UPDATED / ", "") || "—";
+        const automatic = byId("profile-updated")?.textContent?.replace("更新 / ", "") || "—";
         byId("site-updated-mode").textContent = state.settings.manual_updated_at
             ? `当前使用手动日期：${formatCompactDate(state.settings.manual_updated_at)}`
             : `当前为自动更新：${automatic}`;
@@ -932,32 +932,32 @@
         state.settings.manual_updated_at = null;
         byId("site-manual-updated-at").value = "";
         await loadProfile();
-        byId("site-updated-mode").textContent = `已恢复自动更新：${byId("profile-updated")?.textContent?.replace("UPDATED / ", "") || "—"}`;
+        byId("site-updated-mode").textContent = `自動更新に戻しました：${byId("profile-updated")?.textContent?.replace("更新 / ", "") || "—"}`;
         showMessage("profile-form-message", "已恢复自动更新时间。");
     });
 
     function itemConfig(kind) {
         return {
             fandom: {
-                kicker: "FANDOMS COLLECTION",
-                name: "NAME",
-                description: "DESCRIPTION",
-                choice: "STATUS",
-                options: ["CURRENT", "LONG TERM", "OCCASIONAL", "CLOSED"]
+                kicker: "好きな作品のコレクション",
+                name: "名前",
+                description: "説明",
+                choice: "状態",
+                options: [["CURRENT", "いま夢中"], ["LONG TERM", "ずっと好き"], ["OCCASIONAL", "ときどき"], ["CLOSED", "ひと区切り"]]
             },
             favorite: {
-                kicker: "FAVORITES COLLECTION",
-                name: "CHARACTER NAME",
-                description: "NOTE",
-                choice: "FAVORITE TYPE",
-                options: ["最推", "推", "好感"]
+                kicker: "お気に入りのコレクション",
+                name: "キャラクター名",
+                description: "メモ",
+                choice: "好きの種類",
+                options: [["最推", "最推"], ["推", "推"], ["好感", "好感"]]
             },
             boundary: {
-                kicker: "DNI / NOT FOR ME",
-                name: "CONTENT",
+                kicker: "NG / 苦手なもの",
+                name: "内容",
                 description: "",
-                choice: "TYPE",
-                options: ["雷点", "苦手", "不太感兴趣"]
+                choice: "種類",
+                options: [["雷点", "雷点"], ["苦手", "苦手"], ["不太感兴趣", "あまり興味がない"]]
             }
         }[kind];
     }
@@ -978,7 +978,7 @@
         byId("profile-item-id").value = item?.id || "";
         byId("profile-item-kind").value = kind;
         byId("profile-item-kicker").textContent = config.kicker;
-        byId("profile-item-title").textContent = item ? "Edit item" : "New item";
+        byId("profile-item-title").textContent = item ? "項目を編集" : "新しい項目";
         byId("profile-item-name-label").textContent = config.name;
         byId("profile-item-description-label").textContent = config.description;
         byId("profile-item-choice-label").textContent = config.choice;
@@ -986,15 +986,15 @@
             field.classList.toggle("hidden", !field.dataset.visibleFor.split(" ").includes(kind));
         });
         const choice = byId("profile-item-choice");
-        choice.replaceChildren(...config.options.map((option) => {
-            const element = create("option", "", option);
-            element.value = option;
+        choice.replaceChildren(...config.options.map(([optionValue, optionLabel]) => {
+            const element = create("option", "", optionLabel);
+            element.value = optionValue;
             return element;
         }));
         byId("profile-item-name").value = item?.name || item?.label || "";
         byId("profile-item-secondary").value = item?.work_name || "";
         byId("profile-item-image").value = item?.image_url || "";
-        byId("profile-item-choice").value = item?.status || item?.favorite_level || item?.kind || config.options[0];
+        byId("profile-item-choice").value = item?.status || item?.favorite_level || item?.kind || config.options[0][0];
         byId("profile-item-symbol").value = item?.symbol || "";
         byId("profile-item-description").value = item?.description || item?.note || "";
         byId("profile-item-sort").value = item?.sort_order ?? "";
@@ -1353,8 +1353,8 @@
             time.dataset.desktopDate = formatCompactDate(publishedDate);
         }
         meta.append(time);
-        if (writing.is_pinned) meta.append(create("span", "writing-pin", "✦ PINNED"));
-        if (!writing.is_public && isAdmin()) meta.append(create("span", "writing-draft", "PRIVATE"));
+        if (writing.is_pinned) meta.append(create("span", "writing-pin", "✦ 固定"));
+        if (!writing.is_public && isAdmin()) meta.append(create("span", "writing-draft", "非公開"));
         copy.append(meta, create("h4", "", writing.title));
         const relatedGame = relatedGameLink(writing);
         if (relatedGame) copy.insertBefore(relatedGame, copy.querySelector("h4"));

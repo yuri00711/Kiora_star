@@ -16,7 +16,7 @@
 
     const returnState = navigation?.peek();
     if (returnState?.href.includes("/read.html")) {
-        document.getElementById("game-back").textContent = "← BACK TO WRITING";
+        document.getElementById("game-back").textContent = "← かきものへ戻る";
     }
 
     const setOptionalText = (elementId, value) => {
@@ -43,8 +43,8 @@
 
     const archiveNumber = String(game.sort_order ?? game.id).padStart(3, "0");
     document.title = `${game.title || "Game Archive"} · Kiora`;
-    document.getElementById("game-detail-archive-number").textContent = `ARCHIVE ${archiveNumber}`;
-    document.getElementById("game-detail-title").textContent = game.title || "UNTITLED";
+    document.getElementById("game-detail-archive-number").textContent = `記録 ${archiveNumber}`;
+    document.getElementById("game-detail-title").textContent = game.title || "タイトル未設定";
     setOptionalText("game-detail-original", common.firstValue(game, ["original_title", "title_jp", "japanese_title"]));
 
     const coverUrl = common.safeUrl(game.cover_url);
@@ -62,7 +62,7 @@
 
     document.getElementById("game-detail-rating").textContent = game.rating !== null && game.rating !== undefined && game.rating !== ""
         ? `✦ ${game.rating} / 10`
-        : "UNRATED";
+        : "未評価";
 
     const playStatus = common.firstValue(game, ["play_status", "status"]);
     if (playStatus) {
@@ -151,7 +151,7 @@
             const label = document.createElement("small");
             label.textContent = common.formatDate(writing.published_at);
             const title = document.createElement("strong");
-            title.textContent = writing.title || "UNTITLED";
+            title.textContent = writing.title || "タイトル未設定";
             copy.append(label, title);
             if (writing.subtitle || writing.excerpt) {
                 const note = document.createElement("p");
@@ -159,11 +159,11 @@
                 copy.append(note);
             }
             const arrow = document.createElement("i");
-            arrow.textContent = "READ →";
+            arrow.textContent = "読む →";
             link.append(copy, arrow);
             list.append(link);
         });
-        document.getElementById("game-related-writing-count").textContent = `${String(relatedWritings.length).padStart(2, "0")} ${relatedWritings.length === 1 ? "STORY" : "STORIES"}`;
+        document.getElementById("game-related-writing-count").textContent = `${String(relatedWritings.length).padStart(2, "0")} 篇`;
         document.getElementById("game-related-writing-section").hidden = false;
     }
 

@@ -18,7 +18,7 @@
         if (!Array.isArray(values)) return [];
         return values.map((tag) => String(tag || "").trim()).filter((tag, index, all) => tag && all.indexOf(tag) === index).slice(0, 30);
     };
-    const markDirty = () => { dirty = true; byId("settings-save-state").textContent = "UNSAVED"; clearTimeout(timer); timer = setTimeout(saveDraft, 2500); };
+    const markDirty = () => { dirty = true; byId("settings-save-state").textContent = "未保存"; clearTimeout(timer); timer = setTimeout(saveDraft, 2500); };
     const renderTags = () => {
         const list = byId("currently-tag-list");
         list.replaceChildren();
@@ -58,7 +58,7 @@
         input.value = "";
         input.focus();
     };
-    function saveDraft() { if (!dirty) return; localStorage.setItem(draftKey, JSON.stringify(collect())); byId("settings-save-state").textContent = "DRAFT SAVED"; }
+    function saveDraft() { if (!dirty) return; localStorage.setItem(draftKey, JSON.stringify(collect())); byId("settings-save-state").textContent = "下書きを保存しました"; }
     form.addEventListener("input", markDirty);
     byId("currently-add-tag").addEventListener("click", addTag);
     byId("currently-tag-entry").addEventListener("keydown", (event) => { if (event.key !== "Enter") return; event.preventDefault(); addTag(); });
@@ -74,9 +74,9 @@
     const legacyTags = normalizeTags([...(otomeResult.data?.play_styles || []), ...(otomeResult.data?.favorite_elements || []), ...(favoritesResult.data || []).map((item) => item.name)]);
     apply(settingsResult.data?.currently_playing || {}, legacyTags);
     const draft = localStorage.getItem(draftKey);
-    if (draft && confirm("检测到未保存的 CURRENTLY PLAYING 草稿，是否恢复？")) { try { apply(JSON.parse(draft), legacyTags); dirty = true; } catch (_) { localStorage.removeItem(draftKey); } }
+    if (draft && confirm("未保存の『いま遊んでいる』下書きがあります。復元しますか？")) { try { apply(JSON.parse(draft), legacyTags); dirty = true; } catch (_) { localStorage.removeItem(draftKey); } }
     byId("currently-game").addEventListener("change", () => { const game = games.find((item) => String(item.id) === byId("currently-game").value); if (game && !byId("currently-title").value.trim()) byId("currently-title").value = game.title; });
-    form.addEventListener("submit", async (event) => { event.preventDefault(); message("Saving…"); const payload = collect(); const { error } = await auth.write("currently_playing_update", { data: payload }, () => db.from("site_settings").upsert({ id: 1, currently_playing: payload }, { onConflict: "id" })); if (error) { message(`保存失败：${error.message}。请先运行最新的 Supabase 设置迁移。`, true); saveDraft(); return; } localStorage.removeItem(draftKey); dirty = false; byId("settings-save-state").textContent = "SAVED"; message("Saved / 已保存"); });
-    byId("currently-clear").addEventListener("click", async () => { if (!confirm("清空 CURRENTLY PLAYING 设置吗？")) return; const { error } = await auth.write("currently_playing_update", { data: null }, () => db.from("site_settings").upsert({ id: 1, currently_playing: null }, { onConflict: "id" })); if (error) return message(`清空失败：${error.message}`, true); localStorage.removeItem(draftKey); dirty = false; apply({ tags: [] }); message("已恢复自动显示游戏列表中的第一项。"); });
-    byId("settings-gate").hidden = true; byId("currently-editor").hidden = false; byId("settings-save-state").textContent = "READY";
+    form.addEventListener("submit", async (event) => { event.preventDefault(); message("保存中…"); const payload = collect(); const { error } = await auth.write("currently_playing_update", { data: payload }, () => db.from("site_settings").upsert({ id: 1, currently_playing: payload }, { onConflict: "id" })); if (error) { message(`保存失败：${error.message}。请先运行最新的 Supabase 设置迁移。`, true); saveDraft(); return; } localStorage.removeItem(draftKey); dirty = false; byId("settings-save-state").textContent = "保存しました"; message("保存しました"); });
+    byId("currently-clear").addEventListener("click", async () => { if (!confirm("『いま遊んでいる』設定をクリアしますか？")) return; const { error } = await auth.write("currently_playing_update", { data: null }, () => db.from("site_settings").upsert({ id: 1, currently_playing: null }, { onConflict: "id" })); if (error) return message(`清空失败：${error.message}`, true); localStorage.removeItem(draftKey); dirty = false; apply({ tags: [] }); message("ゲーム一覧の先頭を自動表示する設定に戻しました。"); });
+    byId("settings-gate").hidden = true; byId("currently-editor").hidden = false; byId("settings-save-state").textContent = "準備完了";
 })();

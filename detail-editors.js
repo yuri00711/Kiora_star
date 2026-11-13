@@ -85,25 +85,25 @@
         dialog.className = "detail-inline-editor";
         dialog.innerHTML = `
             <form method="dialog" class="detail-inline-editor__panel" data-game-inline-form>
-                <header><div><p>GAME ARCHIVE / EDIT</p><h2>编辑游戏档案</h2></div><button type="button" data-detail-editor-cancel aria-label="Close">×</button></header>
+                <header><div><p>ゲームアーカイブ / 編集</p><h2>ゲーム記録を編集</h2></div><button type="button" data-detail-editor-cancel aria-label="閉じる">×</button></header>
                 <div class="detail-inline-editor__grid">
-                    <label class="wide">TITLE<input name="title" required></label>
-                    <label>RATING<input name="rating" type="number" min="0" max="10" step="0.1"></label>
-                    <label>SORT ORDER<input name="sort_order" type="number"></label>
-                    <label>STARTED<input name="started_at" type="date"></label>
-                    <label>COMPLETED<input name="completed_at" type="date"></label>
-                    <label>STATUS<select name="status"><option value="">UNFILED</option><option>PLAYING</option><option>COMPLETED</option><option>PAUSED</option><option>DROPPED</option><option>WISHLIST</option></select></label>
-                    <label>FAVORITE LEVEL<select name="favorite_level"><option value="">NONE / UNFILED</option><option>FAVORITE</option><option>BELOVED</option><option>LOVE</option><option>LIKE</option><option>NEUTRAL</option><option>NOT FOR ME</option></select></label>
-                    <label class="wide">COVER IMAGE URL<input name="cover_url" type="url" placeholder="https://..."></label>
-                    <label class="wide">OR UPLOAD COVER<input name="cover_file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
-                    <fieldset class="wide"><legend>PLATFORM</legend><div class="detail-inline-editor__checks">${platforms.map((item) => `<label><input type="checkbox" name="platform" value="${item}"><span>${item}</span></label>`).join("")}</div></fieldset>
-                    <label class="wide">TAGS <small>用逗号分隔</small><input name="tags"></label>
-                    <label class="wide">OFFICIAL SITE URL<input name="official_site_url" type="url" placeholder="https://..."></label>
-                    <label class="wide">STORE LINKS <small>每行：LABEL | URL</small><textarea name="store_links" rows="4"></textarea></label>
-                    <label class="wide detail-inline-editor__writing">GAME IMPRESSION<textarea name="review" rows="12"></textarea></label>
+                    <label class="wide">タイトル<input name="title" required></label>
+                    <label>評価<input name="rating" type="number" min="0" max="10" step="0.1"></label>
+                    <label>並び順<input name="sort_order" type="number"></label>
+                    <label>開始日<input name="started_at" type="date"></label>
+                    <label>終了日<input name="completed_at" type="date"></label>
+                    <label>状態<select name="status"><option value="">未分類</option><option value="PLAYING">プレイ中</option><option value="COMPLETED">クリア済み</option><option value="PAUSED">一時休止</option><option value="DROPPED">中断</option><option value="WISHLIST">気になる</option></select></label>
+                    <label>お気に入り度<select name="favorite_level"><option value="">未設定</option><option value="FAVORITE">お気に入り</option><option value="BELOVED">とても大切</option><option value="LOVE">大好き</option><option value="LIKE">好き</option><option value="NEUTRAL">ふつう</option><option value="NOT FOR ME">合わなかった</option></select></label>
+                    <label class="wide">カバー画像URL<input name="cover_url" type="url" placeholder="https://..."></label>
+                    <label class="wide">カバー画像をアップロード<input name="cover_file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+                    <fieldset class="wide"><legend>機種</legend><div class="detail-inline-editor__checks">${platforms.map((item) => `<label><input type="checkbox" name="platform" value="${item}"><span>${item === "MOBILE" ? "モバイル" : item === "OTHER" ? "その他" : item}</span></label>`).join("")}</div></fieldset>
+                    <label class="wide">タグ <small>読点区切り</small><input name="tags"></label>
+                    <label class="wide">公式サイトURL<input name="official_site_url" type="url" placeholder="https://..."></label>
+                    <label class="wide">ストアリンク <small>1行ずつ：名前 | URL</small><textarea name="store_links" rows="4"></textarea></label>
+                    <label class="wide detail-inline-editor__writing">ゲームの感想<textarea name="review" rows="12"></textarea></label>
                 </div>
                 <p class="detail-inline-editor__message" role="status"></p>
-                <footer><button type="submit" class="primary">SAVE RECORD</button><button type="button" data-detail-editor-cancel>CANCEL</button></footer>
+                <footer><button type="submit" class="primary">記録を保存</button><button type="button" data-detail-editor-cancel>キャンセル</button></footer>
             </form>`;
         document.body.append(dialog);
         installDialogBehavior(dialog);
@@ -116,18 +116,18 @@
         dialog.className = "detail-inline-editor";
         dialog.innerHTML = `
             <form method="dialog" class="detail-inline-editor__panel" data-character-inline-form>
-                <header><div><p>CHARACTER ARCHIVE / EDIT</p><h2>编辑角色印象</h2></div><button type="button" data-detail-editor-cancel aria-label="Close">×</button></header>
+                <header><div><p>キャラクターアーカイブ / 編集</p><h2>キャラクターの印象を編集</h2></div><button type="button" data-detail-editor-cancel aria-label="閉じる">×</button></header>
                 <input type="hidden" name="id"><input type="hidden" name="game_id">
                 <div class="detail-inline-editor__grid">
-                    <label class="wide">NAME<input name="name" required></label>
-                    <label class="wide">SUBTITLE / ROUTE NOTE<input name="subtitle"></label>
-                    <label>RATING<input name="rating" type="number" min="0" max="10" step="0.1"></label>
-                    <label>SORT ORDER<input name="sort_order" type="number"></label>
-                    <label class="wide">IMAGE URL<input name="image_url" type="url" placeholder="https://..."></label>
-                    <label class="wide detail-inline-editor__writing">MY IMPRESSION<textarea name="review" rows="14"></textarea></label>
+                    <label class="wide">名前<input name="name" required></label>
+                    <label class="wide">サブタイトル / ルートメモ<input name="subtitle"></label>
+                    <label>評価<input name="rating" type="number" min="0" max="10" step="0.1"></label>
+                    <label>並び順<input name="sort_order" type="number"></label>
+                    <label class="wide">画像URL<input name="image_url" type="url" placeholder="https://..."></label>
+                    <label class="wide detail-inline-editor__writing">わたしの感想<textarea name="review" rows="14"></textarea></label>
                 </div>
                 <p class="detail-inline-editor__message" role="status"></p>
-                <footer><button type="submit" class="primary">SAVE CHARACTER</button><button type="button" data-detail-editor-cancel>CANCEL</button></footer>
+                <footer><button type="submit" class="primary">キャラクターを保存</button><button type="button" data-detail-editor-cancel>キャンセル</button></footer>
             </form>`;
         document.body.append(dialog);
         installDialogBehavior(dialog);
@@ -144,9 +144,9 @@
 
     function updateGameView(game) {
         document.title = `${game.title || "Game Archive"} · Kiora`;
-        document.getElementById("game-detail-title").textContent = game.title || "UNTITLED";
-        document.getElementById("game-detail-archive-number").textContent = `ARCHIVE ${String(game.sort_order ?? game.id).padStart(3, "0")}`;
-        document.getElementById("game-detail-rating").textContent = game.rating !== null && game.rating !== "" ? `✦ ${game.rating} / 10` : "UNRATED";
+        document.getElementById("game-detail-title").textContent = game.title || "タイトル未設定";
+        document.getElementById("game-detail-archive-number").textContent = `記録 ${String(game.sort_order ?? game.id).padStart(3, "0")}`;
+        document.getElementById("game-detail-rating").textContent = game.rating !== null && game.rating !== "" ? `✦ ${game.rating} / 10` : "未評価";
         setFact("game-status-fact", "game-detail-play-status", game.status ? String(game.status).toUpperCase() : "");
         setFact("game-platform-fact", "game-detail-platforms", common.formatList(game.platforms).map((item) => item.toUpperCase()).join(" · "));
         setFact("game-favorite-fact", "game-detail-favorite", game.favorite_level ? String(game.favorite_level).toUpperCase() : "");
@@ -172,8 +172,8 @@
 
     function updateCharacterView(character) {
         document.title = `${character.name || "Character Record"} · Kiora`;
-        document.getElementById("character-index").textContent = `CHARACTER ${String(character.sort_order ?? character.id).padStart(2, "0")}`;
-        document.getElementById("character-name").textContent = character.name || "CHARACTER";
+        document.getElementById("character-index").textContent = `キャラクター ${String(character.sort_order ?? character.id).padStart(2, "0")}`;
+        document.getElementById("character-name").textContent = character.name || "キャラクター";
         document.getElementById("character-rating").textContent = character.rating !== null && character.rating !== "" ? `${character.rating} / 10` : "—";
         const subtitle = document.getElementById("character-subtitle");
         subtitle.textContent = character.subtitle || "";
@@ -212,7 +212,7 @@
         const file = form.elements.namedItem("cover_file").files?.[0];
         if (!file) return nullable(value(form, "cover_url"));
         if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) throw new Error("封面须为 5MB 以内的图片文件。");
-        message.textContent = "Uploading cover…";
+        message.textContent = "表紙をアップロードしています…";
         const extension = (file.name.split(".").pop() || "jpg").replace(/[^a-z0-9]/gi, "").toLowerCase();
         const result = await auth.uploadSiteMedia(file, `collections/games/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension || "jpg"}`);
         if (result.error) throw result.error;
@@ -257,7 +257,7 @@
                     store_links: parseStoreLinks(value(form, "store_links"))
                 };
                 if (!payload.title) throw new Error("请填写游戏标题。");
-                message.textContent = "Saving…";
+                message.textContent = "保存しています…";
                 const result = await auth.write("game_update", { id: game.id, data: payload }, () => db.from("games").update(payload).eq("id", game.id).select("*").single());
                 if (result.error) throw result.error;
                 const saved = returnedRow(result, { ...game, ...payload });
@@ -323,7 +323,7 @@
             }
             try {
                 submit.disabled = true;
-                message.textContent = "Saving…";
+                message.textContent = "保存しています…";
                 const action = id ? "character_update" : "character_create";
                 const result = await auth.write(action, id ? { id, data: payload } : { data: payload }, () => id
                     ? db.from("characters").update(payload).eq("id", id).select("*").single()

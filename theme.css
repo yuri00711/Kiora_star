@@ -1,24 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Zen+Maru+Gothic:wght@400;500;700&display=swap");
+
 :root {
     color-scheme: light;
 
     /* Kiora candy palette */
     --cream: #fffcf5;
     --white: #ffffff;
-    --candy-pink: #ff79b0;
-    --soda-blue: #70d7ea;
-    --sunny-yellow: #ffd868;
-    --mint-green: #a6e8c6;
-    --grape-purple: #beaef4;
-    --peach-orange: #ffa987;
+    --candy-pink: #f58db5;
+    --soda-blue: #84d4e4;
+    --sunny-yellow: #f5d879;
+    --mint-green: #9eddbf;
+    --grape-purple: #bcb0e7;
+    --peach-orange: #f6ab8e;
     --ink-deep: #40394d;
 
     /* Soft surfaces */
-    --pink-soft: #fff0f6;
-    --blue-soft: #eafaff;
-    --yellow-soft: #fff8d9;
-    --mint-soft: #effcf5;
-    --purple-soft: #f2efff;
-    --orange-soft: #fff1e8;
+    --pink-soft: #fff1f6;
+    --blue-soft: #edfafe;
+    --yellow-soft: #fff9e4;
+    --mint-soft: #f0fbf5;
+    --purple-soft: #f4f1fc;
+    --orange-soft: #fff2eb;
 
     /* Accessible emphasis colors */
     --pink-deep: #ad2f68;
@@ -39,20 +41,20 @@
     --accent-gold: var(--sunny-yellow);
     --border: rgba(64, 57, 77, 0.18);
     --border-soft: rgba(64, 57, 77, 0.10);
-    --pop-line: rgba(64, 57, 77, 0.52);
+    --pop-line: rgba(64, 57, 77, 0.25);
     --surface: var(--white);
     --surface-soft: rgba(255, 255, 255, 0.84);
     --surface-strong: var(--white);
     --shadow-soft: 0 16px 42px rgba(64, 57, 77, 0.08);
-    --shadow-pop: 5px 6px 0 rgba(64, 57, 77, 0.10);
+    --shadow-pop: 0 12px 30px rgba(87, 70, 104, 0.10);
     --radius-card: 22px;
     --radius-soft: 14px;
     --radius-pill: 999px;
     --tracking-label: 0.14em;
 
     /* Typography */
-    --font-display: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
-    --font-body: "Noto Sans SC", "Noto Sans JP", "Microsoft YaHei UI", "Yu Gothic UI", sans-serif;
+    --font-display: "M PLUS Rounded 1c", "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+    --font-body: "Zen Maru Gothic", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Noto Sans JP", "Microsoft YaHei UI", "Yu Gothic UI", sans-serif;
     --font-reading: "Noto Serif SC", "Noto Serif JP", "Yu Mincho", "Songti SC", serif;
 
     /* Layout and interaction */

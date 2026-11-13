@@ -11,30 +11,30 @@
     <script defer src="kiora-ja.js?v=20261113-1"></script>
 </head>
 <body data-page="about">
-    <nav class="settings-nav"><button id="settings-back" type="button">← BACK TO PROFILE</button><span id="settings-save-state" class="settings-save-state">CHECKING…</span></nav>
+    <nav class="settings-nav"><button id="settings-back" type="button">← プロフィールへ</button><span id="settings-save-state" class="settings-save-state">確認中…</span></nav>
     <main class="settings-shell">
-        <p id="settings-gate" class="settings-gate" role="status">Checking administrator session…</p>
+        <p id="settings-gate" class="settings-gate" role="status">編集権限を確認しています…</p>
         <section id="currently-editor" hidden>
-            <header class="settings-header"><p class="settings-eyebrow">PROFILE / CURRENT NOTE</p><h1>いま遊んでいる</h1><p>从已有游戏中关联一条档案，也可以单独填写展示文字。</p></header>
+            <header class="settings-header"><p class="settings-eyebrow">プロフィール / いま遊んでいる</p><h1>いま遊んでいる</h1><p>ゲーム記録と結びつけることも、表示文だけを自由に書くこともできます。</p></header>
             <form id="currently-form" class="settings-card">
                 <div class="settings-fields">
-                    <label>LINK TO GAME<select id="currently-game"><option value="">不关联游戏</option></select></label>
-                    <label>DISPLAY TITLE<input id="currently-title" type="text" maxlength="160" placeholder="留空时使用关联游戏标题"></label>
-                    <label>SUBTITLE<input id="currently-subtitle" type="text" maxlength="200"></label>
+                    <label>ゲームと関連づける<select id="currently-game"><option value="">関連づけない</option></select></label>
+                    <label>表示タイトル<input id="currently-title" type="text" maxlength="160" placeholder="空欄なら関連ゲームのタイトルを使います"></label>
+                    <label>サブタイトル<input id="currently-subtitle" type="text" maxlength="200"></label>
                     <div class="settings-grid">
-                        <label>STATUS<select id="currently-status"><option value="">不显示</option><option value="playing">PLAYING</option><option value="replaying">REPLAYING</option><option value="completed">COMPLETED</option><option value="paused">PAUSED</option></select></label>
-                        <label>SHORT NOTE<input id="currently-note" type="text" maxlength="260"></label>
+                        <label>状態<select id="currently-status"><option value="">表示しない</option><option value="playing">プレイ中</option><option value="replaying">再プレイ中</option><option value="completed">クリア済み</option><option value="paused">休止中</option></select></label>
+                        <label>ひとことメモ<input id="currently-note" type="text" maxlength="260"></label>
                     </div>
                     <div class="settings-tag-field">
-                        <p class="settings-tag-label">TAGS / KEYWORDS</p>
+                        <p class="settings-tag-label">タグ / キーワード</p>
                         <div id="currently-tag-list" class="settings-tag-list" aria-live="polite"></div>
                         <div class="settings-tag-entry">
-                            <input id="currently-tag-entry" type="text" maxlength="120" autocomplete="off" aria-label="New tag" placeholder="输入中文、日文或英文标签">
-                            <button id="currently-add-tag" type="button">＋ ADD TAG</button>
+                            <input id="currently-tag-entry" type="text" maxlength="120" autocomplete="off" aria-label="新しいタグ" placeholder="タグを入力">
+                            <button id="currently-add-tag" type="button">＋ タグを追加</button>
                         </div>
                     </div>
                 </div>
-                <div class="settings-actions"><button class="primary" type="submit">SAVE CURRENTLY PLAYING</button><button id="currently-clear" type="button">CLEAR SETTING</button></div>
+                <div class="settings-actions"><button class="primary" type="submit">現在のゲームを保存</button><button id="currently-clear" type="button">設定をクリア</button></div>
                 <p id="settings-message" class="settings-message" role="status"></p>
             </form>
         </section>

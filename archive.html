@@ -43,7 +43,7 @@
     </header>
     <main class="standalone-page standalone-archive">
         <header class="standalone-page-heading">
-            <p>KIORA.SPACE / ARCHIVE</p>
+            <p>KIORA.SPACE / アーカイブ</p>
             <h1>アーカイブ</h1>
         </header>
 <section
@@ -61,47 +61,47 @@
             </div>
             <header class="music-archive-heading">
                 <div>
-                    <p>MUSIC / NOW PLAYING</p>
+                    <p>おんがく / 再生中</p>
                     <h3 id="music-archive-title">おんがく</h3>
-                    <span>Sounds kept in a small constellation.</span>
+                    <span>小さな星座にしまっておく音たち。</span>
                 </div>
                 <div id="music-admin-actions"></div>
             </header>
-            <p id="music-status" class="music-status" role="status">Loading music archive…</p>
+            <p id="music-status" class="music-status" role="status">音楽の記録を読み込んでいます…</p>
             <div id="music-now-playing" class="music-now-playing" hidden></div>
             <section id="music-library" class="music-library" hidden>
-                <div class="music-library-heading"><p>ARCHIVED TRACKS</p><span id="music-count"></span></div>
+                <div class="music-library-heading"><p>保存した曲</p><span id="music-count"></span></div>
                 <div id="music-list" class="music-list"></div>
             </section>
         </section>
     </section>
     </main>
     <footer class="standalone-footer">
-        <span>Kiora's little universe</span><span>2026</span>
+        <span>Kioraの小さな宇宙</span><span>2026</span>
     </footer>
 <div id="music-modal" class="archive-modal" data-protect-draft>
         <div class="archive-modal-backdrop"></div>
         <section class="archive-modal-card music-editor-card" aria-labelledby="music-modal-title">
             <button class="modal-close" data-close-modal type="button">×</button>
-            <p class="modal-label">MUSIC RECORD</p>
-            <h3 id="music-modal-title">New music</h3>
+            <p class="modal-label">音楽の記録</p>
+            <h3 id="music-modal-title">新しい曲</h3>
             <form id="music-form">
                 <input id="music-id" type="hidden">
-                <label>TITLE<input id="music-title" type="text" required maxlength="240"></label>
-                <label>ARTIST<input id="music-artist" type="text" maxlength="240"></label>
+                <label>タイトル<input id="music-title" type="text" required maxlength="240"></label>
+                <label>アーティスト<input id="music-artist" type="text" maxlength="240"></label>
                 <div class="form-grid">
-                    <label>PROVIDER<select id="music-provider" required><option value="netease">NETEASE</option><option value="spotify">SPOTIFY</option><option value="youtube">YOUTUBE</option><option value="apple_music">APPLE MUSIC</option></select></label>
-                    <label>SORT ORDER<input id="music-sort-order" type="number"></label>
+                    <label>再生サービス<select id="music-provider" required><option value="netease">NETEASE</option><option value="spotify">SPOTIFY</option><option value="youtube">YOUTUBE</option><option value="apple_music">APPLE MUSIC</option></select></label>
+                    <label>並び順<input id="music-sort-order" type="number"></label>
                 </div>
-                <label>MUSIC URL<input id="music-url" type="url" required placeholder="Official music page URL"></label>
-                <label>COVER IMAGE URL<input id="music-cover-url" type="url" placeholder="https://..."></label>
-                <label>MY NOTE<textarea id="music-note" rows="4"></textarea></label>
-                <label>LYRIC EXCERPT<textarea id="music-lyric-excerpt" rows="3" placeholder="Only text you have the right to display"></textarea></label>
-                <label>LRC DATA<textarea id="music-lrc-data" rows="6" placeholder="[00:12.50] lyric line"></textarea></label>
+                <label>音楽URL<input id="music-url" type="url" required placeholder="公式の音楽ページURL"></label>
+                <label>ジャケット画像URL<input id="music-cover-url" type="url" placeholder="https://..."></label>
+                <label>ひとこと<textarea id="music-note" rows="4"></textarea></label>
+                <label>歌詞の抜粋<textarea id="music-lyric-excerpt" rows="3" placeholder="表示する権利のある歌詞だけを入力してください"></textarea></label>
+                <label>LRCデータ<textarea id="music-lrc-data" rows="6" placeholder="[00:12.50] 歌詞"></textarea></label>
                 <p id="music-form-message" class="form-message" role="status"></p>
                 <div class="editor-actions">
-                    <button class="modal-primary-button" type="submit">SAVE MUSIC</button>
-                    <button id="delete-music-btn" class="modal-danger-button hidden" type="button">DELETE</button>
+                    <button class="modal-primary-button" type="submit">音楽を保存</button>
+                    <button id="delete-music-btn" class="modal-danger-button hidden" type="button">削除</button>
                 </div>
             </form>
         </section>

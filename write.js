@@ -87,9 +87,9 @@
         }
         const select = field("write-game");
         const previous = select.value;
-        select.replaceChildren(new Option("NOT LINKED / 暂不关联", ""));
+        select.replaceChildren(new Option("関連づけない", ""));
         (result.data || []).forEach((game) => {
-            select.append(new Option(game.title || `GAME ${game.id}`, String(game.id)));
+            select.append(new Option(game.title || `ゲーム ${game.id}`, String(game.id)));
         });
         select.value = previous;
     }
@@ -97,12 +97,12 @@
     function saveDraft() {
         if (!dirty) return;
         localStorage.setItem(draftKey, JSON.stringify(collectDraft()));
-        saveState.textContent = "DRAFT SAVED";
+        saveState.textContent = "下書きを保存しました";
     }
 
     function scheduleDraft() {
         dirty = true;
-        saveState.textContent = "UNSAVED";
+        saveState.textContent = "未保存";
         clearTimeout(draftTimer);
         draftTimer = setTimeout(saveDraft, 3000);
     }
@@ -119,7 +119,7 @@
         body.hidden = previewing;
         preview.hidden = !previewing;
         field("toggle-preview").classList.toggle("active", previewing);
-        field("toggle-preview").textContent = previewing ? "EDIT" : "PREVIEW";
+        field("toggle-preview").textContent = previewing ? "編集" : "プレビュー";
         if (previewing) preview.innerHTML = common.markdownToHtml(body.value);
     }
 
@@ -238,13 +238,13 @@
         event.preventDefault();
         if (!adminUser) return;
         setMessage("正在保存……");
-        saveState.textContent = "SAVING…";
+        saveState.textContent = "保存中…";
         let coverUrl;
         try {
             coverUrl = await uploadCover();
         } catch (error) {
             setMessage(`封面上传失败：${error.message}`, true);
-            saveState.textContent = "SAVE FAILED";
+            saveState.textContent = "保存できませんでした";
             saveDraft();
             return;
         }
@@ -280,7 +280,7 @@
         );
         if (result.error) {
             setMessage(`保存失败：${result.error.message}`, true);
-            saveState.textContent = "SAVE FAILED";
+            saveState.textContent = "保存できませんでした";
             saveDraft();
             return;
         }
@@ -288,7 +288,7 @@
         await removeOldCover(currentWriting?.cover_url, coverUrl);
         localStorage.removeItem(draftKey);
         dirty = false;
-        saveState.textContent = "SAVED";
+        saveState.textContent = "保存しました";
         setMessage("Saved / 已保存");
         window.setTimeout(() => {
             const target = new URL("read.html", window.location.href);
@@ -353,8 +353,8 @@
             isPublic: data.is_public,
             body: data.body
         });
-        field("write-page-title").textContent = "Edit writing";
-        field("write-mode").textContent = common.categories[data.category]?.label || "WRITING EDITOR";
+        field("write-page-title").textContent = "文章を編集する";
+        field("write-mode").textContent = common.categories[data.category]?.label || "かきもの編集";
         field("delete-writing").hidden = auth.role !== "owner";
         document.title = `Edit ${data.title} · Kiora`;
     } else {
@@ -368,7 +368,7 @@
         try {
             applyDraft(JSON.parse(savedDraft));
             dirty = true;
-            saveState.textContent = "DRAFT RESTORED";
+            saveState.textContent = "下書きを復元しました";
         } catch (_) {
             localStorage.removeItem(draftKey);
         }
@@ -382,6 +382,6 @@
     gateStatus.hidden = true;
     editor.hidden = false;
     field("mobile-write-toolbar").hidden = false;
-    saveState.textContent = "READY";
+    saveState.textContent = "準備完了";
     updateStats();
 })();

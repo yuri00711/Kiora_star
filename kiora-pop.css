@@ -24,8 +24,13 @@ body {
     margin: 0;
     overflow-x: clip;
     background-color: var(--cream);
-    background-image: radial-gradient(circle, rgba(64, 57, 77, 0.075) 1px, transparent 1.5px);
-    background-size: 26px 26px;
+    background-image:
+        radial-gradient(circle at 7% 10%, color-mix(in srgb, var(--candy-pink) 16%, transparent) 0 9rem, transparent 22rem),
+        radial-gradient(circle at 93% 24%, color-mix(in srgb, var(--soda-blue) 15%, transparent) 0 11rem, transparent 25rem),
+        radial-gradient(circle at 22% 86%, color-mix(in srgb, var(--sunny-yellow) 12%, transparent) 0 9rem, transparent 23rem),
+        radial-gradient(circle, rgba(64, 57, 77, 0.055) 1px, transparent 1.35px);
+    background-attachment: fixed;
+    background-size: auto, auto, auto, 30px 30px;
     color: var(--ink-deep);
     font-family: var(--font-body);
     line-height: 1.7;
@@ -244,13 +249,13 @@ video {
     padding: 30px 32px 26px;
     border: 0;
     border-radius: 24px;
-    border: 1.5px solid var(--pop-line);
-    background-color: var(--white);
+    border: 1px solid color-mix(in srgb, var(--module-color) 38%, var(--border-soft));
+    background-color: color-mix(in srgb, var(--module-soft) 76%, white);
     background-image: repeating-linear-gradient(135deg, transparent 0 13px, color-mix(in srgb, var(--module-contrast) 24%, transparent) 13px 16px);
     background-size: clamp(90px, 16vw, 190px) 100%;
     background-position: right top;
     background-repeat: no-repeat;
-    box-shadow: 8px 9px 0 var(--module-contrast);
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--module-color) 12%, transparent);
     overflow: hidden;
 }
 
@@ -339,12 +344,12 @@ video {
     border: 1px solid color-mix(in srgb, var(--module-color) 70%, var(--ink-deep));
     border-radius: var(--radius-pill);
     background: var(--module-color);
-    box-shadow: 4px 5px 0 var(--module-contrast);
+    box-shadow: 0 7px 16px color-mix(in srgb, var(--module-color) 22%, transparent);
     color: var(--ink-deep);
     font-family: var(--font-display);
     font-size: 0.78rem;
     font-weight: 800;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.035em;
 }
 
 .modal-primary-button:hover,
@@ -357,7 +362,7 @@ video {
 .sale-section-actions button:hover,
 .tier-admin-actions button:hover {
     transform: translateY(-2px);
-    box-shadow: 6px 7px 0 var(--module-contrast);
+    box-shadow: 0 10px 20px color-mix(in srgb, var(--module-color) 28%, transparent);
 }
 
 .modal-secondary-button,
@@ -386,14 +391,15 @@ select {
     min-height: var(--tap-size);
     border: 1px solid rgba(64, 57, 77, 0.2);
     border-radius: 12px;
-    background: var(--white);
-    box-shadow: none;
+    background: color-mix(in srgb, var(--module-soft) 34%, white);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
 textarea:focus,
 select:focus {
     border-color: var(--module-color);
+    background: var(--white);
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--module-color) 18%, transparent);
     outline: none;
 }
@@ -1190,6 +1196,214 @@ select:focus {
     background: var(--white);
 }
 
+/* Soft, energetic surfaces ------------------------------------------------
+   Color is carried by the page surfaces and editors, not only by outlines. */
+.home-journal,
+.standalone-page,
+.games-index,
+.study-shell,
+.sale-shell,
+.sale-region-shell,
+.settings-shell,
+.export-settings-shell,
+.tier-board,
+.game-detail-shell,
+.game-full-record-shell,
+.character-detail-shell {
+    isolation: isolate;
+}
+
+.home-writing-featured,
+.home-profile-card,
+.game-card,
+.game-archive-sheet,
+.character-record-sheet,
+.game-record-dossier,
+.standalone-about,
+.writing-magazine,
+.music-archive,
+.study-dashboard,
+.study-view,
+.study-detail,
+.study-paper-workspace,
+.study-answer-panel,
+.sale-region-grid,
+.sale-summary,
+.sale-calendar-section,
+.sale-region-section,
+.sale-selection-panel,
+.sale-wallet,
+.settings-card,
+.export-editor-layout,
+.tier-sections,
+.unassigned-section {
+    background-image:
+        linear-gradient(145deg,
+            color-mix(in srgb, var(--module-soft) 74%, white) 0%,
+            rgba(255, 255, 255, 0.96) 38%,
+            color-mix(in srgb, var(--module-contrast) 13%, white) 100%);
+    border-color: color-mix(in srgb, var(--module-color) 22%, var(--border-soft));
+    box-shadow: 0 16px 36px color-mix(in srgb, var(--module-color) 10%, rgba(64, 57, 77, 0.05));
+}
+
+.archive-modal-card,
+.character-modal-card,
+.game-editor-card,
+.sale-dialog,
+.study-dialog,
+.repo-editor,
+.detail-inline-editor {
+    background:
+        radial-gradient(circle at 100% 0, color-mix(in srgb, var(--module-third) 16%, transparent), transparent 34%),
+        linear-gradient(155deg, color-mix(in srgb, var(--module-soft) 72%, white), var(--cream) 52%, color-mix(in srgb, var(--module-contrast) 12%, white));
+    border: 1px solid color-mix(in srgb, var(--module-color) 26%, var(--border-soft));
+    box-shadow: 0 24px 64px rgba(64, 57, 77, 0.16);
+}
+
+.game-editor-header,
+.character-modal-heading,
+.sale-dialog-heading,
+.study-dialog > form > header,
+.archive-modal-card > .modal-label,
+.repo-editor > header {
+    background: color-mix(in srgb, var(--module-soft) 72%, white);
+}
+
+.game-editor-tabs,
+.editor-toolbar,
+.settings-nav,
+.sale-dialog-footer,
+.study-dialog footer,
+.editor-actions,
+.repo-editor-actions {
+    background: color-mix(in srgb, var(--module-third) 9%, white);
+}
+
+.game-editor-section,
+.game-review-section,
+.character-editor-fields,
+.sale-dialog-section,
+.export-editor-section,
+.settings-fields,
+.write-fields-primary,
+.body-editor,
+.repo-fields,
+.study-form {
+    padding: clamp(18px, 3vw, 30px);
+    border: 1px solid color-mix(in srgb, var(--module-color) 18%, transparent);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--module-soft) 48%, rgba(255, 255, 255, 0.88));
+}
+
+.game-editor-pane > :nth-child(even),
+.sale-dialog-section:nth-of-type(even),
+.export-editor-section:nth-child(even),
+.repo-fields > :nth-child(4n + 2),
+.repo-fields > :nth-child(4n + 3) {
+    background-color: color-mix(in srgb, var(--module-third) 10%, white);
+}
+
+.game-editor-pane > :nth-child(3n),
+.sale-dialog-section:nth-of-type(3n),
+.export-editor-section:nth-child(3n) {
+    background-color: color-mix(in srgb, var(--module-contrast) 15%, white);
+}
+
+.game-cover-editor,
+.character-editor-preview,
+.export-preview,
+.repo-preview,
+.study-paper-reader,
+.music-player-shell,
+.profile-export-preview {
+    background: linear-gradient(145deg, var(--blue-soft), var(--purple-soft) 55%, var(--pink-soft));
+    border-color: color-mix(in srgb, var(--module-color) 24%, var(--border-soft));
+}
+
+.modal-secondary-button,
+.study-text-button,
+.settings-actions button:not(.primary),
+.game-record-edit,
+.character-edit-record,
+.game-detail-nav a,
+.sale-region-back,
+.tier-nav a,
+.settings-nav a,
+.editor-toolbar button,
+.game-editor-tabs button,
+.filter-choices button,
+.active-filters button,
+.view-switch button,
+.writing-filter-tabs button,
+.study-filter-row button {
+    background: color-mix(in srgb, var(--module-soft) 42%, white);
+    border-color: color-mix(in srgb, var(--module-color) 24%, var(--border-soft));
+}
+
+.modal-danger-button {
+    border-color: color-mix(in srgb, var(--candy-pink) 48%, var(--border));
+    background: var(--pink-soft);
+    color: var(--pink-deep);
+}
+
+/* Japanese labels need breathing room rather than wide Latin tracking. */
+.modal-label,
+.game-editor-section-heading h4,
+.game-editor-tabs button,
+.settings-header p,
+.settings-card h2,
+.study-kicker,
+.sale-dialog-section-title,
+.filter-label,
+.field-label,
+label,
+legend,
+button,
+.site-desktop-nav a,
+.site-mobile-menu a {
+    letter-spacing: clamp(0.015em, 0.08vw, 0.055em);
+    overflow-wrap: anywhere;
+}
+
+button,
+.modal-primary-button,
+.modal-secondary-button,
+.study-primary,
+.study-secondary,
+.settings-actions button,
+.sale-section-actions button {
+    line-height: 1.45;
+    white-space: normal;
+}
+
+.game-editor-section-heading h4,
+.settings-card h2,
+.sale-dialog-section-title h3,
+.study-dialog h2,
+.archive-modal-card h2,
+.repo-editor h2 {
+    color: var(--module-deep);
+    font-family: var(--font-display);
+    font-weight: 800;
+}
+
+.form-grid,
+.settings-fields,
+.game-basic-fields,
+.character-editor-fields,
+.repo-fields,
+.visibility-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+.archive-modal-card,
+.character-modal-card,
+.game-editor-card,
+.sale-dialog,
+.study-dialog {
+    max-width: min(var(--dialog-width, 980px), calc(100vw - 24px));
+}
+
 /* Responsive -------------------------------------------------------------- */
 @media (max-width: 1180px) {
     .games-grid,
@@ -1334,6 +1548,35 @@ select:focus {
         width: auto;
         max-height: min(78svh, 720px);
         border-radius: 22px 22px 16px 16px;
+    }
+
+    .game-editor-section,
+    .game-review-section,
+    .character-editor-fields,
+    .sale-dialog-section,
+    .export-editor-section,
+    .settings-fields,
+    .write-fields-primary,
+    .body-editor,
+    .repo-fields,
+    .study-form {
+        padding: 16px;
+        border-radius: 15px;
+    }
+
+    .editor-actions,
+    .settings-actions,
+    .sale-dialog-footer,
+    .repo-editor-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .editor-actions button,
+    .settings-actions button,
+    .sale-dialog-footer button,
+    .repo-editor-actions button {
+        width: 100%;
     }
 }
 

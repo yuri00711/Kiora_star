@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Game Archive · Kiora</title>
+    <title>ゲーム記録 · Kiora</title>
     <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="game.css?v=20261109-5">
     <link rel="stylesheet" href="kiora/kiora-dock.css?v=20260922-1">
@@ -18,59 +18,59 @@
     <div class="game-orbits" aria-hidden="true"><span></span><span></span></div>
 
     <nav class="game-detail-nav" aria-label="Game navigation">
-        <button id="game-back" type="button">← BACK TO ARCHIVE</button>
+        <button id="game-back" type="button">← ゲーム一覧へ</button>
         <a href="index.html">KIORA.SPACE</a>
     </nav>
 
     <main class="game-detail-shell">
-        <p id="game-detail-status" class="game-detail-status" role="status">Loading archive…</p>
+        <p id="game-detail-status" class="game-detail-status" role="status">ゲーム記録を読み込んでいます…</p>
 
         <article id="game-detail" class="game-detail game-archive-sheet" hidden>
             <header class="game-record">
                 <div class="game-record-heading">
-                    <p id="game-detail-archive-number" class="game-detail-kicker">ARCHIVE</p>
+                    <p id="game-detail-archive-number" class="game-detail-kicker">記録</p>
                     <h1 id="game-detail-title"></h1>
                     <p id="game-detail-original" class="game-detail-original" hidden></p>
                 </div>
 
                 <figure class="game-detail-cover-frame">
-                    <span class="game-cover-index" aria-hidden="true">CELESTIAL<br>COLLECTION</span>
+                    <span class="game-cover-index" aria-hidden="true">星の<br>コレクション</span>
                     <img id="game-detail-cover" class="game-detail-cover" alt="" loading="eager" hidden>
                     <div id="game-detail-cover-placeholder" class="game-detail-cover-placeholder" aria-hidden="true">✦</div>
-                    <figcaption>PRIVATE GAME ARCHIVE</figcaption>
+                    <figcaption>ひみつのゲーム記録</figcaption>
                 </figure>
 
                 <div class="game-record-dossier">
                     <dl class="game-detail-facts">
-                        <div id="game-rating-fact"><dt>RATING</dt><dd id="game-detail-rating"></dd></div>
-                        <div id="game-status-fact" hidden><dt>STATUS</dt><dd id="game-detail-play-status"></dd></div>
-                        <div id="game-platform-fact" hidden><dt>PLATFORM</dt><dd id="game-detail-platforms"></dd></div>
-                        <div id="game-favorite-fact" hidden><dt>FAVORITE LEVEL</dt><dd id="game-detail-favorite"></dd></div>
-                        <div id="game-date-fact" hidden><dt>PLAYED</dt><dd id="game-detail-date"></dd></div>
+                        <div id="game-rating-fact"><dt>評価</dt><dd id="game-detail-rating"></dd></div>
+                        <div id="game-status-fact" hidden><dt>状態</dt><dd id="game-detail-play-status"></dd></div>
+                        <div id="game-platform-fact" hidden><dt>機種</dt><dd id="game-detail-platforms"></dd></div>
+                        <div id="game-favorite-fact" hidden><dt>お気に入り度</dt><dd id="game-detail-favorite"></dd></div>
+                        <div id="game-date-fact" hidden><dt>プレイした日</dt><dd id="game-detail-date"></dd></div>
                     </dl>
 
                     <div id="game-note-preview" class="game-note-preview" hidden>
-                        <p class="game-detail-label">PERSONAL RECORD</p>
+                        <p class="game-detail-label">わたしの記録</p>
                         <p id="game-note-preview-text"></p>
                     </div>
 
-                    <p id="game-detail-keywords-label" class="game-detail-keywords-label" hidden>KEYWORDS</p>
+                    <p id="game-detail-keywords-label" class="game-detail-keywords-label" hidden>キーワード</p>
                     <div id="game-detail-tags" class="game-detail-tags" hidden></div>
 
-                    <a id="game-open-record" class="game-open-record" href="game-record.html">OPEN FULL RECORD →</a>
+                    <a id="game-open-record" class="game-open-record" href="game-record.html">記録を全部見る →</a>
 
                     <div id="game-admin-actions" class="game-admin-actions" hidden>
-                        <button id="game-edit-record" type="button">EDIT RECORD</button>
-                        <button id="game-add-character" type="button">＋ ADD CHARACTER</button>
-                        <a id="game-write-afterglow" href="write.html">＋ WRITE AFTERGLOW</a>
+                        <button id="game-edit-record" type="button">記録を編集</button>
+                        <button id="game-add-character" type="button">＋ キャラクターを追加</button>
+                        <a id="game-write-afterglow" href="write.html">＋ ゲーム感想を書く</a>
                     </div>
                 </div>
             </header>
 
             <section id="game-related-writing-section" class="game-detail-section game-related-writing-section" hidden>
                 <div class="game-detail-section-heading">
-                    <div><p class="game-detail-label">WRITING / AFTERGLOW</p><span>STORIES LINKED TO THIS GAME</span></div>
-                    <span id="game-related-writing-count">00 STORIES</span>
+                    <div><p class="game-detail-label">かきもの / 余韻</p><span>このゲームに結びついた文章</span></div>
+                    <span id="game-related-writing-count">00 篇</span>
                 </div>
                 <div id="game-related-writing-list" class="game-related-writing-list"></div>
             </section>

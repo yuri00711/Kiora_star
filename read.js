@@ -97,10 +97,10 @@
     const returningHome = returnState?.href === "/" || returnState?.href.endsWith("/index.html");
     if (returningToGame) {
         document.getElementById("reader-back").textContent = "← BACK TO GAME";
-        document.getElementById("back-to-category").textContent = "BACK TO GAME";
+        document.getElementById("back-to-category").textContent = "ゲームへ戻る";
     } else if (returningHome) {
         document.getElementById("reader-back").textContent = "← BACK HOME";
-        document.getElementById("back-to-category").textContent = "BACK HOME";
+        document.getElementById("back-to-category").textContent = "ホームへ戻る";
     }
 
     const settingsButton = document.getElementById("reader-settings-button");

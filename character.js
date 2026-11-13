@@ -41,12 +41,12 @@
     });
 
     document.title = `${character.name || "Character Record"} · Kiora`;
-    document.getElementById("character-index").textContent = `CHARACTER ${String(character.sort_order ?? character.id).padStart(2, "0")}`;
-    document.getElementById("character-name").textContent = character.name || "CHARACTER";
+    document.getElementById("character-index").textContent = `キャラクター ${String(character.sort_order ?? character.id).padStart(2, "0")}`;
+    document.getElementById("character-name").textContent = character.name || "キャラクター";
     document.getElementById("character-rating").textContent = character.rating !== null && character.rating !== undefined && character.rating !== ""
         ? `${character.rating} / 10`
         : "—";
-    document.getElementById("character-game-title").textContent = game?.title || "GAME ARCHIVE";
+    document.getElementById("character-game-title").textContent = game?.title || "ゲーム記録";
     const gameLink = document.getElementById("character-game-link");
     gameLink.href = gameId ? `game.html?id=${encodeURIComponent(gameId)}` : "games.html";
     gameLink.addEventListener("click", () => navigation?.capture({ label: character.name || "Character" }));

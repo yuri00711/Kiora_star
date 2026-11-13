@@ -38,8 +38,8 @@
 
     const archiveNumber = String(game.sort_order ?? game.id).padStart(3, "0");
     document.title = `${game.title || "Game"} · Full Record · Kiora`;
-    document.getElementById("record-archive-number").textContent = `ARCHIVE ${archiveNumber} / FULL RECORD`;
-    document.getElementById("record-title").textContent = game.title || "UNTITLED";
+    document.getElementById("record-archive-number").textContent = `記録 ${archiveNumber} / 全記録`;
+    document.getElementById("record-title").textContent = game.title || "タイトル未設定";
 
     const original = common.firstValue(game, ["original_title", "title_jp", "japanese_title"]);
     if (original) {
@@ -49,7 +49,7 @@
 
     document.getElementById("record-rating").textContent = game.rating !== null && game.rating !== undefined && game.rating !== ""
         ? `✦ ${game.rating} / 10`
-        : "UNRATED";
+        : "未評価";
     const startedDate = common.formatPureDate(common.firstValue(game, ["started_at", "start_date"]));
     const completedDate = common.formatPureDate(common.firstValue(game, ["completed_at", "completed_date", "finished_at", "played_at", "played_date"]));
     document.getElementById("record-played").textContent = startedDate && completedDate
@@ -73,10 +73,10 @@
 
     const links = [];
     const officialUrl = common.safeUrl(game.official_site_url);
-    if (officialUrl) links.push({ label: "OFFICIAL SITE", url: officialUrl });
+    if (officialUrl) links.push({ label: "公式サイト", url: officialUrl });
     common.normalizeStoreLinks(game.store_links).forEach((item) => {
         const url = common.safeUrl(item.url);
-        if (url) links.push({ label: String(item.label || "STORE").toUpperCase(), url });
+        if (url) links.push({ label: String(item.label || "ストア"), url });
     });
     if (links.length) {
         const container = document.getElementById("record-links");
@@ -120,7 +120,7 @@
             const label = document.createElement("small");
             label.textContent = common.formatDate(writing.published_at);
             const title = document.createElement("strong");
-            title.textContent = writing.title || "UNTITLED";
+            title.textContent = writing.title || "タイトル未設定";
             copy.append(label, title);
             if (writing.subtitle || writing.excerpt) {
                 const note = document.createElement("p");
@@ -128,11 +128,11 @@
                 copy.append(note);
             }
             const arrow = document.createElement("i");
-            arrow.textContent = "READ →";
+            arrow.textContent = "読む →";
             link.append(copy, arrow);
             list.append(link);
         });
-        document.getElementById("record-writing-count").textContent = `${String(relatedWritings.length).padStart(2, "0")} ${relatedWritings.length === 1 ? "STORY" : "STORIES"}`;
+        document.getElementById("record-writing-count").textContent = `${String(relatedWritings.length).padStart(2, "0")} 篇`;
         document.getElementById("record-writing-section").hidden = false;
     }
 
@@ -161,9 +161,9 @@
         copy.className = "game-character-copy";
         const meta = document.createElement("p");
         meta.className = "game-character-meta";
-        meta.textContent = `CHARACTER ${String(index + 1).padStart(2, "0")}${character.rating !== null && character.rating !== undefined ? `  /  ✦ ${character.rating}` : ""}`;
+        meta.textContent = `キャラクター ${String(index + 1).padStart(2, "0")}${character.rating !== null && character.rating !== undefined ? `  /  ✦ ${character.rating}` : ""}`;
         const heading = document.createElement("h3");
-        heading.textContent = character.name || "CHARACTER";
+        heading.textContent = character.name || "キャラクター";
         copy.append(meta, heading);
 
         if (character.subtitle) {
@@ -182,24 +182,24 @@
         const view = document.createElement("a");
         view.className = "game-character-view";
         view.href = `character.html?id=${encodeURIComponent(character.id)}&gameId=${encodeURIComponent(game.id)}`;
-        view.textContent = "VIEW IMPRESSION →";
+        view.textContent = "感想を見る →";
         view.addEventListener("click", () => navigation?.capture({ label: game.title }));
         copy.append(view);
         card.append(copy);
         list.append(card);
     });
 
-    document.getElementById("record-character-count").textContent = `${String(characterList.length).padStart(2, "0")} ROUTE${characterList.length === 1 ? "" : "S"}`;
+    document.getElementById("record-character-count").textContent = `${String(characterList.length).padStart(2, "0")} 人`;
     document.getElementById("record-character-empty").hidden = characterList.length !== 0;
 
     const recordIndex = document.getElementById("record-section-index");
     let visibleSectionNumber = 0;
     [
-        ["record-description-section", "INTRODUCTION"],
-        ["record-note-section", "GAME NOTE"],
-        ["record-characters-section", `CHARACTERS · ${characterList.length}`],
-        ["record-writing-section", `WRITING · ${relatedWritings.length}`],
-        ["record-links-section", "LINKS"]
+        ["record-description-section", "ゲームについて"],
+        ["record-note-section", "ゲームメモ"],
+        ["record-characters-section", `キャラクター · ${characterList.length}`],
+        ["record-writing-section", `かきもの · ${relatedWritings.length}`],
+        ["record-links-section", "リンク"]
     ].forEach(([sectionId, label]) => {
         const section = document.getElementById(sectionId);
         if (!section || section.hidden) return;
@@ -212,7 +212,7 @@
     recordIndex.hidden = !recordIndex.childElementCount;
 
     const updatedAt = common.firstValue(game, ["updated_at", "created_at"]);
-    document.getElementById("record-updated").textContent = updatedAt ? `UPDATED / ${common.formatDate(updatedAt)}` : "";
+    document.getElementById("record-updated").textContent = updatedAt ? `更新 / ${common.formatDate(updatedAt)}` : "";
     status.hidden = true;
     record.hidden = false;
     window.KioraGameRecordData = { game, characters: characterList };

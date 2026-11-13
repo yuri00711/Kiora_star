@@ -27,8 +27,8 @@
         isAdmin = auth.can("tier-board:create") || auth.can("tier-board:edit");
         if (boardsResult.error) {
             statusLine.textContent = boardsResult.error.message.includes("tier_boards")
-                ? "Tier Board 尚未启用。请先运行 supabase-games-migration.sql。"
-                : `Tier Board unavailable: ${boardsResult.error.message}`;
+                ? "ティア表はまだ有効になっていません。先に supabase-games-migration.sql を実行してください。"
+                : `ティア表を読み込めません：${boardsResult.error.message}`;
             return;
         }
         games = gamesResult.data || [];
@@ -39,7 +39,7 @@
         renderTabs();
         if (activeBoard) await loadBoard(activeBoard.id);
         else {
-            statusLine.textContent = isAdmin ? "Create the first board to begin arranging games." : "No Tier Boards have been published yet.";
+            statusLine.textContent = isAdmin ? "最初のボードを作って、ゲームを並べましょう。" : "公開されているティア表はまだありません。";
             boardRoot.hidden = true;
         }
     }
@@ -64,7 +64,7 @@
         if (!isAdmin) return;
         const add = document.createElement("button");
         add.type = "button";
-        add.textContent = "＋ NEW BOARD";
+        add.textContent = "＋ 新しいボード";
         add.addEventListener("click", createBoard);
         root.append(add);
     }
@@ -115,7 +115,7 @@
         if (!sections.length) {
             const empty = document.createElement("p");
             empty.className = "tier-empty";
-            empty.textContent = isAdmin ? "Add a tier to begin this board." : "This board has no sections yet.";
+            empty.textContent = isAdmin ? "段を追加して、このボードを始めましょう。" : "このボードにはまだ段がありません。";
             root.append(empty);
         }
         renderUnassigned();
@@ -127,17 +127,17 @@
         root.replaceChildren();
         if (!isAdmin) return;
         root.append(
-            button("EDIT BOARD", editBoard),
-            button("＋ ADD TIER", createTierSection),
-            button("EXPORT TIER IMAGE", exportBoard, "export-button")
+            button("ボードを編集", editBoard),
+            button("＋ 段を追加", createTierSection),
+            button("ティア画像を書き出す", exportBoard, "export-button")
         );
-        if (auth.role === "owner") root.append(button("DELETE BOARD", deleteBoard, "danger-button"));
+        if (auth.role === "owner") root.append(button("ボードを削除", deleteBoard, "danger-button"));
         const label = document.createElement("label");
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = showNamesInExport;
         checkbox.addEventListener("change", () => { showNamesInExport = checkbox.checked; });
-        label.append(checkbox, " SHOW GAME NAMES");
+        label.append(checkbox, " ゲーム名を表示");
         root.append(label);
     }
 
@@ -147,7 +147,7 @@
         article.dataset.sectionId = section.id;
         const heading = document.createElement("header");
         const copy = document.createElement("div");
-        const number = document.createElement("p"); number.textContent = `TIER ${String(index + 1).padStart(2, "0")}`;
+        const number = document.createElement("p"); number.textContent = `ティア ${String(index + 1).padStart(2, "0")}`;
         const title = document.createElement("h3"); title.textContent = section.title;
         const description = document.createElement("span"); description.textContent = section.description || ""; description.hidden = !section.description;
         copy.append(number, title, description);
@@ -156,14 +156,14 @@
             const controls = document.createElement("div");
             controls.className = "tier-controls";
             const handle = button("↕", () => {}, "tier-drag-handle");
-            handle.setAttribute("aria-label", "Drag tier");
+            handle.setAttribute("aria-label", "段を移動");
             handle.dataset.dragKind = "tier";
             handle.dataset.dragId = section.id;
             controls.append(
                 handle,
                 button("↑", () => shiftTier(section.id, -1), "tier-order-button"),
                 button("↓", () => shiftTier(section.id, 1), "tier-order-button"),
-                button("EDIT", () => editTier(section))
+                button("編集", () => editTier(section))
             );
             if (auth.role === "owner") controls.append(button("×", () => deleteTier(section), "danger-button"));
             heading.append(controls);
@@ -176,7 +176,7 @@
             if (game) dropzone.append(createGameTile(game, item));
         });
         if (!dropzone.children.length) {
-            const empty = document.createElement("p"); empty.className = "drop-hint"; empty.textContent = isAdmin ? "DROP A GAME HERE" : "—"; dropzone.append(empty);
+            const empty = document.createElement("p"); empty.className = "drop-hint"; empty.textContent = isAdmin ? "ここにゲームを置く" : "—"; dropzone.append(empty);
         }
         article.append(heading, dropzone);
         return article;
@@ -196,11 +196,11 @@
             image.addEventListener("error", () => cover.replaceChildren("✦"), { once: true });
             cover.append(image);
         } else cover.textContent = "✦";
-        const name = document.createElement("p"); name.textContent = game.title || "UNTITLED";
+        const name = document.createElement("p"); name.textContent = game.title || "タイトル未設定";
         tile.append(cover, name);
         if (isAdmin) {
             const handle = button("⋮⋮", () => {}, "game-drag-handle");
-            handle.setAttribute("aria-label", `Drag ${game.title || "game"}`);
+            handle.setAttribute("aria-label", `${game.title || "ゲーム"}を移動`);
             handle.dataset.dragKind = "game";
             handle.dataset.dragId = game.id;
             tile.append(handle);
@@ -222,66 +222,66 @@
         const root = document.getElementById("unassigned-games");
         root.replaceChildren(...unassigned.map((game) => createGameTile(game)));
         if (!unassigned.length) {
-            const empty = document.createElement("p"); empty.className = "drop-hint"; empty.textContent = "ALL GAMES ARE FILED"; root.append(empty);
+            const empty = document.createElement("p"); empty.className = "drop-hint"; empty.textContent = "すべてのゲームを分類しました"; root.append(empty);
         }
     }
 
     async function createBoard() {
-        const title = prompt("Tier Board title");
+        const title = prompt("ティアボードのタイトル");
         if (!title?.trim()) return;
-        const description = prompt("Description (optional)") || null;
+        const description = prompt("説明（任意）") || null;
         const payload = { title: title.trim(), description, sort_order: boards.length };
         const { data, error } = await auth.write("tier_board_create", payload, () => db.from("tier_boards").insert(payload).select("id,title,description,sort_order,created_at,updated_at").single());
-        if (error) return alert(`Create failed: ${error.message}`);
+        if (error) return alert(`作成できませんでした：${error.message}`);
         boards.push(data); activeBoard = data; sections = []; items = [];
         history.replaceState(history.state, "", `?id=${encodeURIComponent(data.id)}`);
         renderTabs(); renderBoard();
     }
 
     async function editBoard() {
-        const title = prompt("Tier Board title", activeBoard.title);
+        const title = prompt("ティアボードのタイトル", activeBoard.title);
         if (!title?.trim()) return;
-        const description = prompt("Description (optional)", activeBoard.description || "") || null;
+        const description = prompt("説明（任意）", activeBoard.description || "") || null;
         const payload = { id: activeBoard.id, title: title.trim(), description };
         const { error } = await auth.write("tier_board_update", payload, () => db.from("tier_boards").update({ title: payload.title, description }).eq("id", activeBoard.id));
-        if (error) return alert(`Save failed: ${error.message}`);
+        if (error) return alert(`保存できませんでした：${error.message}`);
         Object.assign(activeBoard, { title: title.trim(), description }); renderTabs(); renderBoard();
     }
 
     async function deleteBoard() {
         if (auth.role !== "owner") return;
-        if (!confirm(`Delete “${activeBoard.title}” and all of its tiers?`)) return;
+        if (!confirm(`「${activeBoard.title}」と中の段をすべて削除しますか？`)) return;
         const { error } = await db.from("tier_boards").delete().eq("id", activeBoard.id);
-        if (error) return alert(`Delete failed: ${error.message}`);
+        if (error) return alert(`削除できませんでした：${error.message}`);
         boards = boards.filter((board) => board !== activeBoard); activeBoard = boards[0] || null; renderTabs();
-        if (activeBoard) await loadBoard(activeBoard.id); else { boardRoot.hidden = true; statusLine.hidden = false; statusLine.textContent = "Create the first board to begin arranging games."; }
+        if (activeBoard) await loadBoard(activeBoard.id); else { boardRoot.hidden = true; statusLine.hidden = false; statusLine.textContent = "最初のボードを作って、ゲームを並べましょう。"; }
     }
 
     async function createTierSection() {
-        const title = prompt("Tier title");
+        const title = prompt("段のタイトル");
         if (!title?.trim()) return;
-        const description = prompt("Tier description (optional)") || null;
+        const description = prompt("段の説明（任意）") || null;
         const payload = { board_id: activeBoard.id, title: title.trim(), description, sort_order: sections.length };
         const { data, error } = await auth.write("tier_section_create", payload, () => db.from("tier_sections").insert(payload).select("id,board_id,title,description,sort_order,created_at,updated_at").single());
-        if (error) return alert(`Create failed: ${error.message}`);
+        if (error) return alert(`作成できませんでした：${error.message}`);
         sections.push(data); renderBoard();
     }
 
     async function editTier(section) {
-        const title = prompt("Tier title", section.title);
+        const title = prompt("段のタイトル", section.title);
         if (!title?.trim()) return;
-        const description = prompt("Tier description (optional)", section.description || "") || null;
+        const description = prompt("段の説明（任意）", section.description || "") || null;
         const payload = { id: section.id, title: title.trim(), description };
         const { error } = await auth.write("tier_section_update", payload, () => db.from("tier_sections").update({ title: payload.title, description }).eq("id", section.id));
-        if (error) return alert(`Save failed: ${error.message}`);
+        if (error) return alert(`保存できませんでした：${error.message}`);
         Object.assign(section, { title: title.trim(), description }); renderBoard();
     }
 
     async function deleteTier(section) {
         if (auth.role !== "owner") return;
-        if (!confirm(`Delete tier “${section.title}”? Its games will return to UNFILED.`)) return;
+        if (!confirm(`段「${section.title}」を削除しますか？ゲームは未分類へ戻ります。`)) return;
         const { error } = await db.from("tier_sections").delete().eq("id", section.id);
-        if (error) return alert(`Delete failed: ${error.message}`);
+        if (error) return alert(`削除できませんでした：${error.message}`);
         sections = sections.filter((item) => item !== section);
         items = items.filter((item) => String(item.section_id) !== String(section.id));
         await persistTierOrder(); renderBoard();
@@ -307,7 +307,7 @@
         const order = sections.map((section, index) => ({ id: section.id, sort_order: index }));
         const result = await auth.write("tier_sections_reorder", { items: order }, () => Promise.all(order.map((entry) => db.from("tier_sections").update({ sort_order: entry.sort_order }).eq("id", entry.id))).then((results) => ({ data: null, error: results.find((entry) => entry.error)?.error || null })));
         const failed = result.error ? { error: result.error } : null;
-        if (failed) alert(`Sort failed: ${failed.error.message}`);
+        if (failed) alert(`並べ替えに失敗しました：${failed.error.message}`);
         sections.forEach((section, index) => { section.sort_order = index; });
     }
 
@@ -325,7 +325,7 @@
             result = await auth.write("tier_item_move", payload, () => db.from("tier_items").insert(payload).select("id,board_id,section_id,game_id,sort_order,created_at,updated_at").single());
             if (!result.error) items.push(result.data);
         }
-        if (result.error) return alert(`Move failed: ${result.error.message}`);
+        if (result.error) return alert(`移動できませんでした：${result.error.message}`);
         const moved = items.find((item) => String(item.game_id) === String(gameId));
         const arranged = items.filter((item) => String(item.section_id) === String(sectionId) && item !== moved).sort(byOrder);
         arranged.splice(beforeIndex < 0 ? arranged.length : beforeIndex, 0, moved);
@@ -336,7 +336,7 @@
     async function removeGame(item) {
         if (auth.role !== "owner") return;
         const { error } = await db.from("tier_items").delete().eq("id", item.id);
-        if (error) return alert(`Remove failed: ${error.message}`);
+        if (error) return alert(`取り外せませんでした：${error.message}`);
         items = items.filter((entry) => entry !== item); await normalizeItemOrders(); renderBoard();
     }
 
@@ -350,7 +350,7 @@
         });
         const result = await auth.write("tier_items_reorder", { items: updates }, () => Promise.all(updates.map((entry) => db.from("tier_items").update({ sort_order: entry.sort_order }).eq("id", entry.id))).then((results) => ({ data: null, error: results.find((entry) => entry.error)?.error || null })));
         const failed = result.error ? { error: result.error } : null;
-        if (failed) alert(`Sort failed: ${failed.error.message}`);
+        if (failed) alert(`並べ替えに失敗しました：${failed.error.message}`);
     }
 
     function installDragTargets() {
@@ -458,7 +458,7 @@
         ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
         ctx.strokeStyle = "rgba(109,85,116,.18)"; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(1080, 120, 150, 0, Math.PI * 2); ctx.stroke();
-        ctx.fillStyle = "#a183a3"; ctx.font = "18px Georgia"; ctx.fillText("KIORA.SPACE / TIER ARCHIVE", 72, 64);
+        ctx.fillStyle = "#a183a3"; ctx.font = "18px sans-serif"; ctx.fillText("KIORA.SPACE / ティア記録", 72, 64);
         ctx.fillStyle = "#4f4653"; ctx.font = "46px Georgia"; ctx.fillText(activeBoard.title, 72, 125);
         if (activeBoard.description) { ctx.fillStyle = "#887b8c"; ctx.font = "19px Georgia"; ctx.fillText(activeBoard.description.slice(0, 84), 73, 165); }
         ctx.strokeStyle = "rgba(92,72,98,.22)"; ctx.beginPath(); ctx.moveTo(72, 195); ctx.lineTo(1128, 195); ctx.stroke();
@@ -472,7 +472,7 @@
             ctx.fillStyle = sectionIndex % 2 ? "rgba(255,255,255,.48)" : "rgba(255,253,250,.66)";
             ctx.fillRect(48, y, 1104, tierHeight - 12);
             ctx.strokeStyle = "rgba(102,80,109,.18)"; ctx.strokeRect(48.5, y + .5, 1103, tierHeight - 13);
-            ctx.fillStyle = "#967596"; ctx.font = "13px Georgia"; ctx.fillText(`TIER ${String(sectionIndex + 1).padStart(2, "0")}`, 72, y + 39);
+            ctx.fillStyle = "#967596"; ctx.font = "13px sans-serif"; ctx.fillText(`ティア ${String(sectionIndex + 1).padStart(2, "0")}`, 72, y + 39);
             ctx.fillStyle = "#514853"; ctx.font = "27px Georgia"; ctx.fillText(section.title, 72, y + 75);
             if (section.description) { ctx.fillStyle = "#928695"; ctx.font = "14px Georgia"; ctx.fillText(section.description.slice(0, 28), 72, y + 103); }
             const tierItems = items.filter((item) => String(item.section_id) === String(section.id)).sort(byOrder);
@@ -487,14 +487,14 @@
                     const sw = 116 / scale, sh = 158 / scale;
                     ctx.drawImage(image, (image.width - sw) / 2, (image.height - sh) / 2, sw, sh, x, rowY, 116, 158);
                 } else { ctx.fillStyle = "#a98daa"; ctx.font = "20px Georgia"; ctx.fillText("✦", x + 49, rowY + 86); }
-                if (showNamesInExport) { ctx.fillStyle = "#5d5260"; ctx.font = "13px Georgia"; const name = (game.title || "UNTITLED"); ctx.fillText(name.length > 15 ? `${name.slice(0, 14)}…` : name, x, rowY + 183); }
+                if (showNamesInExport) { ctx.fillStyle = "#5d5260"; ctx.font = "13px sans-serif"; const name = (game.title || "タイトル未設定"); ctx.fillText(name.length > 15 ? `${name.slice(0, 14)}…` : name, x, rowY + 183); }
             });
             y += tierHeight;
         });
-        ctx.fillStyle = "#9c8e9f"; ctx.font = "13px Georgia"; ctx.fillText("KIORA / PRIVATE GAME ARCHIVE", 72, height - 52);
+        ctx.fillStyle = "#9c8e9f"; ctx.font = "13px sans-serif"; ctx.fillText("KIORA / ひみつのゲーム記録", 72, height - 52);
         ctx.textAlign = "right"; ctx.fillText(new Date().toLocaleDateString("ja-JP").replaceAll("/", "."), 1128, height - 52);
         canvas.toBlob((blob) => {
-            if (!blob) return alert("Export failed.");
+            if (!blob) return alert("画像を書き出せませんでした。");
             const anchor = document.createElement("a"); anchor.href = URL.createObjectURL(blob); anchor.download = `kiora-tier-${String(activeBoard.title).replace(/[^\p{L}\p{N}]+/gu, "-")}.png`; anchor.click();
             setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
         }, "image/png");

@@ -808,7 +808,7 @@ function updateGameCoverPreview(url) {
     const safeUrl = String(url || "").startsWith("blob:") ? String(url) : safeImageUrl(url);
     if (!safeUrl) {
         const empty = document.createElement("span");
-        empty.textContent = "NO COVER";
+        empty.textContent = "表紙なし";
         preview.append(empty);
         preview.classList.remove("has-image");
         return;
@@ -1003,7 +1003,7 @@ if (gameForm) {
             const dateMessage = document.getElementById("game-date-message");
             dateMessage.textContent = "";
             if (startedAt && completedAt && completedAt < startedAt) {
-                dateMessage.textContent = "COMPLETED 不能早于 STARTED。";
+                dateMessage.textContent = "終了日は開始日より前に設定できません。";
                 document.getElementById("game-completed-at").focus();
                 return;
             }
@@ -1037,7 +1037,7 @@ if (gameForm) {
                 }
                 const extension = (coverFile.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
                 const uploadPath = `collections/games/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension || "jpg"}`;
-                message.textContent = "Uploading cover…";
+                message.textContent = "表紙をアップロードしています…";
                 const upload = await kioraAuth.uploadSiteMedia(coverFile, uploadPath);
                 if (upload.error) {
                     message.textContent = "封面上传失败：" + upload.error.message;
@@ -1096,7 +1096,7 @@ if (gameForm) {
             };
 
 
-            message.textContent = "Saving…";
+            message.textContent = "保存しています…";
             gameSaveInProgress = true;
             const submitButton = gameForm.querySelector('button[type="submit"]');
             if (submitButton) submitButton.disabled = true;
@@ -1145,7 +1145,7 @@ if (gameForm) {
                 setGameEditorMode(savedGame);
                 renderCharacterEditorList([]);
                 gameModal.dataset.dirty = "false";
-                message.textContent = "Record created. Continue with your impression or character notes.";
+                message.textContent = "記録を作成しました。続けて感想やキャラクターメモを書けます。";
                 setGameEditorPane("afterglow", true);
                 return;
             }
@@ -1526,7 +1526,7 @@ function updateCharacterEditorPreview() {
         image.append(preview);
     } else {
         const empty = document.createElement("span");
-        empty.textContent = "NO IMAGE";
+        empty.textContent = "画像なし";
         image.append(empty);
     }
 }

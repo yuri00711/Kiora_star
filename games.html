@@ -84,20 +84,20 @@
                 <p id="games-count" aria-live="polite"></p>
             </div>
             <div id="active-filters" class="active-filters" hidden></div>
-            <p id="games-status" class="games-status" role="status">Reading the archive…</p>
+            <p id="games-status" class="games-status" role="status">アーカイブを開いています…</p>
             <div id="games-list" class="games-grid" hidden></div>
         </section>
     </main>
 
-    <footer class="games-footer"><span>KIORA / PRIVATE ARCHIVE</span><a href="/">RETURN HOME ↑</a></footer>
+    <footer class="games-footer"><span>KIORA / ひみつの記録</span><a href="/">ホームへ戻る ↑</a></footer>
 
     <div id="filter-sheet" class="filter-sheet" hidden>
         <button class="filter-sheet-backdrop" type="button" aria-label="Close filters"></button>
         <section class="filter-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="filter-sheet-title">
             <div class="sheet-handle" aria-hidden="true"></div>
-            <header><div><p>ARCHIVE INDEX</p><h2 id="filter-sheet-title">Filter records</h2></div><button id="close-filters" type="button" aria-label="Close filters">×</button></header>
+            <header><div><p>アーカイブの索引</p><h2 id="filter-sheet-title">ゲームを絞り込む</h2></div><button id="close-filters" type="button" aria-label="絞り込みを閉じる">×</button></header>
             <div id="mobile-filters" class="mobile-filter-content"></div>
-            <div class="sheet-actions"><button id="mobile-clear" type="button">CLEAR</button><button id="apply-filters" type="button">VIEW RECORDS</button></div>
+            <div class="sheet-actions"><button id="mobile-clear" type="button">クリア</button><button id="apply-filters" type="button">結果を見る</button></div>
         </section>
     </div>
 
@@ -116,22 +116,22 @@
 
             <header class="game-editor-header">
                 <div>
-                    <p id="game-editor-mode" class="modal-label">CREATE MODE</p>
-                    <h3 id="game-modal-title">New record</h3>
-                    <p id="game-editor-description" class="game-editor-description">Create a new archive entry.</p>
+                    <p id="game-editor-mode" class="modal-label">新規作成</p>
+                    <h3 id="game-modal-title">新しい記録</h3>
+                    <p id="game-editor-description" class="game-editor-description">新しいゲーム記録を作ります。</p>
                 </div>
                 <span class="game-editor-mark" aria-hidden="true">✦</span>
             </header>
 
             <nav class="game-editor-tabs" aria-label="Game editor sections" role="tablist">
                 <button type="button" role="tab" aria-selected="true" data-game-editor-tab="overview">
-                    <span>01</span><strong>OVERVIEW</strong><small>基础资料</small>
+                    <span>01</span><strong>基本情報</strong><small>ゲームの資料</small>
                 </button>
                 <button type="button" role="tab" aria-selected="false" data-game-editor-tab="afterglow">
-                    <span>02</span><strong>AFTERGLOW</strong><small>游戏感想</small>
+                    <span>02</span><strong>余韻</strong><small>ゲーム感想</small>
                 </button>
                 <button type="button" role="tab" aria-selected="false" data-game-editor-tab="characters">
-                    <span>03</span><strong>CHARACTERS</strong><small>角色印象</small>
+                    <span>03</span><strong>キャラクター</strong><small>キャラクターの印象</small>
                 </button>
             </nav>
 
@@ -144,26 +144,26 @@
 
                 <div class="game-editor-pane" data-game-editor-pane="overview" role="tabpanel">
                 <section class="game-editor-section" aria-labelledby="game-basic-heading">
-                    <div class="game-editor-section-heading"><span>01</span><h4 id="game-basic-heading">BASIC</h4></div>
+                    <div class="game-editor-section-heading"><span>01</span><h4 id="game-basic-heading">基本情報</h4></div>
                     <div class="game-basic-grid">
                         <div class="game-cover-editor">
-                            <div id="game-cover-preview" class="game-cover-preview" aria-live="polite"><span>NO COVER</span></div>
-                            <label class="game-upload-button" for="game-cover-upload">UPLOAD IMAGE</label>
+                            <div id="game-cover-preview" class="game-cover-preview" aria-live="polite"><span>画像なし</span></div>
+                            <label class="game-upload-button" for="game-cover-upload">画像をアップロード</label>
                             <input id="game-cover-upload" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-                            <p class="game-field-note">JPG / PNG / WEBP / GIF · MAX 5MB</p>
+                            <p class="game-field-note">JPG / PNG / WEBP / GIF · 最大 5MB</p>
                         </div>
                         <div class="game-basic-fields">
-                            <label>TITLE<input id="game-title" type="text" required autocomplete="off"></label>
-                            <label>COVER IMAGE URL<input id="game-cover-url" type="url" placeholder="https://..."></label>
+                            <label>タイトル<input id="game-title" type="text" required autocomplete="off"></label>
+                            <label>カバー画像URL<input id="game-cover-url" type="url" placeholder="https://..."></label>
                             <div class="form-grid">
-                                <label>RATING<input id="game-rating" type="number" min="0" max="10" step="0.1" inputmode="decimal"></label>
-                                <label>SORT ORDER<input id="game-sort-order" type="number" inputmode="numeric"></label>
+                                <label>評価<input id="game-rating" type="number" min="0" max="10" step="0.1" inputmode="decimal"></label>
+                                <label>並び順<input id="game-sort-order" type="number" inputmode="numeric"></label>
                             </div>
                             <div class="game-played-date">
-                                <p class="game-control-label">PLAYED DATE</p>
+                                <p class="game-control-label">プレイした日</p>
                                 <div class="form-grid">
-                                    <label>STARTED<input id="game-started-at" type="date"></label>
-                                    <label>COMPLETED<input id="game-completed-at" type="date"></label>
+                                    <label>開始日<input id="game-started-at" type="date"></label>
+                                    <label>クリア日<input id="game-completed-at" type="date"></label>
                                 </div>
                                 <p id="game-date-message" class="field-validation-message" role="alert"></p>
                             </div>
@@ -172,21 +172,21 @@
                 </section>
 
                 <section class="game-editor-section" aria-labelledby="game-archive-heading">
-                    <div class="game-editor-section-heading"><span>02</span><h4 id="game-archive-heading">ARCHIVE</h4></div>
+                    <div class="game-editor-section-heading"><span>02</span><h4 id="game-archive-heading">記録の整理</h4></div>
                     <div class="game-archive-grid">
-                        <label>STATUS
+                        <label>状態
                             <select id="game-status">
-                                <option value="">UNFILED</option><option value="PLAYING">PLAYING</option><option value="COMPLETED">COMPLETED</option><option value="PAUSED">PAUSED</option><option value="DROPPED">DROPPED</option><option value="WISHLIST">WISHLIST</option>
+                                <option value="">未分類</option><option value="PLAYING">プレイ中</option><option value="COMPLETED">クリア済み</option><option value="PAUSED">休止中</option><option value="DROPPED">中断</option><option value="WISHLIST">気になる</option>
                             </select>
                         </label>
-                        <label>FAVORITE LEVEL
+                        <label>お気に入り度
                             <select id="game-favorite-level">
-                                <option value="">NONE / UNFILED</option><option value="FAVORITE">FAVORITE</option><option value="BELOVED">BELOVED</option><option value="LOVE">LOVE</option><option value="LIKE">LIKE</option><option value="NEUTRAL">NEUTRAL</option><option value="NOT FOR ME">NOT FOR ME</option>
+                                <option value="">未設定</option><option value="FAVORITE">お気に入り</option><option value="BELOVED">とても大切</option><option value="LOVE">大好き</option><option value="LIKE">好き</option><option value="NEUTRAL">ふつう</option><option value="NOT FOR ME">好みではない</option>
                             </select>
                         </label>
                     </div>
                     <fieldset class="game-platform-fieldset">
-                        <legend>PLATFORM</legend>
+                        <legend>機種</legend>
                         <div class="game-platform-options">
                             <label><input type="checkbox" name="game-platform" value="SWITCH"><span>SWITCH</span></label>
                             <label><input type="checkbox" name="game-platform" value="STEAM"><span>STEAM</span></label>
@@ -195,33 +195,33 @@
                             <label><input type="checkbox" name="game-platform" value="PSP"><span>PSP</span></label>
                             <label><input type="checkbox" name="game-platform" value="PS4"><span>PS4</span></label>
                             <label><input type="checkbox" name="game-platform" value="PS5"><span>PS5</span></label>
-                            <label><input type="checkbox" name="game-platform" value="MOBILE"><span>MOBILE</span></label>
-                            <label><input type="checkbox" name="game-platform" value="OTHER"><span>OTHER</span></label>
+                            <label><input type="checkbox" name="game-platform" value="MOBILE"><span>モバイル</span></label>
+                            <label><input type="checkbox" name="game-platform" value="OTHER"><span>その他</span></label>
                         </div>
                     </fieldset>
                     <div class="game-tag-field">
-                        <label class="game-control-label" for="game-tag-entry">TAGS</label>
+                        <label class="game-control-label" for="game-tag-entry">タグ</label>
                         <div id="game-tag-list" class="game-tag-list"></div>
-                        <div class="game-tag-entry"><input id="game-tag-entry" type="text" placeholder="Type a tag"><button id="game-add-tag" type="button">＋ ADD TAG</button></div>
+                        <div class="game-tag-entry"><input id="game-tag-entry" type="text" placeholder="タグを入力"><button id="game-add-tag" type="button">＋ タグを追加</button></div>
                         <input id="game-tags" type="hidden">
                     </div>
                     <div class="game-links-grid">
-                        <label>OFFICIAL SITE URL<input id="game-official-site-url" type="url" placeholder="https://..."></label>
-                        <label>STORE LINKS <span>ONE PER LINE: LABEL | URL</span><textarea id="game-store-links" rows="3" placeholder="NINTENDO | https://..."></textarea></label>
+                        <label>公式サイトURL<input id="game-official-site-url" type="url" placeholder="https://..."></label>
+                        <label>ストアリンク <span>1行ずつ：名前 | URL</span><textarea id="game-store-links" rows="3" placeholder="NINTENDO | https://..."></textarea></label>
                     </div>
                 </section>
                 </div>
 
                 <div class="game-editor-pane" data-game-editor-pane="afterglow" role="tabpanel" hidden>
                     <section class="game-editor-section game-review-section" aria-labelledby="game-review-heading">
-                        <div class="game-editor-section-heading"><span>02</span><h4 id="game-review-heading">AFTERGLOW / PERSONAL NOTE</h4></div>
+                        <div class="game-editor-section-heading"><span>02</span><h4 id="game-review-heading">余韻 / ゲーム感想</h4></div>
                         <div class="game-writing-focus">
                             <header>
                                 <p>不用填写完整资料，只写下游戏结束后仍然留下来的感觉。</p>
                                 <span id="game-review-count">0 字</span>
                             </header>
                             <label class="game-review-writing-field">
-                                <span>GAME IMPRESSION</span>
+                                <span>ゲームの感想</span>
                                 <textarea id="game-review" rows="16" placeholder="最先浮现的场景、喜欢或不喜欢的地方、玩完以后仍然记得的感受……"></textarea>
                             </label>
                             <aside class="game-review-guide" aria-label="Writing prompts">
@@ -231,7 +231,7 @@
                                 <p>玩完以后留下了什么？</p>
                             </aside>
                             <button id="game-open-writing" class="game-open-writing" type="button" disabled>
-                                WRITE A FULL AFTERGLOW ARTICLE →
+                                ゲーム感想をじっくり書く →
                                 <small>在 Writing 中写一篇与本游戏关联的长文</small>
                             </button>
                         </div>
@@ -239,7 +239,7 @@
                 </div>
 
                 <!-- =========================
-                 CHARACTER ARCHIVE
+                 キャラクター記録
                 ========================= -->
 
                 <div class="game-editor-pane" data-game-editor-pane="characters" role="tabpanel" hidden>
@@ -247,7 +247,7 @@
 
                     <div class="character-editor-heading">
                         <div>
-                            <div class="game-editor-section-heading"><span>03</span><h4 id="game-character-heading">CHARACTER IMPRESSIONS</h4></div>
+                            <div class="game-editor-section-heading"><span>03</span><h4 id="game-character-heading">キャラクターの印象</h4></div>
                             <p class="character-editor-intro">每位角色单独保存。先选择一位角色，再进入只属于这条路线的记录。</p>
                         </div>
 
@@ -256,7 +256,7 @@
                             class="character-add-button"
                             type="button"
                         >
-                            ＋ ADD CHARACTER
+                            ＋ キャラクターを追加
                         </button>
                     </div>
 
@@ -277,17 +277,17 @@
                         class="modal-primary-button"
                         type="submit"
                     >
-                        SAVE RECORD
+                        記録を保存
                     </button>
 
-                    <button class="modal-secondary-button" data-close-modal type="button">CANCEL</button>
+                    <button class="modal-secondary-button" data-close-modal type="button">キャンセル</button>
 
                     <button
                         id="delete-game-btn"
                         class="modal-danger-button hidden"
                         type="button"
                     >
-                        DELETE
+                        削除
                     </button>
 
                 </div>
@@ -312,8 +312,8 @@
 
             <header class="character-modal-heading">
                 <div>
-                    <p class="modal-label">CHARACTER IMPRESSION</p>
-                    <h3 id="character-modal-title">New character</h3>
+                    <p class="modal-label">キャラクターの印象</p>
+                    <h3 id="character-modal-title">新しいキャラクター</h3>
                     <p id="character-modal-game" class="character-modal-game"></p>
                 </div>
                 <span aria-hidden="true">✦</span>
@@ -326,44 +326,44 @@
 
                 <div class="character-editor-layout">
                     <aside class="character-editor-preview" aria-label="Character preview">
-                        <div id="character-preview-image" class="character-preview-image"><span>NO IMAGE</span></div>
-                        <p>CHARACTER IMPRESSION</p>
-                        <strong id="character-preview-name">UNTITLED</strong>
+                        <div id="character-preview-image" class="character-preview-image"><span>画像なし</span></div>
+                        <p>キャラクターの印象</p>
+                        <strong id="character-preview-name">タイトル未設定</strong>
                         <span id="character-preview-subtitle"></span>
                         <i id="character-preview-rating">✦ —</i>
                     </aside>
 
                     <div class="character-editor-fields">
                         <label>
-                            NAME
+                            名前
                             <input id="character-name" type="text" required autocomplete="off">
                         </label>
 
                         <label>
-                            SUBTITLE / ROUTE NOTE
+                            サブタイトル / ルートメモ
                             <input id="character-subtitle" type="text" placeholder="一句话记住这条路线">
                         </label>
 
                         <div class="form-grid">
                             <label>
-                                RATING
+                                評価
                                 <input id="character-rating" type="number" min="0" max="10" step="0.1">
                             </label>
                             <label>
-                                SORT ORDER
+                                並び順
                                 <input id="character-sort-order" type="number">
                             </label>
                         </div>
 
                         <label>
-                            IMAGE URL
+                            画像URL
                             <input id="character-image-url" type="url" placeholder="https://...">
                         </label>
                     </div>
                 </div>
 
                 <label class="character-review-writing-field">
-                    <span>MY IMPRESSION</span>
+                    <span>わたしの感想</span>
                     <textarea id="character-review" rows="14" placeholder="先写最强烈的感受，再写喜欢的瞬间、矛盾之处和路线结束后的余韵……"></textarea>
                     <small><span id="character-review-count">0 字</span>　不需要写成资料卡，只记录你真正记住的东西。</small>
                 </label>
@@ -379,17 +379,17 @@
                         class="modal-primary-button"
                         type="submit"
                     >
-                        SAVE CHARACTER
+                        キャラクターを保存
                     </button>
 
-                    <button class="modal-secondary-button" data-close-modal type="button">CANCEL</button>
+                    <button class="modal-secondary-button" data-close-modal type="button">キャンセル</button>
 
                     <button
                         id="delete-character-btn"
                         class="modal-danger-button hidden"
                         type="button"
                     >
-                        DELETE CHARACTER
+                        キャラクターを削除
                     </button>
 
                 </div>
