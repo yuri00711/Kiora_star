@@ -109,7 +109,7 @@
 
     function updateStats() {
         const stats = common.readingStats(body.value);
-        field("word-count").textContent = `${stats.characters} 字`;
+        field("word-count").textContent = `${stats.characters} 文字`;
         field("reading-time").textContent = `読む時間 約${stats.minutes}分`;
         if (previewing) preview.innerHTML = common.markdownToHtml(body.value);
     }

@@ -60,11 +60,11 @@
                 <div class="editor-toolbar" role="toolbar" aria-label="Markdown の書式ツール">
                     <button type="button" data-command="undo" title="元に戻す">↶</button>
                     <button type="button" data-command="redo" title="やり直す">↷</button>
-                    <button type="button" data-prefix="# " title="标题">H1</button>
-                    <button type="button" data-prefix="## " title="二级标题">H2</button>
-                    <button type="button" data-wrap="**" title="粗体"><strong>B</strong></button>
+                    <button type="button" data-prefix="# " title="見出し">H1</button>
+                    <button type="button" data-prefix="## " title="小見出し">H2</button>
+                    <button type="button" data-wrap="**" title="太字"><strong>B</strong></button>
                     <button type="button" data-wrap="*" title="斜体"><em>I</em></button>
-                    <button type="button" data-wrap="~~" title="删除线"><s>S</s></button>
+                    <button type="button" data-wrap="~~" title="取り消し線"><s>S</s></button>
                     <button type="button" data-prefix="> " title="引用">❯</button>
                     <button type="button" data-prefix="- " title="箇条書き">• リスト</button>
                     <button type="button" data-prefix="1. " title="番号付きリスト">1. リスト</button>
@@ -75,7 +75,7 @@
                 </div>
                 <textarea id="write-body" rows="24" required spellcheck="true" placeholder="ここから書きはじめる…"></textarea>
                 <div id="write-preview" class="write-preview" hidden></div>
-                <div class="writing-stats"><span id="word-count">0 字</span><span id="reading-time">読む時間 約1分</span></div>
+                <div class="writing-stats"><span id="word-count">0 文字</span><span id="reading-time">読む時間 約1分</span></div>
             </section>
 
             <details class="write-advanced">
@@ -99,7 +99,7 @@
         </form>
     </main>
 
-    <div id="mobile-write-toolbar" class="mobile-write-toolbar" aria-label="移动端写作工具栏" hidden>
+    <div id="mobile-write-toolbar" class="mobile-write-toolbar" aria-label="モバイルの書式ツール" hidden>
         <button type="button" data-prefix="# ">H</button>
         <button type="button" data-wrap="**"><strong>B</strong></button>
         <button type="button" data-wrap="*"><em>I</em></button>
