@@ -6,7 +6,7 @@
     const navigation = window.KioraNavigation;
     const pageParams = new URLSearchParams(window.location.search);
     const STATES = ["PLAYING", "COMPLETED", "PAUSED", "DROPPED", "WISHLIST"];
-    const PLATFORMS = ["SWITCH", "STEAM", "PC", "PSVITA", "PSP", "PS4", "PS5", "MOBILE", "OTHER"];
+    const PLATFORMS = ["SWITCH", "STEAM", "PC", "PSVITA", "MOBILE", "OTHER"];
     const FAVORITES = ["FAVORITE", "BELOVED", "LOVE", "LIKE", "NEUTRAL", "NOT FOR ME", "UNFILED"];
     const STATUS_LABELS = { PLAYING: "プレイ中", COMPLETED: "クリア済み", PAUSED: "休止中", DROPPED: "中断", WISHLIST: "気になる" };
     const FAVORITE_LABELS = { FAVORITE: "いちばん好き", BELOVED: "大切", LOVE: "大好き", LIKE: "好き", NEUTRAL: "ふつう", "NOT FOR ME": "合わなかった", UNFILED: "未分類" };

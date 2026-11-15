@@ -1088,7 +1088,8 @@ if (gameForm) {
 
                 status: document.getElementById("game-status").value || null,
                 favorite_level: document.getElementById("game-favorite-level").value || null,
-                platforms: Array.from(document.querySelectorAll('input[name="game-platform"]:checked')).map((input) => input.value),
+                platforms: Array.from(document.querySelectorAll('input[name="game-platform"]:checked')).map((input) => input.value)
+                    .concat(normalizeGameList(currentGameForCharacters?.platforms).filter((item) => ["PSP", "PS4", "PS5"].includes(String(item).toUpperCase()))),
                 tags: gameTagValues.slice(),
                 official_site_url: document.getElementById("game-official-site-url").value.trim() || null,
                 store_links: parsedStoreLinks.links

@@ -525,7 +525,7 @@
 
 
             setStatus(
-                `Sale data unavailable: ${
+                `セール情報を読み込めません：${
                     error?.message ||
                     error
                 }`,

@@ -6,7 +6,7 @@
     const db = common?.getClient?.();
     let savedScrollY = 0;
 
-    const platforms = ["SWITCH", "STEAM", "PC", "PSVITA", "PSP", "PS4", "PS5", "MOBILE", "OTHER"];
+    const platforms = ["SWITCH", "STEAM", "PC", "PSVITA", "MOBILE", "OTHER"];
 
     function instantScroll(y) {
         requestAnimationFrame(() => {
@@ -251,7 +251,7 @@
                     completed_at: completed,
                     status: nullable(value(form, "status")),
                     favorite_level: nullable(value(form, "favorite_level")),
-                    platforms: [...form.querySelectorAll('[name="platform"]:checked')].map((input) => input.value),
+                    platforms: [...form.querySelectorAll('[name="platform"]:checked')].map((input) => input.value).concat(common.formatList(game.platforms).filter((item) => ["PSP", "PS4", "PS5"].includes(String(item).toUpperCase()))),
                     tags: value(form, "tags").split(/[,，\n]/).map((tag) => tag.trim()).filter((tag, index, all) => tag && all.indexOf(tag) === index),
                     official_site_url: nullable(value(form, "official_site_url")),
                     store_links: parseStoreLinks(value(form, "store_links"))
