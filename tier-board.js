@@ -129,16 +129,9 @@
         root.append(
             button("ボードを編集", editBoard),
             button("＋ 段を追加", createTierSection),
-            button("ティア画像を書き出す", exportBoard, "export-button")
+            button("画像を書き出す", openExportDialog, "export-button")
         );
         if (auth.role === "owner") root.append(button("ボードを削除", deleteBoard, "danger-button"));
-        const label = document.createElement("label");
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = showNamesInExport;
-        checkbox.addEventListener("change", () => { showNamesInExport = checkbox.checked; });
-        label.append(checkbox, " ゲーム名を表示");
-        root.append(label);
     }
 
     function createTier(section, index) {
@@ -433,72 +426,86 @@
         });
     }
 
-    function loadImage(url) {
-        return new Promise((resolve) => {
-            if (!url) return resolve(null);
-            const image = new Image();
-            image.crossOrigin = "anonymous";
-            image.onload = () => resolve(image);
-            image.onerror = () => resolve(null);
-            image.src = url;
-        });
+    const exportDialog = document.getElementById("tier-export-dialog");
+    const exportPreview = document.getElementById("tier-export-preview");
+    const exportStatus = document.getElementById("tier-export-status");
+    const exportDownload = document.getElementById("tier-export-download");
+    const exportNames = document.getElementById("tier-export-show-names");
+    let exportRequest = 0;
+    let exportReturnFocus = null;
+
+    function closeExportDialog() {
+        exportRequest++;
+        exportDialog.hidden = true;
+        exportPreview.replaceChildren();
+        exportStatus.textContent = "";
+        exportReturnFocus?.focus();
+        exportReturnFocus = null;
     }
 
-    async function exportBoard() {
-        const columns = 6;
-        const cardW = 142;
-        const cardH = showNamesInExport ? 225 : 190;
-        const tierHeights = sections.map((section) => Math.max(250, 78 + Math.ceil(items.filter((item) => String(item.section_id) === String(section.id)).length / columns) * cardH));
-        const width = 1200;
-        const height = 230 + tierHeights.reduce((sum, value) => sum + value, 0) + 110;
-        const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        const gradient = ctx.createLinearGradient(0, 0, width, height);
-        gradient.addColorStop(0, "#fcf8f2"); gradient.addColorStop(.52, "#f7eef3"); gradient.addColorStop(1, "#f1eff8");
-        ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
-        ctx.strokeStyle = "rgba(109,85,116,.18)"; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(1080, 120, 150, 0, Math.PI * 2); ctx.stroke();
-        ctx.fillStyle = "#a183a3"; ctx.font = "18px sans-serif"; ctx.fillText("KIORA.SPACE / ティア記録", 72, 64);
-        ctx.fillStyle = "#4f4653"; ctx.font = "46px Georgia"; ctx.fillText(activeBoard.title, 72, 125);
-        if (activeBoard.description) { ctx.fillStyle = "#887b8c"; ctx.font = "19px Georgia"; ctx.fillText(activeBoard.description.slice(0, 84), 73, 165); }
-        ctx.strokeStyle = "rgba(92,72,98,.22)"; ctx.beginPath(); ctx.moveTo(72, 195); ctx.lineTo(1128, 195); ctx.stroke();
-
-        const uniqueGames = [...new Set(items.map((item) => String(item.game_id)))].map(gameById).filter(Boolean);
-        const imageEntries = await Promise.all(uniqueGames.map(async (game) => [String(game.id), await loadImage(safe(game.cover_url))]));
-        const images = new Map(imageEntries);
-        let y = 220;
-        sections.forEach((section, sectionIndex) => {
-            const tierHeight = tierHeights[sectionIndex];
-            ctx.fillStyle = sectionIndex % 2 ? "rgba(255,255,255,.48)" : "rgba(255,253,250,.66)";
-            ctx.fillRect(48, y, 1104, tierHeight - 12);
-            ctx.strokeStyle = "rgba(102,80,109,.18)"; ctx.strokeRect(48.5, y + .5, 1103, tierHeight - 13);
-            ctx.fillStyle = "#967596"; ctx.font = "13px sans-serif"; ctx.fillText(`ティア ${String(sectionIndex + 1).padStart(2, "0")}`, 72, y + 39);
-            ctx.fillStyle = "#514853"; ctx.font = "27px Georgia"; ctx.fillText(section.title, 72, y + 75);
-            if (section.description) { ctx.fillStyle = "#928695"; ctx.font = "14px Georgia"; ctx.fillText(section.description.slice(0, 28), 72, y + 103); }
-            const tierItems = items.filter((item) => String(item.section_id) === String(section.id)).sort(byOrder);
-            tierItems.forEach((item, index) => {
-                const game = gameById(item.game_id); if (!game) return;
-                const x = 285 + (index % columns) * cardW;
-                const rowY = y + 28 + Math.floor(index / columns) * cardH;
-                const image = images.get(String(game.id));
-                ctx.fillStyle = "rgba(239,230,239,.8)"; ctx.fillRect(x, rowY, 116, 158);
-                if (image) {
-                    const scale = Math.max(116 / image.width, 158 / image.height);
-                    const sw = 116 / scale, sh = 158 / scale;
-                    ctx.drawImage(image, (image.width - sw) / 2, (image.height - sh) / 2, sw, sh, x, rowY, 116, 158);
-                } else { ctx.fillStyle = "#a98daa"; ctx.font = "20px Georgia"; ctx.fillText("✦", x + 49, rowY + 86); }
-                if (showNamesInExport) { ctx.fillStyle = "#5d5260"; ctx.font = "13px sans-serif"; const name = (game.title || "タイトル未設定"); ctx.fillText(name.length > 15 ? `${name.slice(0, 14)}…` : name, x, rowY + 183); }
-            });
-            y += tierHeight;
-        });
-        ctx.fillStyle = "#9c8e9f"; ctx.font = "13px sans-serif"; ctx.fillText("KIORA / ひみつのゲーム記録", 72, height - 52);
-        ctx.textAlign = "right"; ctx.fillText(new Date().toLocaleDateString("ja-JP").replaceAll("/", "."), 1128, height - 52);
-        canvas.toBlob((blob) => {
-            if (!blob) return alert("画像を書き出せませんでした。");
-            const anchor = document.createElement("a"); anchor.href = URL.createObjectURL(blob); anchor.download = `kiora-tier-${String(activeBoard.title).replace(/[^\p{L}\p{N}]+/gu, "-")}.png`; anchor.click();
-            setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
-        }, "image/png");
+    function openExportDialog() {
+        if (!activeBoard || !isAdmin) return;
+        exportReturnFocus = document.activeElement;
+        exportDialog.hidden = false;
+        exportNames.checked = showNamesInExport;
+        exportPreview.replaceChildren();
+        exportDownload.disabled = true;
+        exportStatus.textContent = "プレビューを作成しています…";
+        exportDialog.querySelector('[data-tier-export-close]:not(.tier-export-backdrop)').focus();
+        renderExportPreview();
     }
+
+    async function renderExportPreview() {
+        const request = ++exportRequest;
+        showNamesInExport = exportNames.checked;
+        exportPreview.replaceChildren();
+        exportDownload.disabled = true;
+        const assignedCount = window.KioraTierExport.layout(activeBoard, sections, items, games, showNamesInExport).gameCount;
+        if (!assignedCount) {
+            exportStatus.textContent = "このボードにはまだ作品がありません。段を追加し、未分類のゲームを段へ移動してから書き出してください。";
+            return;
+        }
+        exportStatus.textContent = "プレビューを作成しています…";
+        try {
+            const result = await window.KioraTierExport.render({ board: activeBoard, sections, items, games, showNames: showNamesInExport, safeUrl: safe });
+            if (request !== exportRequest || exportDialog.hidden) return;
+            exportPreview.append(result.canvas);
+            exportDownload.disabled = false;
+            exportStatus.textContent = result.missingCovers
+                ? `${result.gameCount} 作品を表示中。読み込めない表紙は作品名で表示します。`
+                : `${result.gameCount} 作品を表示中。画像を確認して保存できます。`;
+        } catch (error) {
+            if (request === exportRequest) exportStatus.textContent = `プレビューを作成できませんでした：${error.message}`;
+        }
+    }
+
+    async function downloadExport() {
+        if (exportDownload.disabled) return;
+        exportDownload.disabled = true;
+        exportStatus.textContent = "高画質の PNG を作成しています…";
+        try {
+            const result = await window.KioraTierExport.render({ board: activeBoard, sections, items, games, showNames: exportNames.checked, pixelRatio: 2, safeUrl: safe });
+            if (!result.canvas) throw new Error("書き出す作品がありません。");
+            const blob = await new Promise((resolve) => result.canvas.toBlob(resolve, "image/png"));
+            if (!blob) throw new Error("PNG を生成できませんでした。");
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = `kiora-tier-${String(activeBoard.title).replace(/[^\p{L}\p{N}]+/gu, "-")}.png`;
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
+            exportStatus.textContent = "PNG を保存しました。";
+        } catch (error) {
+            exportStatus.textContent = `画像を書き出せませんでした：${error.message}`;
+        } finally {
+            exportDownload.disabled = false;
+        }
+    }
+
+    exportDialog.querySelectorAll("[data-tier-export-close]").forEach((control) => control.addEventListener("click", closeExportDialog));
+    exportNames.addEventListener("change", renderExportPreview);
+    exportDownload.addEventListener("click", downloadExport);
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !exportDialog.hidden) closeExportDialog(); });
 
     await loadAll();
 })();

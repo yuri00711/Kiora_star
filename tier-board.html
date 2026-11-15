@@ -27,12 +27,32 @@
             <section id="unassigned-section" class="unassigned-section" hidden><header><p>未分類のゲーム</p><span>表紙を好きな段へ移動できます。</span></header><div id="unassigned-games" class="unassigned-games"></div></section>
         </article>
     </main>
+    <div id="tier-export-dialog" class="tier-export-dialog" role="dialog" aria-modal="true" aria-labelledby="tier-export-title" hidden>
+        <button class="tier-export-backdrop" type="button" data-tier-export-close aria-label="閉じる"></button>
+        <section class="tier-export-panel">
+            <header class="tier-export-header">
+                <div><p>画像を書き出す</p><h2 id="tier-export-title">ボードのプレビュー</h2></div>
+                <button type="button" data-tier-export-close aria-label="閉じる">×</button>
+            </header>
+            <div class="tier-export-options">
+                <p>段に置いたゲームを画像にします。未分類のゲームは含まれません。</p>
+                <label><input id="tier-export-show-names" type="checkbox" checked> ゲーム名を表示</label>
+            </div>
+            <div id="tier-export-preview" class="tier-export-preview" aria-label="書き出し画像のプレビュー"></div>
+            <p id="tier-export-status" class="tier-export-status" role="status"></p>
+            <footer class="tier-export-actions">
+                <button type="button" data-tier-export-close>戻る</button>
+                <button id="tier-export-download" type="button" disabled>PNG を保存</button>
+            </footer>
+        </section>
+    </div>
     <footer class="tier-footer"><span>KIORA / KIORA.SPACE</span><span>ひみつのゲーム記録</span></footer>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260920-1"></script>
     <script src="article-common.js"></script>
     <script src="navigation-state.js?v=20261109-3"></script>
-    <script src="tier-board.js?v=20261109-1"></script>
+    <script src="tier-export.js?v=20261115-1"></script>
+    <script src="tier-board.js?v=20261115-1"></script>
     <script src="kiora/context-broker.js?v=20260921-3"></script>
     <script src="kiora/page-adapters.js?v=20260921-3"></script>
     <script src="kiora/kiora-dock.js?v=20260922-1"></script>
